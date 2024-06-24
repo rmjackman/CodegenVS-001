@@ -1,0 +1,607 @@
+/************************** include *****************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "cdgn_global.h"
+int getch(void);
+
+#define SYMBOL_OFFSET 9 // SYMBOL+1, SYMBOL+2 ...
+#define ASC_STR_LEN 23
+#define DFB_BYTES_PER_LINE 8
+#define MAX_SEGMENTS 256
+#define LINE_BUFFER_SIZE 1000
+char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
+
+#define SHOW_SECTYP_AND_ADDRESS 0
+
+//extern	ssstype sss[MAXSYMS];
+//extern	uint16_t symnum;
+//extern	uint8_t *xlram;
+
+
+//#define ptc(c) putchar(c)
+//#define pts(s) printf(s)
+//#define pts_p(s,p) printf(s,p)
+
+
+uint16_t disassln(uint16_t pc);
+void phb(uint8_t* ptr);
+void adnmb(uint8_t* ptr);
+void adnmw(uint8_t* ptr);
+void adnmw2(uint16_t ska);
+char intern_to_atascii(char ch);
+void pts(const char* str);
+void pts_p(const char* format, void* arg);
+void ptc(char c);
+char ptb(unsigned char num);
+uint8_t read_loadfile(const char filename[FILENAME_MAX]);
+
+uint16_t sno;
+char sctp;
+uint16_t ska_sav, lo_hi_operand; 
+char lo_hi_task;
+uint8_t segment;
+uint8_t number_of_segments;
+uint16_t start_address[MAX_SEGMENTS];
+uint16_t end_address[MAX_SEGMENTS];
+
+void disassemble(const char* filename) {
+	char ch;
+	uint16_t pc;
+
+
+
+
+	char output_filename[FILENAME_MAX];
+	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
+
+	if (extension_pos == NULL) {
+		fprintf(stderr, "Error: File has no extension.\n");
+		return;
+	}
+
+	size_t base_filename_len = extension_pos - filename; // Calculate the length of the base filename
+	snprintf(output_filename, FILENAME_MAX, "%.*s.DIS", (int)base_filename_len, filename); // Create new filename
+
+	FILE* output_file;
+	if (fopen_s(&output_file, output_filename, "w") != 0) {
+		perror("Error opening output file");
+		return;
+	}
+	printf("\n\n\nDIS Filename %s\n\n\n", output_filename);
+
+	number_of_segments = read_loadfile(filename); //loafilename
+
+/********      Write header                  ********/
+	
+	printf ("Writing header\n");
+	bool found = 0;
+	uint16_t i;
+	//printf("symnum = %d\n\n", symnum);
+	for (i = 0; i < symnum; i++) {
+		found = 0;
+		if (sss[i].symbol) {
+			//printf("i = %d",i);
+			for (segment = 1; segment <= number_of_segments; segment++) {
+				if ((sss[i].symadr >= start_address[segment]
+					&& sss[i].symadr <= end_address[segment]) // Check if symbol is in segment
+					|| sss[i].symtyp == '*') {  // Check if ORG
+					found = 1;
+					break;
+				}
+				
+			}
+			//printf("    Segment = %d\n", segment-1);
+		}
+		if (found == 0)
+			fprintf(output_file, "%s\tEQU $%x\n", sss[i].symbol, sss[i].symadr);
+	}
+
+	
+	for (segment = 1; segment <= number_of_segments; segment++) {
+
+		printf("Writing segment %d\n", segment);
+		pc = start_address[segment];
+		
+		fprintf(output_file, "\n\t\tORG $%x\n\n", pc); // Write to the file
+		
+		sno = 0;
+		while (sss[sno].symadr < pc) {
+			sno++;
+			if (sno == symnum) {
+				sno--;
+				break;				//symbol list ended. Go back one
+			}
+		}
+		if (sss[sno].symadr > pc) sno--;//symbol not found. Go back one
+										//If address in symbol table, stay there
+
+		ch = 0;
+		while (1) {
+			pc = disassln(pc);
+			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
+				fprintf(output_file, "%s\n", line_buffer);
+			}
+			if (pc == end_address[segment] + 1)
+				break;
+			if (pc > end_address[segment] + 1) {
+				printf("\aEnd of segment not recognised\n");
+				break;
+			}
+		}
+	}
+	fclose(output_file); // Close the file
+	puts("Done.\n");
+	return;
+}
+
+uint16_t disassln(uint16_t ska) {
+	uint8_t offset;
+	char* ptr;
+	uint8_t* codeptr;
+	
+	char cnt;
+	unsigned int temp;
+	char linbuf[] = "         ";
+	char* lnbfptr;
+	char ch;
+
+	line_buffer[0] = '\0';
+
+	if ((sss[sno ].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
+		cnt = 0;
+		lnbfptr = linbuf;
+		if (sss[sno].symbol)
+			while (sss[sno].symbol[cnt])
+				*lnbfptr++ = sss[sno].symbol[cnt++];
+	}
+
+	if ((sss[sno + 1].symadr == ska) && (sno < symnum - 1)) {// needed for everything else
+		sno++;
+		cnt = 0;
+		lnbfptr = linbuf;
+		if (sss[sno].symbol)
+			while (sss[sno].symbol[cnt])
+				*lnbfptr++ = sss[sno].symbol[cnt++];
+	}
+	
+	sctp = sss[sno].symtyp;
+
+#if SHOW_SECTYP_AND_ADDRESS
+
+	if (sss[sno].symadr == ska) {
+		if (sctp)
+			pts_p("%c ", sctp);
+		else
+			pts("  ");
+	}
+	else
+		pts("  ");
+
+	
+	pts_p("$%X ", ska);
+
+#endif
+
+	pts_p("%s", linbuf);
+
+
+
+
+	codeptr = xlram + ska;
+
+	switch (sctp) {
+	case '\0':
+	case ' ':
+	case ';':
+	case '\'':
+	case '!':
+	case '&':
+	case '@':
+	case '(':
+	case '<':	break; //normal opcodes
+
+	case '#':
+		cnt = DFB_BYTES_PER_LINE - 1;
+		pts("DFB ");
+		while (1) {
+			pts_p("$%X", *codeptr++);
+			ska++;
+			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
+			if (cnt-- == 0) break;
+			ptc(',');
+		}
+		return(ska);
+	case '%':
+		pts("DFB ");
+		ptc('%');
+		ptb(*codeptr);
+		return(++ska);
+	case '=':
+	case '|':
+       		pts("DFW ");
+		adnmw(codeptr);
+		return (ska + 2);
+	case '-':
+	case '_':
+		pts("DFW ");
+		adnmw(codeptr);
+		pts("-1");
+		return (ska + 2);
+	case '\\':
+		pts("ASC ");
+		ptc('\\');
+		while (!((*codeptr) & 128)) {
+			ptc(*codeptr++);
+			ska++;
+		}
+		ptc((*codeptr) & 127);
+		ptc('\\');
+		return(++ska);
+
+	case '"':
+		cnt = ASC_STR_LEN;
+		pts("ASC ");
+		if (*codeptr & 128) {
+			ptc('/');
+			while (*codeptr & 128) {
+				ptc(127 & *codeptr++);
+				ska++;
+				if (sss[sno + 1].symadr == ska) break;
+				if (cnt-- == 0) break;
+			}
+			ptc('/');
+			return(ska);
+		}
+		else {
+			ptc('"');
+			while (!(*codeptr & 128)) {
+				ptc(*codeptr++);
+				ska++;
+				if (sss[sno + 1].symadr == ska) break;
+				if (cnt-- == 0) break;
+			}
+			ptc('"');
+			return(ska);
+		}
+	case '$':
+		cnt = 23;
+		
+		pts("ASC ");
+		if (*codeptr & 128) {
+			ptc('$');
+			while (*codeptr & 128) {
+				ch = intern_to_atascii(*codeptr);
+				ptc(127 & ch);
+				codeptr++;
+				ska++;
+				if (sss[sno + 1].symadr == ska) break;
+				if (cnt-- == 0) break;
+			}
+			ptc('$');
+			return(ska);
+		}
+		else {
+			ptc('%');
+			while (!(*codeptr & 128)) {
+				ch = intern_to_atascii(*codeptr);
+				ptc(ch);
+				codeptr++;
+				ska++;
+				if (sss[sno + 1].symadr == ska) break;
+				if (cnt-- == 0) break;
+			}
+			ptc('%');
+			return(ska);
+		}
+		case '*':
+			
+    		ska = (sss[sno + 1].symadr);//next symbol-table entry
+			pts_p("\n\t\tORG $%X\n", ska);
+			return(ska);
+
+		
+	default:
+		pts_p("The section type '%c' is not yet implemented\n", sctp);
+
+	}
+	offset = abofst[*codeptr];
+	ptr = abtab + offset;
+	ptc(*ptr++);// Print the opcode
+	ptc(*ptr++);
+	ptc(*ptr);
+
+	switch (opertytb[*codeptr++]) {
+	case OPC:		return(ska + 1);
+
+	case NN:
+		if (sctp == '\'') {
+			if (isprint(*codeptr))
+			pts_p(" '%c'", *codeptr);
+			else
+			pts_p(" #$%X", *codeptr);
+			return(ska + 2);
+		}
+		else {
+
+			pts(" #");
+
+			if (sctp == '!') {
+				ptc('%');
+				ptb(*codeptr);
+				return(ska + 2);
+			}
+			else if (sctp == '(') {
+				phb(codeptr);
+				return(ska + 2);
+			}
+			else if (sctp == '&') {
+				if (lo_hi_task == 0) {				// :LO
+					if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '&')) {
+						lo_hi_task = 1;
+						ska_sav = ska;
+						return(ska + 2);
+					}
+					else{//treat as sctp == ';'
+						phb(codeptr);
+						return(ska + 2);
+					}
+				}
+				else if (lo_hi_task == 1) {				// :HI
+					lo_hi_operand = *codeptr << 8;
+					lo_hi_task = 2;
+					return(ska_sav);
+				}
+				else if (lo_hi_task == 2) {				// :LO
+					lo_hi_operand += *codeptr;
+					adnmw2(lo_hi_operand);
+					pts(":LO");
+					lo_hi_task = 3;
+					return(ska + 2);
+				}
+				else if (lo_hi_task == 3) {					//:LO
+					lo_hi_task = 0;
+					adnmw2(lo_hi_operand);
+					pts(":HI");
+					lo_hi_operand = *codeptr << 8;
+					
+					return(ska + 2);					// :HI
+				}
+			}
+			else {
+				phb(codeptr);
+				return(ska + 2);
+			}
+		}
+		
+	case AA:
+		ptc(' ');
+		adnmb(codeptr);
+		return(ska + 2);
+	case AAX:
+		ptc(' ');
+		adnmb(codeptr);
+		pts(",X");
+		return(ska + 2);
+	case AAY:
+		ptc(' ');
+		adnmb(codeptr);
+		pts(",Y");
+		return(ska + 2);
+	case BAABY:
+		pts(" (");
+		adnmb(codeptr);
+		pts("),Y");
+		return(ska + 2);
+	case BAAXB:
+		pts(" (");
+		adnmb(codeptr);
+		pts(",X)");
+		return(ska + 2);
+	case AAAA:
+		ptc(' ');
+		adnmw(codeptr);
+		return(ska + 3);
+	case AAAAX:
+		ptc(' ');
+		adnmw(codeptr);
+		pts(",X");
+		return(ska + 3);
+	case AAAAY:
+		ptc(' ');
+		adnmw(codeptr);
+		pts(",Y");
+		return(ska + 3);
+	case BAAAAB:
+		pts(" (");
+		adnmw(codeptr);
+		ptc(')');
+		return(ska + 3);
+	case BRA:
+		temp = ska + 2;
+		ska += 2 + (signed char)*codeptr;
+		ptc(' ');
+		adnmw2(ska);
+		return(temp);
+
+	default:
+		pts("  Disassembly not possible");
+		ptc('?');
+		return(ska + 1);
+	}
+}
+
+void adnmw(uint8_t* ptr) {
+	uint16_t ska;
+
+	uint8_t low_bite = *ptr++;
+	uint8_t high_bite = *ptr;
+	ska = (uint16_t)low_bite + 256 * ((uint16_t)high_bite);
+	if ((sctp == '-') || (sctp == '_'))
+		ska++;
+	adnmw2(ska);
+	return;
+}
+
+void adnmw2(uint16_t ska) {
+
+	uint16_t i, isav;
+	uint16_t offset;
+
+	for (i = 0; sss[i].symadr <= ska; i++) {
+		if (sss[i].symbol[0] != '\0') {		 // symbol exists at this i
+			isav = i;
+			if (sss[i].symadr == ska) {		// symbol found at this address?
+				pts(sss[i].symbol);			// symbol to string
+				return;
+			}
+		}
+	}
+	if (i == 0) {							// no symbols at all
+		if (ska > 9) ptc('$'); // only if $ is needed
+		pts_p("%X", ska);
+		return;
+	}
+ 	offset = ska - sss[isav].symadr;
+	
+	if ((sss[i].symadr - ska == 1) && (sss[i].symbol)) {   // eg. STA SYMBOL-1
+
+		pts_p("%s", sss[i].symbol);
+		pts("-1");
+	}
+	else if (offset <= SYMBOL_OFFSET) {     // eg. STA SYMBOL+1
+		pts_p("%s", sss[isav].symbol);
+		pts_p("+%d", offset);
+	}
+	else
+		pts_p("$%X", ska);
+
+	return;
+}
+
+
+void adnmb(uint8_t* ptr) {
+	uint8_t byte;
+
+	byte = *ptr++;
+	adnmw2((uint16_t)byte);
+	return;
+}
+
+void phb(uint8_t* ptr) {
+	if (*ptr > 9) 
+		ptc('$');
+	pts_p("%X", *ptr);
+	return;
+}
+//32,32,-64,0,32,32,-64,0
+//1, 1,-2, 0, 1, 1, -2 ,0
+
+char intern_to_atascii(char ch) {
+	char chmasked = ch & 0b01111111;
+	if (chmasked < 64)
+		ch += 32;
+	else if (chmasked < 96)
+		ch -= 64;
+	return(ch);
+}
+
+void pts(const char* str) {
+	size_t current_length = strlen(line_buffer);
+	snprintf(line_buffer + current_length, LINE_BUFFER_SIZE - current_length, "%s", str);
+}
+
+void pts_p(const char* format, void* arg) {
+	size_t current_length = strlen(line_buffer);
+	char temp_buffer[LINE_BUFFER_SIZE];
+	snprintf(temp_buffer, sizeof(temp_buffer), format, arg);
+	strncat_s(line_buffer, LINE_BUFFER_SIZE, temp_buffer, LINE_BUFFER_SIZE - current_length - 1);
+}
+
+void ptc(char c) {
+	size_t current_length = strlen(line_buffer);
+	if (current_length < LINE_BUFFER_SIZE - 1) { // Ensure there's space for the character and null terminator
+		line_buffer[current_length] = c;
+		line_buffer[current_length + 1] = '\0';
+	}
+}
+
+char ptb(unsigned char num) {
+	// Determine the number of bits needed to represent the integer
+	uint8_t numBits = 8;
+	uint8_t bit_val;
+	uint8_t nr_of_1s = 0;
+	// Print binary string with leading zeros
+	for (int i = numBits - 1; i >= 0; i--) {
+		bit_val = (num >> i) & 1;
+		nr_of_1s += bit_val;
+		pts_p("%d", bit_val);
+	}
+	return (nr_of_1s);
+
+}
+
+
+
+uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
+	FILE* file;
+	uint8_t segment = 1;
+
+	// Open binary file for reading
+	printf("\nReading from %s\n\n", filename	);
+	if (fopen_s(&file, filename, "rb") != 0) {
+		perror("Error opening file");
+		return(1);
+	}
+
+	printf("Segment\tfrom\t to\n");
+
+	while (!feof(file)) {
+
+		uint8_t start_high, start_low, end_high, end_low;
+
+		fread(&start_low, sizeof(uint8_t), 1, file); // Read start address LOW
+
+		if (feof(file)) {
+			fprintf(stderr, "End of file reached as expected.\n");
+			break; // Exit the loop
+		}
+		fread(&start_high, sizeof(uint8_t), 1, file);	// Read start address HIGH
+
+		if (segment == 1) {
+			if (!(start_low == 0xFF && start_high == 0xFF)) // Check for mandatory 0xFF bytes on first iteration
+				fprintf(stderr, "Error: This is not a load-file.\n");
+		}
+		if (start_low == 0xFF && start_high == 0xFF) { // Ignore 0xFF bytes
+			fread(&start_low, sizeof(uint8_t), 1, file); // Read start address LOW again.
+			fread(&start_high, sizeof(uint8_t), 1, file);// Read start address HIGH again.
+		}
+		start_address[segment] = (start_high << 8) | start_low;
+
+		fread(&end_low, sizeof(uint8_t), 1, file);
+		fread(&end_high, sizeof(uint8_t), 1, file);
+
+		end_address[segment] = (end_high << 8) | end_low;
+
+		uint16_t segment_length = end_address[segment] - start_address[segment] + 1;
+		uint16_t xlram_start = start_address[segment];
+
+		fread(&xlram[xlram_start], sizeof(uint8_t), segment_length, file);
+
+		if (feof(file)) {
+			fprintf(stderr, "Error: End of file reached prematurely.\n");
+			break;
+		}
+		// Print the table for the current segment
+		printf("   %d\t%X\t%X\n", segment, start_address[segment], end_address[segment]);
+
+		segment++;
+	}
+	return(segment-1);
+}
+
