@@ -22,12 +22,7 @@
 #define DELETE_TEMP_ATR    1// Delete temp.atr befor starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
 
-//#define SRC_FILENAME "C:\\Users\\Acustica\\Google Drive\\CODEGEN-2\\SGEN32.SRC"
-#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\DisTest.SRC"
-//#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\SGEN32.SRC"
-//#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\SecType.SRC"
-//#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\OPCTEST.SRC"
-//#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\SGEN32_no_macros.SRC"
+
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -71,8 +66,8 @@ void operand_to_filename(char filename[]);
 void list_label(int i);
 void list_label_f(int i);		//label zu LIS file
 void list_label_f2(int i);		//label zu LIS file T
-unsigned int symtoi2(char* strbeg);
-unsigned int symtoi3(char* strbeg);
+//uint32_t symtoi2(char* strbeg);
+uint32_t symtoi3(char* strbeg);
 void sectyp(char line_type);
 char fptsmb(int i);
 int prec(char symbol);
@@ -469,11 +464,17 @@ int main(int argc, char* argv[])
 
 		symnumext = symnum;
 		include_flg = 0;
-		if (pass == 1)
-		{
-			sss[symnum].symtyp = '#';
-			strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");
-			sss[symnum++].symadr = 0xd40f;
+		bool d40f_found = 0;
+		if (pass == 2) {
+			for (i = 0; i < symnum; i++) {
+				if (sss[i].symadr == 0xd40f)
+					d40f_found = 1;
+			}
+			if (d40f_found == 0) {
+				sss[symnum].symtyp = '#';
+				strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");
+				sss[symnum++].symadr = 0xd40f;
+			}
 		}
 
 		for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen)
@@ -1612,6 +1613,7 @@ int main(int argc, char* argv[])
 			if (sss[i].symtyp)
 				fprintf(stream2, "%c ", sss[i].symtyp);
 			else fprintf(stream2, "  ");
+			fprintf(stream2, "%d ", sss[i].ofst);
 			list_label_f2(i);
 		}
 	}
@@ -2199,15 +2201,17 @@ uint32_t symtoi1()
 			else
 				sssptr->macf = SYMBOL;
 
-			if (*txtptr == '+')
+			if ((*txtptr == '+') && (!isalpha(*(txtptr + 1))) && (sssptr->ofst != -1))		//-1 has precedence over +									//e.g. LDA SYMBOL+2
 			{
-				if ((*(txtptr + 1) - '0') > sssptr->ofst)
-					sssptr->ofst = *(txtptr + 1) - '0';
-				if (*(txtptr + 2) == '+')							//These two lines take care
-					sssptr->ofst = sssptr->ofst + *(txtptr + 3) - '0';	//of hidden labels 
+				if ((*(txtptr + 1) - '0') > sssptr->ofst)		// if offset > than what is already set
+					sssptr->ofst = *(txtptr + 1) - '0';						// Set offset
+				if (*(txtptr + 2) == '+')									//These two lines take care ???????
+					sssptr->ofst = sssptr->ofst + *(txtptr + 3) - '0';		//of hidden labels  ???????
 			}
-			if (*txtptr == '-')
-				sssptr->ofst = (char)(256 - (*(txtptr + 1) - '0'));
+			else if ((*txtptr == '-') && (!isalpha(*(txtptr + 1))))			//e.g. LDA SYMBOL-3
+				if ((signed char)(256 - (*(txtptr + 1) - '0')) < sssptr->ofst)		// if offset < than what is already set
+					sssptr->ofst = (signed char)(256 - (*(txtptr + 1) - '0')); // Set offset
+
 
 			symfg = 1;
 			return(sssptr->symadr);
@@ -2467,7 +2471,7 @@ void list_label_f2(int i) {
 
 
 
-unsigned int symtoi3(char* strbeg)
+uint32_t symtoi3(char* strbeg)
 {
 	int i, j;
 	if (symnum == 0) return(NOTFOUND);
@@ -2489,7 +2493,7 @@ unsigned int symtoi3(char* strbeg)
 
 void sectyp(char line_type)
 {
-	if (!labflg && (line_type == ';') && strchr("!&'", section_type))
+	if (  !labflg && (line_type == ';') && strchr("!&'", section_type)  )
 		line_type = section_type;
 
 
@@ -2506,7 +2510,7 @@ void sectyp(char line_type)
 			}
 			if ((pass == 2) && (line_type == '&')) /**/
 			{
-				sss[symnum - 1].symtyp = line_type;
+				sss[symnum - 1].symtyp = '&';
 			}
 
 

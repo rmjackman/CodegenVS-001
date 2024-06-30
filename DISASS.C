@@ -18,6 +18,7 @@ int getch(void);
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
 #define SHOW_SECTYP_AND_ADDRESS 0
+#define USE_SYMTAB_OFFSET 1
 
 //extern	ssstype sss[MAXSYMS];
 //extern	uint16_t symnum;
@@ -49,14 +50,10 @@ uint8_t segment;
 uint8_t number_of_segments;
 uint16_t start_address[MAX_SEGMENTS];
 uint16_t end_address[MAX_SEGMENTS];
+uint16_t pc;
 
 void disassemble(const char* filename) {
 	char ch;
-	uint16_t pc;
-
-
-
-
 	char output_filename[FILENAME_MAX];
 	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
 
@@ -66,7 +63,7 @@ void disassemble(const char* filename) {
 	}
 
 	size_t base_filename_len = extension_pos - filename; // Calculate the length of the base filename
-	snprintf(output_filename, FILENAME_MAX, "%.*s.DIS", (int)base_filename_len, filename); // Create new filename
+	snprintf(output_filename, FILENAME_MAX, "%.*s.SRC", (int)base_filename_len, filename); // Create new filename
 
 	FILE* output_file;
 	if (fopen_s(&output_file, output_filename, "w") != 0) {
@@ -126,6 +123,7 @@ void disassemble(const char* filename) {
 			pc = disassln(pc);
 			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
 				fprintf(output_file, "%s\n", line_buffer);
+				//printf("%s\n", line_buffer);
 			}
 			if (pc == end_address[segment] + 1)
 				break;
@@ -450,36 +448,98 @@ void adnmw(uint8_t* ptr) {
 
 void adnmw2(uint16_t ska) {
 
-	uint16_t i, isav;
-	uint16_t offset;
+	uint16_t i=0, isav=0;
+	uint16_t offset=0;
 
-	for (i = 0; sss[i].symadr <= ska; i++) {
-		if (sss[i].symbol[0] != '\0') {		 // symbol exists at this i
+	i = 0;
+	while (sss[i].symadr <= ska) {
+		if (sss[i].symbol[0]) {         // symbol exists at this i
 			isav = i;
-			if (sss[i].symadr == ska) {		// symbol found at this address?
-				pts(sss[i].symbol);			// symbol to string
+			if (sss[i].symadr == ska) {     // symbol found at this address?
+				pts(sss[i].symbol);         // symbol to string
 				return;
 			}
 		}
+		i++;
 	}
-	if (i == 0) {							// no symbols at all
+
+	if (i == 0) {							// no symbols at all??????????????????
 		if (ska > 9) ptc('$'); // only if $ is needed
 		pts_p("%X", ska);
 		return;
 	}
- 	offset = ska - sss[isav].symadr;
+
+	while (sss[i].symbol[0] == 0) i++;	// find first symbol after ska
 	
-	if ((sss[i].symadr - ska == 1) && (sss[i].symbol)) {   // eg. STA SYMBOL-1
+
+
+#if USE_SYMTAB_OFFSET
+
+	
+
+	if (sss[i].ofst & 128) { // is negative
+		if (sss[i].symadr - ska <= -sss[i].ofst) {    // eg. STA SYMBOL-1
+
+			pts_p("%s", sss[i].symbol);
+			pts_p("-%d", sss[i].symadr - ska);
+		}
+		else {
+			if (ska > 9) ptc('$'); // only if $ is needed
+			pts_p("%X", ska);
+		}
+	}
+	else if (sss[isav].ofst > 0) {
+		if (ska - sss[isav].symadr <= sss[isav].ofst) {     // eg. STA SYMBOL+1
+			pts_p("%s", sss[isav].symbol);
+			pts_p("+%d", ska - sss[isav].symadr);
+		}
+		else {
+			if (ska > 9) ptc('$'); // only if $ is needed
+			pts_p("%X", ska);
+		}
+	}
+
+
+#else
+
+	offset = ska - sss[isav].symadr;
+	
+	if ( (sss[i].symadr - ska == 1) && (sss[i].symbol[0])) {   // eg. STA SYMBOL-1
 
 		pts_p("%s", sss[i].symbol);
 		pts("-1");
+	
 	}
 	else if (offset <= SYMBOL_OFFSET) {     // eg. STA SYMBOL+1
 		pts_p("%s", sss[isav].symbol);
 		pts_p("+%d", offset);
 	}
-	else
-		pts_p("$%X", ska);
+
+
+#endif
+	else {
+		if (ska > 9) ptc('$'); // only if $ is needed
+		pts_p("%X", ska);
+	}
+		
+
+
+#define TEST 0
+#if TEST
+		if (pc >= 0x600) {
+			printf("\npc = $%x\n", pc);
+			printf("i = %d\n", i);
+			printf("ska = $%x\n", ska);
+			printf("isav = %d\n", isav);
+			printf("sss[i].symadr = $%x\n", sss[i].symadr);
+			printf("sss[isav].symadr = $%x\n", sss[isav].symadr);
+			printf("sss[i].ofst = $%x\n", sss[i].ofst);
+			printf("sss[isav].ofst = $%x\n", sss[isav].ofst);
+			printf("sss[i].symbol = %s\n", sss[i].symbol);
+			printf("sss[isav].symbol = %s\n", sss[isav].symbol);
+			printf("%s\n", line_buffer);
+}
+#endif // TEST
 
 	return;
 }

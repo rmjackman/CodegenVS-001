@@ -108,7 +108,7 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 	char* ext;
 	char* ptr;
 	FILE* filestream;
-
+	
 
 #if CREATE_EMPTY_ED_IMAGE
 
@@ -181,7 +181,6 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 
 #else	// Create new image containing DOS 2.5	
 
-
 		if (errno == ENOENT) {
 			printf("'%s' does not exist. Creating new image from DOS25 data.\n", diskimage_name);
 		}
@@ -190,22 +189,50 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 			hit_Enter();
 			exit(1);
 		}
+		
+		
 		if (fopen_s(&filestream, diskimage_name, "wb") != 0) {
 			printf("Can't create '%s'", diskimage_name);
 			perror("");
 			exit(1);
 		}
 
-		fwrite(dos25_block, header_len, 1, filestream);
-		fwrite(dos25_block + 16, DOS_BLOCK_SIZE - 16, 1, filestream);
-		for (i = DOS_BLOCK_SIZE - 16 + 1; i <= (360 - 1) * 128; i++)
-			fputc('\0', filestream);
-		fwrite(dos25_votc_dir, DOS25_VOTC_DIR_SIZE, 1, filestream);
-		for (i = (720 - 360 - 1) * 128 + DOS25_VOTC_DIR_SIZE; i < 720 * 128; i++)
-			fputc('\0', filestream);
+		if (fwrite(dos25_block, header_len, 1, filestream) != 1) { 
+			perror("Error writing dos25_block header"); exit(1); 
+		}
+		else
+			printf("dos25_block header written\n");
 
-		fclose(filestream);
+		if (fwrite(dos25_block + 16, DOS_BLOCK_SIZE - 16, 1, filestream) != 1) 		{ 
+			perror("Error writing dos25_block"); exit(1); 
+		}
+		else
+			printf("dos25_block written\n");
 
+		for (i = DOS_BLOCK_SIZE - 16 + 1; i <= (360 - 1) * 128; i++) {
+			if (fputc('\0', filestream) == EOF) { 
+				perror("Error writing null character"); exit(1); }
+		}
+
+		if (fwrite(dos25_votc_dir, DOS25_VOTC_DIR_SIZE, 1, filestream) != 1) { 
+			perror("Error writing dos25_votc_dir"); exit(1); 
+		}
+
+		for (i = (720 - 360 - 1) * 128 + DOS25_VOTC_DIR_SIZE; i < 720 * 128; i++) { 
+			if (fputc('\0', filestream) == EOF) { perror("Error writing null character"); exit(1); } }
+
+		if (filestream != NULL) {
+			if (fclose(filestream) == 0) {
+				printf("File closed successfully.\n");
+			}
+			else {
+				perror("Error closing file");
+			}
+			filestream = NULL; // Set the file stream pointer to NULL
+		}
+		else {
+			printf("File stream is already NULL.\n");
+		}
 
 		if (fopen_s(&filestream, diskimage_name, "rb") != 0) {	//Open diskimage file for reading.
 			printf("Can't open %s", diskimage_name);
