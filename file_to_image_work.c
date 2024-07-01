@@ -242,13 +242,19 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 #endif	
 	}
 	printf("\nDisk image: %s\n", diskimage_name);
-
-	fseek(filestream, 0, SEEK_END);
+	// Move the file position indicator to the end of the file
+	if (fseek(filestream, 0, SEEK_END) != 0) {
+		perror("Error seeking to end of file");
+		fclose(filestream);
+		return 1;
+	}
+	// Get the current position of the file position indicator (file size)
 	lenf = ftell(filestream);
 
-	if (lenf == -1L) {
+	if (lenf == -1) {
+		perror("Error getting file length");
 		fclose(filestream);
-		err("Error getting file length\n");
+		return 1;
 	}
 
 	if (lenf > (uint32_t)(MAX_LEN + header_len)) file_err("File is too long:", diskimage_name);
@@ -780,18 +786,33 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 
 
 
-	/**************** Get full sectors **************************************/
-	printf("Geting full sectors from disk image\n\n");
+	/**************** Get sectors **************************************/
+	printf("Geting sectors from disk image\n\n");
 
 	k = 0;
 	seccount_360 = 0;
 	seccount_1024 = 0;			//ED
 
-
-
-	if (filsiz >= (uint32_t)(sectlen - 3))//at least one full sector
-	{
-		for (i = 1; i <= filsiz - (sectlen - 3); i += (sectlen - 3)) {
+	required_secs = filsiz / (sectlen - 3);
+	if (filsiz % (sectlen - 3))			// partial sector
+		required_secs++;
+	for (i = 1; i <= required_secs; i++) {
+		if (i == required_secs) {//last sector
+			if (filsiz % (sectlen - 3)) {//partial sector
+				fread(&disk[sec][0], (size_t)(filsiz % (sectlen - 3)), 1, filestream);
+				disk[sec][sectlen - 3] = (uint8_t)(filpos_in_dir * 4);	//file position (high byte of following sector: 0)
+				disk[sec][sectlen - 2] = (uint8_t)0;					//low byte des folgenden Sectors: 0
+				disk[sec][sectlen - 1] = (uint8_t)(filsiz % (sectlen - 3));	//number of data bytes
+			}
+			else {//full sector
+				fread(&disk[sec][0], (size_t)(sectlen - 3), 1, filestream);
+				disk[sec][sectlen - 3] = (uint8_t)(filpos_in_dir * 4);	//file position (high byte of following sector: 0)
+				disk[sec][sectlen - 2] = (uint8_t)0;					//low byte des folgenden Sectors: 0
+				disk[sec][sectlen - 1] = (uint8_t)(sectlen - 3);					//number of data bytes
+			}
+			sec < TOTAL_SD_SECS ? seccount_360++ : seccount_1024++;
+		}
+		else {//not last sector
 			fread(&disk[sec][0], (size_t)(sectlen - 3), 1, filestream);	//read sectlen-3 bytes into disk
 			secold = sec;
 			sec < TOTAL_SD_SECS ? seccount_360++ : seccount_1024++;																			//ED
@@ -804,19 +825,6 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 		}
 	}
 
-
-	/**************** Get final (partial) sector *****************************/
-
-	printf("Geting final (partial) sector\n\n");
-
-	i = filsiz % (sectlen - 3); // No partial sector if i == 0
-	if (i) {
-		fread(&disk[sec][0], i, 1, filestream);
-		disk[sec][sectlen - 3] = (uint8_t)(filpos_in_dir * 4);	//file position (high byte of following sector: 0)
-		disk[sec][sectlen - 2] = (uint8_t)0;					//low byte des folgenden Sectors: 0
-		disk[sec][sectlen - 1] = (uint8_t)i;					//number of data bytes
-		sec < TOTAL_SD_SECS ? seccount_360++ : seccount_1024++;											//ED
-	}
 	fclose(filestream);
 
 	seccount_total = seccount_360 + seccount_1024;

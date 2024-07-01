@@ -18,7 +18,7 @@ int getch(void);
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
 #define SHOW_SECTYP_AND_ADDRESS 0
-#define USE_SYMTAB_OFFSET 1
+#define USE_SYMTAB_OFFSET 0
 
 //extern	ssstype sss[MAXSYMS];
 //extern	uint16_t symnum;
@@ -478,7 +478,7 @@ void adnmw2(uint16_t ska) {
 	
 
 	if (sss[i].ofst & 128) { // is negative
-		if (sss[i].symadr - ska <= -sss[i].ofst) {    // eg. STA SYMBOL-1
+		if (sss[i].symadr - ska <= sss[i].ofst & 127) {    // eg. STA SYMBOL-1
 
 			pts_p("%s", sss[i].symbol);
 			pts_p("-%d", sss[i].symadr - ska);
