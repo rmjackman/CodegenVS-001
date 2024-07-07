@@ -464,18 +464,7 @@ int main(int argc, char* argv[])
 
 		symnumext = symnum;
 		include_flg = 0;
-		bool d40f_found = 0;
-		if (pass == 2) {
-			for (i = 0; i < symnum; i++) {
-				if (sss[i].symadr == 0xd40f)
-					d40f_found = 1;
-			}
-			if (d40f_found == 0) {
-				sss[symnum].symtyp = '#';
-				strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");
-				sss[symnum++].symadr = 0xd40f;
-			}
-		}
+		
 
 		for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen)
 		{
@@ -1147,14 +1136,23 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			/* DFW */
+			/* DFW */ //?????????????????????????????????????
 
 			if (strcmp(opcode, "DFW") == 0)
 			{
+				char* tmp_ptr ;
 				data_flg = 1;
-				sectyp('=');
+				//sectyp('=');
 				do {
 					txtptr++;
+
+					tmp_ptr = txtptr;
+					while (isalnum(*tmp_ptr)) tmp_ptr++;
+					if (  *tmp_ptr == '-' && *(tmp_ptr + 1) == '1' && !isdigit(*(tmp_ptr + 2))  )
+						sectyp('-');
+					else
+						sectyp('=');
+
 					symval = expresstoi_p2();
 					toxlbuf((char)symval);
 					toxlbuf((char)(symval >> 8));
@@ -1382,7 +1380,8 @@ int main(int argc, char* argv[])
 
 				txtptr++;
 				intval = expresstoi_p2();
-
+//				if (intval == 0x484C) //0x4946
+//					i = 99;
 				if (operand[1] == '%') // e.g. LDA #%11000000
 					sectyp('!');
 				else
@@ -1405,7 +1404,9 @@ int main(int argc, char* argv[])
 							sectyp('(');
 					}
 				}
-				if (strchr("!&@(", section_type) == 0) sectyp(';');//????????????????????????????????
+				if (strchr("!&@(", section_type) == 0) //if not one of these
+					sectyp(';');//????????????????????????????????
+
 				toxlbuf((char)data[cnt][NN]);
 				toxlbuf((char)intval);
 				continue;
@@ -1553,6 +1554,20 @@ int main(int argc, char* argv[])
 				strcpy_s(sss[symnum++].symbol, sizeof(sss[symnum].symbol), macsymbol[i]);
 
 			}
+
+			bool d40f_found = 0;
+
+			for (i = 0; i < symnum; i++) {
+				if (sss[i].symadr == 0xd40f)
+					d40f_found = 1;
+			}
+			if (d40f_found == 0) {
+				sss[symnum].symtyp = '#';
+				strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");
+				sss[symnum++].symadr = 0xd40f;
+			}
+
+
 			qsort(sss, symnum, sizeof(ssstype), strcmp);
 
 
@@ -1778,7 +1793,7 @@ int main(int argc, char* argv[])
 
 		if (smttoimg_flg)
 			file_to_image(smbfilename, dsk_filename);
-
+		
 		if (*addtoimg_filename)								/* ADDTOIMG */
 		{
 			for (i = 0; i < addtoimg_cnt; i++)
@@ -1798,13 +1813,13 @@ int main(int argc, char* argv[])
 		{
 			puts("");
 
-			puts("  ##    ##    ##   ");
-			puts("  ##    ##    ##   ");
-			puts("  ##    ##    ##   ");
-			printf("\a  ##    ##    ##   CPFL - MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
-			puts("  ##    ##    ##   ");;
-			puts("                            ");
-			puts("  ##    ##    ##   ");
+			puts("  ##          ##");
+			puts("    ##      ##");
+			puts("      ##  ##");
+		printf("\a        ##  CPFL - MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
+			puts("      ##  ##");;
+			puts("    ##      ##");
+			puts("  ##          ##");
 			hit_Enter();
 			exit(1);
 		}

@@ -197,31 +197,45 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 			exit(1);
 		}
 
-		if (fwrite(dos25_block, header_len, 1, filestream) != 1) { 
+		if (fwrite(dos25_block, header_len, 1, filestream) != 1) { //Header
 			perror("Error writing dos25_block header"); exit(1); 
 		}
 		else
 			printf("dos25_block header written\n");
 
-		if (fwrite(dos25_block + 16, DOS_BLOCK_SIZE - 16, 1, filestream) != 1) 		{ 
+		if (fwrite(dos25_block + 16, DOS_BLOCK_SIZE - 16, 1, filestream) != 1){ //DOS25
 			perror("Error writing dos25_block"); exit(1); 
 		}
 		else
 			printf("dos25_block written\n");
 
-		for (i = DOS_BLOCK_SIZE - 16 + 1; i <= (360 - 1) * 128; i++) {
+		for (i = DOS_BLOCK_SIZE - 16 + 1; i <= (360 - 1) * 128; i++) {// 0 0 0 0 .....
 			if (fputc('\0', filestream) == EOF) { 
 				perror("Error writing null character"); exit(1); }
 		}
 
-		if (fwrite(dos25_votc_dir, DOS25_VOTC_DIR_SIZE, 1, filestream) != 1) { 
+		if (fwrite(dos25_votc_dir, DOS25_VOTC_DIR_SIZE, 1, filestream) != 1) {// VTOC DIR
 			perror("Error writing dos25_votc_dir"); exit(1); 
 		}
 
 		for (i = (720 - 360 - 1) * 128 + DOS25_VOTC_DIR_SIZE; i < 720 * 128; i++) { 
 			if (fputc('\0', filestream) == EOF) { perror("Error writing null character"); exit(1); } }
 
-		if (filestream != NULL) {
+
+
+		
+		printf("\nDisk image: %s\n", diskimage_name);
+		
+		
+		
+		lenf = 92176;									// Get the file length
+
+		
+		printf("Size of newly created file: %li bytes\n", lenf);
+
+		fflush(filestream);											// Flush the output buffer
+
+		if (filestream != NULL) {									// Close the file
 			if (fclose(filestream) == 0) {
 				printf("File closed successfully.\n");
 			}
@@ -234,27 +248,32 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 			printf("File stream is already NULL.\n");
 		}
 
-		if (fopen_s(&filestream, diskimage_name, "rb") != 0) {	//Open diskimage file for reading.
+		if (fopen_s(&filestream, diskimage_name, "rb") != 0) {		// Open the newly created file
 			printf("Can't open %s", diskimage_name);
 			perror("");
 			exit(1);
 		}
 #endif	
 	}
-	printf("\nDisk image: %s\n", diskimage_name);
-	// Move the file position indicator to the end of the file
-	if (fseek(filestream, 0, SEEK_END) != 0) {
-		perror("Error seeking to end of file");
-		fclose(filestream);
-		return 1;
-	}
-	// Get the current position of the file position indicator (file size)
-	lenf = ftell(filestream);
+	else {
 
-	if (lenf == -1) {
-		perror("Error getting file length");
-		fclose(filestream);
-		return 1;
+
+		printf("\nDisk image: %s\n", diskimage_name);
+
+		if (fseek(filestream, 0, SEEK_END) != 0) {						// Seek the end of file
+			perror("Error seeking to end of file");
+			fclose(filestream);
+			exit(1);
+		}
+
+		lenf = ftell(filestream);										// Get the file length
+
+		if (lenf == -1) {
+			perror("Error getting file length");
+			fclose(filestream);
+			exit(1);
+		}
+		printf("File size: %li bytes\n", lenf);
 	}
 
 	if (lenf > (uint32_t)(MAX_LEN + header_len)) file_err("File is too long:", diskimage_name);
@@ -461,7 +480,7 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 
 
 #if SHOW_DIR	
-	showdir(3);
+	showdir(2);
 #endif
 
 #if SHOW_DIR64	
