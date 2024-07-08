@@ -2508,6 +2508,16 @@ uint32_t symtoi3(char* strbeg)
 
 void sectyp(char line_type)
 {
+	if (!labflg && line_type == '&' && section_type == '&' && pass == 2) {
+		if (symnumext >= MAXSYMS)
+			error("Too many symbols");
+		else {
+			sss[symnumext].symtyp = line_type;
+			sss[symnumext++].symadr = pc;
+		}
+		return;
+	}
+	
 	if (  !labflg && (line_type == ';') && strchr("!&'", section_type)  )
 		line_type = section_type;
 
