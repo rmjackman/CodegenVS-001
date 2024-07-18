@@ -1142,7 +1142,7 @@ int main(int argc, char* argv[])
 			{
 				char* tmp_ptr ;
 				data_flg = 1;
-				//sectyp('=');
+				
 				do {
 					txtptr++;
 
@@ -1380,14 +1380,14 @@ int main(int argc, char* argv[])
 
 				txtptr++;
 				intval = expresstoi_p2();
-//				if (intval == 0x484C) //0x4946
+//				if (pc == 0x232e) //0x4946
 //					i = 99;
-				if (operand[1] == '%') // e.g. LDA #%11000000
+				if (operand[1] == '%')							// e.g. LDA #%11000000
 					sectyp('!');
 				else
 				{
 					lo_fg = 1;
-					if (*txtptr == ':') // e.g. LDA #OKTXT:H
+					if (*txtptr == ':')							// e.g. LDA #OKTXT:H
 					{
 						txtptr++;
 						if ((*txtptr == 'H') || (*txtptr == 'h'))
@@ -1396,7 +1396,7 @@ int main(int argc, char* argv[])
 							lo_fg = 0;
 						}
 					}
-					if ((symfg || (intval == NOTFOUND)) && lo_fg)
+					if ((symfg || (intval == NOTFOUND)) && lo_fg && (pass == 2))
 					{
 						if (intval > 255)
 							sectyp('&');
