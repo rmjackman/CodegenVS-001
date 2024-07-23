@@ -2216,7 +2216,7 @@ uint32_t symtoi1()
 			else
 				sssptr->macf = SYMBOL;
 
-			if ((*txtptr == '+') && (!isalpha(*(txtptr + 1))) && (sssptr->ofst != -1))		//-1 has precedence over +									//e.g. LDA SYMBOL+2
+			if (*txtptr == '+' && !isalpha(*(txtptr + 1)) )	//e.g. LDA SYMBOL+2
 			{
 				if ((*(txtptr + 1) - '0') > sssptr->ofst)		// if offset > than what is already set
 					sssptr->ofst = *(txtptr + 1) - '0';						// Set offset
@@ -2508,7 +2508,7 @@ uint32_t symtoi3(char* strbeg)
 
 void sectyp(char line_type)
 {
-	if (!labflg && line_type == '&' && section_type == '&' && pass == 2) {
+	if (line_type == '&'  && pass == 2) {
 		if (symnumext >= MAXSYMS)
 			error("Too many symbols");
 		else {

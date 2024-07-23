@@ -18,7 +18,7 @@ int getch(void);
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
 #define SHOW_SECTYP_AND_ADDRESS 0
-#define USE_SYMTAB_OFFSET 0
+#define USE_SYMTAB_OFFSET 1
 
 //extern	ssstype sss[MAXSYMS];
 //extern	uint16_t symnum;
@@ -372,7 +372,10 @@ uint16_t disassln(uint16_t ska) {
 				}
 			}
 			else {
-				phb(codeptr);
+				if (*codeptr < 0x80)
+					adnmb(codeptr);
+				else
+					phb(codeptr);
 				return(ska + 2);
 			}
 		}
@@ -504,16 +507,17 @@ void adnmw2(uint16_t ska) {
 
 	offset = ska - sss[isav].symadr;
 	
-	if ( (sss[i].symadr - ska == 1) && (sss[i].symbol[0])) {   // eg. STA SYMBOL-1
+	if (offset <= SYMBOL_OFFSET) {     // eg. STA SYMBOL+1
+		pts_p("%s", sss[isav].symbol);
+		pts_p("+%d", offset);
+	}
+	else if ( (sss[i].symadr - ska == 1) && (sss[i].symbol[0])) {   // eg. STA SYMBOL-1
 
 		pts_p("%s", sss[i].symbol);
 		pts("-1");
 	
 	}
-	else if (offset <= SYMBOL_OFFSET) {     // eg. STA SYMBOL+1
-		pts_p("%s", sss[isav].symbol);
-		pts_p("+%d", offset);
-	}
+	
 
 
 #endif
