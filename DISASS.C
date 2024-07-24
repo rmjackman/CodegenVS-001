@@ -310,12 +310,18 @@ uint16_t disassln(uint16_t ska) {
 	}
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
-	ptc(*ptr++);// Print the opcode
-	ptc(*ptr++);
-	ptc(*ptr);
+	if (!(offset = 0x54)) {
+		ptc(*ptr++);// Print the opcode except JSR
+		ptc(*ptr++);
+		ptc(*ptr);
+	}
+	if (offset == 0x7e) //RTS
+		ptc('\n');
+	
 
 	switch (opertytb[*codeptr++]) {
-	case OPC:		return(ska + 1);
+	case OPC:		
+		return(ska + 1);
 
 	case NN:
 		if (sctp == '\'') {
@@ -335,7 +341,7 @@ uint16_t disassln(uint16_t ska) {
 				return(ska + 2);
 			}
 			else if (sctp == '(') {
-				phb(codeptr);
+				adnmb(codeptr);
 				return(ska + 2);
 			}
 			else if (sctp == '&') {
@@ -405,8 +411,11 @@ uint16_t disassln(uint16_t ska) {
 		pts(",X)");
 		return(ska + 2);
 	case AAAA:
-		ptc(' ');
+		if (offset != 0x54)
+			ptc(' ');
 		adnmw(codeptr);
+		if (offset == 0x51) //JMP
+			ptc('\n');
 		return(ska + 3);
 	case AAAAX:
 		ptc(' ');
@@ -428,6 +437,7 @@ uint16_t disassln(uint16_t ska) {
 		ska += 2 + (signed char)*codeptr;
 		ptc(' ');
 		adnmw2(ska);
+		ptc('\n');
 		return(temp);
 
 	default:
@@ -478,23 +488,25 @@ void adnmw2(uint16_t ska) {
 
 #if USE_SYMTAB_OFFSET
 
-	
+	if (ska == 0x2204)
+		ska = ska;
 
-	if (sss[i].ofst & 128) { // is negative
-		if (sss[i].symadr - ska <= sss[i].ofst & 127) {    // eg. STA SYMBOL-1
-
-			pts_p("%s", sss[i].symbol);
-			pts_p("-%d", sss[i].symadr - ska);
+	if (sss[isav].ofst > 0) {								// positive offset has priority
+		if (ska - sss[isav].symadr <= sss[isav].ofst) {     // eg. STA SYMBOL+1
+			pts_p("%s", sss[isav].symbol);
+			pts_p("+%d", ska - sss[isav].symadr);
 		}
 		else {
 			if (ska > 9) ptc('$'); // only if $ is needed
 			pts_p("%X", ska);
 		}
 	}
-	else if (sss[isav].ofst > 0) {
-		if (ska - sss[isav].symadr <= sss[isav].ofst) {     // eg. STA SYMBOL+1
-			pts_p("%s", sss[isav].symbol);
-			pts_p("+%d", ska - sss[isav].symadr);
+	
+	else if (sss[i].ofst & 128) { // is negative
+		if (sss[i].symadr - ska <= sss[i].ofst & 127) {    // eg. STA SYMBOL-1
+
+			pts_p("%s", sss[i].symbol);
+			pts_p("-%d", sss[i].symadr - ska);
 		}
 		else {
 			if (ska > 9) ptc('$'); // only if $ is needed
