@@ -146,7 +146,8 @@ uint16_t disassln(uint16_t ska) {
 	char cnt;
 	unsigned int temp;
 	char linbuf[] = "         ";
-	char* lnbfptr;
+	char* lnbfptr = linbuf;
+	char* lnbfptrsv;
 	char ch;
 
 	line_buffer[0] = '\0';
@@ -310,11 +311,27 @@ uint16_t disassln(uint16_t ska) {
 	}
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
-	if (!(offset = 0x54)) {
+
+#define HIDE_JSR 1
+#if HIDE_JSR
+	if (offset == 0x54) { //JSR
+		size_t current_length_sv = strlen(line_buffer);
+		
+		adnmw(++codeptr);
+
+		if (isalpha(line_buffer[current_length_sv]))
+			return(ska + 3);
+		else{ 
+			line_buffer[current_length_sv] = 0; 
+			codeptr--;
+		}
+	}
+#endif
+	
 		ptc(*ptr++);// Print the opcode except JSR
 		ptc(*ptr++);
 		ptc(*ptr);
-	}
+	
 	if (offset == 0x7e) //RTS
 		ptc('\n');
 	
@@ -411,8 +428,7 @@ uint16_t disassln(uint16_t ska) {
 		pts(",X)");
 		return(ska + 2);
 	case AAAA:
-		if (offset != 0x54)
-			ptc(' ');
+		ptc(' ');
 		adnmw(codeptr);
 		if (offset == 0x51) //JMP
 			ptc('\n');
