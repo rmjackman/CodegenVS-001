@@ -19,6 +19,7 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
 #define SHOW_SECTYP_AND_ADDRESS 0
 #define USE_SYMTAB_OFFSET 1
+#define HIDE_JSR 1
 
 //extern	ssstype sss[MAXSYMS];
 //extern	uint16_t symnum;
@@ -96,7 +97,10 @@ void disassemble(const char* filename) {
 			//printf("    Segment = %d\n", segment-1);
 		}
 		if (found == 0)
-			fprintf(output_file, "%s\tEQU $%x\n", sss[i].symbol, sss[i].symadr);
+			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '(')) // Check if constant
+				fprintf(output_file, "%s\tEPZ $%x\n", sss[i].symbol, sss[i].symadr);
+			else
+				fprintf(output_file, "%s\tEQU $%x\n", sss[i].symbol, sss[i].symadr);
 	}
 
 	
@@ -312,7 +316,7 @@ uint16_t disassln(uint16_t ska) {
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
 
-#define HIDE_JSR 1
+
 #if HIDE_JSR
 	if (offset == 0x54) { //JSR
 		size_t current_length_sv = strlen(line_buffer);

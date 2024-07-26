@@ -786,11 +786,13 @@ int main(int argc, char* argv[])
 					i = expresstoi();
 					if (pass == 1)
 					{
-						if (i != NOTFOUND)
-						{
+						if (i != NOTFOUND) {
 							strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
 							sss[symnum++].symadr = i;
-							sss[symnum - 1].symtyp = '#';
+							if ((strcmp(opcode, "EQU") == 0) && (i < 256))
+								sss[symnum - 1].symtyp = '(';
+							else //if (strcmp(opcode, "EPZ") == 0)
+								sss[symnum - 1].symtyp = '#';
 						}
 					}
 					continue;
@@ -1400,8 +1402,8 @@ int main(int argc, char* argv[])
 					{
 						if (intval > 255)
 							sectyp('&');
-						else				// zero page
-							sectyp('(');
+						//else				// zero page
+							//sectyp('(');
 					}
 				}
 				if (strchr("!&@(", section_type) == 0) //if not one of these
