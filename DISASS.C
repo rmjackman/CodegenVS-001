@@ -385,21 +385,21 @@ uint16_t disassln(uint16_t ska) {
 				else if (lo_hi_task == 2) {				// :LO
 					lo_hi_operand += *codeptr;
 					adnmw2(lo_hi_operand);
-					pts(":LO");
+					pts(":L");
 					lo_hi_task = 3;
 					return(ska + 2);
 				}
 				else if (lo_hi_task == 3) {					//:LO
 					lo_hi_task = 0;
 					adnmw2(lo_hi_operand);
-					pts(":HI");
+					pts(":H");
 					lo_hi_operand = *codeptr << 8;
 					
 					return(ska + 2);					// :HI
 				}
 			}
 			else {
-				if (*codeptr < 0x80)
+				if (*codeptr < 0x80)//????????????????????????
 					adnmb(codeptr);
 				else
 					phb(codeptr);
@@ -508,7 +508,7 @@ void adnmw2(uint16_t ska) {
 
 #if USE_SYMTAB_OFFSET
 
-	if (ska == 0x2204)
+	if (ska == 0x549B)
 		ska = ska;
 
 	if (sss[isav].ofst > 0) {								// positive offset has priority
@@ -523,7 +523,7 @@ void adnmw2(uint16_t ska) {
 	}
 	
 	else if (sss[i].ofst & 128) { // is negative
-		if (sss[i].symadr - ska <= sss[i].ofst & 127) {    // eg. STA SYMBOL-1
+		if (sss[i].symadr - ska <= (uint8_t)sss[i].ofst & 127) {    // eg. STA SYMBOL-1
 
 			pts_p("%s", sss[i].symbol);
 			pts_p("-%d", sss[i].symadr - ska);

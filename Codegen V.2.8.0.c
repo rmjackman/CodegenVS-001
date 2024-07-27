@@ -1382,8 +1382,8 @@ int main(int argc, char* argv[])
 
 				txtptr++;
 				intval = expresstoi_p2();
-//				if (pc == 0x232e) //0x4946
-//					i = 99;
+				if (pc == 0x548B) //0x4946
+					i = 99;
 				if (operand[1] == '%')							// e.g. LDA #%11000000
 					sectyp('!');
 				else
@@ -1398,12 +1398,12 @@ int main(int argc, char* argv[])
 							lo_fg = 0;
 						}
 					}
-					if ((symfg || (intval == NOTFOUND)) && lo_fg && (pass == 2))
+					if (lo_fg && (pass == 2))//??????????????????
 					{
 						if (intval > 255)
 							sectyp('&');
 						//else				// zero page
-							//sectyp('(');
+							//sectyp('(');	// taken care of by distinguishing between EQU and EPZ.
 					}
 				}
 				if (strchr("!&@(", section_type) == 0) //if not one of these
