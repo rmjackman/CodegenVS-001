@@ -20,6 +20,7 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define SHOW_SECTYP_AND_ADDRESS 0
 #define USE_SYMTAB_OFFSET 1
 #define HIDE_JSR 1
+#define SKA_AS_COMMENT 1
 
 //extern	ssstype sss[MAXSYMS];
 //extern	uint16_t symnum;
@@ -366,7 +367,7 @@ uint16_t disassln(uint16_t ska) {
 				return(ska + 2);
 			}
 			else if (sctp == '&') {
-				if (lo_hi_task == 0) {				// :LO
+				if (lo_hi_task == 0) {				// :L
 					if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '&')) {
 						lo_hi_task = 1;
 						ska_sav = ska;
@@ -377,25 +378,25 @@ uint16_t disassln(uint16_t ska) {
 						return(ska + 2);
 					}
 				}
-				else if (lo_hi_task == 1) {				// :HI
+				else if (lo_hi_task == 1) {				// :H
 					lo_hi_operand = *codeptr << 8;
 					lo_hi_task = 2;
 					return(ska_sav);
 				}
-				else if (lo_hi_task == 2) {				// :LO
+				else if (lo_hi_task == 2) {				// :L
 					lo_hi_operand += *codeptr;
 					adnmw2(lo_hi_operand);
 					pts(":L");
 					lo_hi_task = 3;
 					return(ska + 2);
 				}
-				else if (lo_hi_task == 3) {					//:LO
+				else if (lo_hi_task == 3) {					//:L
 					lo_hi_task = 0;
 					adnmw2(lo_hi_operand);
 					pts(":H");
 					lo_hi_operand = *codeptr << 8;
 					
-					return(ska + 2);					// :HI
+					return(ska + 2);					// :H
 				}
 			}
 			else {
@@ -490,6 +491,11 @@ void adnmw2(uint16_t ska) {
 			isav = i;
 			if (sss[i].symadr == ska) {     // symbol found at this address?
 				pts(sss[i].symbol);         // symbol to string
+#if SKA_AS_COMMENT
+				if (strlen(line_buffer) < 18)
+					ptc('\t');
+				pts_p("\t%X", ska);
+#endif
 				return;
 			}
 		}
@@ -557,7 +563,12 @@ void adnmw2(uint16_t ska) {
 		if (ska > 9) ptc('$'); // only if $ is needed
 		pts_p("%X", ska);
 	}
-		
+	
+#if SKA_AS_COMMENT
+	if (strlen(line_buffer) < 18)
+		ptc('\t');
+	pts_p("\t%X", ska);
+#endif
 
 
 #define TEST 0
