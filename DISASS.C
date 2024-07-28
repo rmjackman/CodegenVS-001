@@ -17,7 +17,7 @@ int getch(void);
 #define LINE_BUFFER_SIZE 1000
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
-#define SHOW_SECTYP_AND_ADDRESS 0
+#define SHOW_SECTYP_AND_ADDRESS 1
 #define USE_SYMTAB_OFFSET 1
 #define HIDE_JSR 1
 #define SKA_AS_COMMENT 1
@@ -34,8 +34,8 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
-void adnmb(uint8_t* ptr);
-void adnmw(uint8_t* ptr);
+uint16_t adnmb(uint8_t* ptr);
+uint16_t adnmw(uint8_t* ptr);
 void adnmw2(uint16_t ska);
 char intern_to_atascii(char ch);
 void pts(const char* str);
@@ -43,6 +43,7 @@ void pts_p(const char* format, void* arg);
 void ptc(char c);
 char ptb(unsigned char num);
 uint8_t read_loadfile(const char filename[FILENAME_MAX]);
+void pt_ska_comment(uint16_t adr);
 
 uint16_t sno;
 char sctp;
@@ -52,7 +53,8 @@ uint8_t segment;
 uint8_t number_of_segments;
 uint16_t start_address[MAX_SEGMENTS];
 uint16_t end_address[MAX_SEGMENTS];
-uint16_t pc;
+uint16_t pc, adr;
+char comment_string[10] = "";
 
 void disassemble(const char* filename) {
 	char ch;
@@ -180,15 +182,15 @@ uint16_t disassln(uint16_t ska) {
 
 	if (sss[sno].symadr == ska) {
 		if (sctp)
-			pts_p("%c ", sctp);
+			printf("%c ", sctp);
 		else
-			pts("  ");
+			printf("  ");
 	}
 	else
-		pts("  ");
+		printf("  ");
 
 	
-	pts_p("$%X ", ska);
+	printf("$%X ", ska);
 
 #endif
 
@@ -198,7 +200,7 @@ uint16_t disassln(uint16_t ska) {
 
 
 	codeptr = xlram + ska;
-
+	//printf("%c ", sctp);
 	switch (sctp) {
 	case '\0':
 	case ' ':
@@ -207,7 +209,7 @@ uint16_t disassln(uint16_t ska) {
 	case '!':
 	case '&':
 	case '@':
-	case '(':
+	case '(': 
 	case '<':	break; //normal opcodes
 
 	case '#':
@@ -229,13 +231,15 @@ uint16_t disassln(uint16_t ska) {
 	case '=':
 	case '|':
        		pts("DFW ");
-		adnmw(codeptr);
+			adr = adnmw(codeptr);
+			pt_ska_comment(adr);
 		return (ska + 2);
 	case '-':
 	case '_':
 		pts("DFW ");
-		adnmw(codeptr);
+		adr = adnmw(codeptr);
 		pts("-1");
+		pt_ska_comment(adr);
 		return (ska + 2);
 	case '\\':
 		pts("ASC ");
@@ -322,7 +326,8 @@ uint16_t disassln(uint16_t ska) {
 	if (offset == 0x54) { //JSR
 		size_t current_length_sv = strlen(line_buffer);
 		
-		adnmw(++codeptr);
+		adr = adnmw(++codeptr);
+		pt_ska_comment(adr);
 
 		if (isalpha(line_buffer[current_length_sv]))
 			return(ska + 3);
@@ -347,10 +352,13 @@ uint16_t disassln(uint16_t ska) {
 
 	case NN:
 		if (sctp == '\'') {
-			if (isprint(*codeptr))
-			pts_p(" '%c'", *codeptr);
+			if (isprint(*codeptr)) {
+				pts_p(" '%c'", *codeptr);
+				pt_ska_comment((uint16_t)* codeptr);
+			}
 			else
 			pts_p(" #$%X", *codeptr);
+
 			return(ska + 2);
 		}
 		else {
@@ -360,10 +368,12 @@ uint16_t disassln(uint16_t ska) {
 			if (sctp == '!') {
 				ptc('%');
 				ptb(*codeptr);
+				pt_ska_comment((uint16_t)*codeptr);
 				return(ska + 2);
 			}
 			else if (sctp == '(') {
-				adnmb(codeptr);
+				adr = adnmb(codeptr);
+				pt_ska_comment(adr);
 				return(ska + 2);
 			}
 			else if (sctp == '&') {
@@ -387,6 +397,7 @@ uint16_t disassln(uint16_t ska) {
 					lo_hi_operand += *codeptr;
 					adnmw2(lo_hi_operand);
 					pts(":L");
+					pt_ska_comment(lo_hi_operand);
 					lo_hi_task = 3;
 					return(ska + 2);
 				}
@@ -394,15 +405,18 @@ uint16_t disassln(uint16_t ska) {
 					lo_hi_task = 0;
 					adnmw2(lo_hi_operand);
 					pts(":H");
+					pt_ska_comment(lo_hi_operand);
 					lo_hi_operand = *codeptr << 8;
 					
 					return(ska + 2);					// :H
 				}
 			}
 			else {
-				if (*codeptr < 0x80)//????????????????????????
+				if (*codeptr < 0x80) {//not user zero page variables
 					adnmb(codeptr);
-				else
+					pt_ska_comment((uint16_t)*codeptr);
+				}
+				else//avoid user zero page variables
 					phb(codeptr);
 				return(ska + 2);
 			}
@@ -410,54 +424,64 @@ uint16_t disassln(uint16_t ska) {
 		
 	case AA:
 		ptc(' ');
-		adnmb(codeptr);
+		adr = adnmb(codeptr);
+		pt_ska_comment(adr);
 		return(ska + 2);
 	case AAX:
 		ptc(' ');
-		adnmb(codeptr);
+		adr = adnmb(codeptr);
 		pts(",X");
+		pt_ska_comment(adr);
 		return(ska + 2);
 	case AAY:
 		ptc(' ');
-		adnmb(codeptr);
+		adr = adnmb(codeptr);
 		pts(",Y");
+		pt_ska_comment(adr);
 		return(ska + 2);
 	case BAABY:
 		pts(" (");
-		adnmb(codeptr);
+		adr = adnmb(codeptr);
 		pts("),Y");
+		pt_ska_comment(adr);
 		return(ska + 2);
 	case BAAXB:
 		pts(" (");
-		adnmb(codeptr);
+		adr = adnmb(codeptr);
 		pts(",X)");
+		pt_ska_comment(adr);
 		return(ska + 2);
 	case AAAA:
 		ptc(' ');
-		adnmw(codeptr);
+		adr = adnmw(codeptr);
+		pt_ska_comment(adr);
 		if (offset == 0x51) //JMP
 			ptc('\n');
 		return(ska + 3);
 	case AAAAX:
 		ptc(' ');
-		adnmw(codeptr);
+		adr = adnmw(codeptr);
 		pts(",X");
+		pt_ska_comment(adr);
 		return(ska + 3);
 	case AAAAY:
 		ptc(' ');
-		adnmw(codeptr);
+		adr = adnmw(codeptr);
 		pts(",Y");
+		pt_ska_comment(adr);
 		return(ska + 3);
 	case BAAAAB:
 		pts(" (");
-		adnmw(codeptr);
+		adr = adnmw(codeptr);
 		ptc(')');
+		pt_ska_comment(adr);
 		return(ska + 3);
 	case BRA:
 		temp = ska + 2;
 		ska += 2 + (signed char)*codeptr;
 		ptc(' ');
 		adnmw2(ska);
+		pt_ska_comment(ska);
 		ptc('\n');
 		return(temp);
 
@@ -468,7 +492,8 @@ uint16_t disassln(uint16_t ska) {
 	}
 }
 
-void adnmw(uint8_t* ptr) {
+/************** adnmw returns address to be printed *****************/
+uint16_t adnmw(uint8_t* ptr) {
 	uint16_t ska;
 
 	uint8_t low_bite = *ptr++;
@@ -477,7 +502,7 @@ void adnmw(uint8_t* ptr) {
 	if ((sctp == '-') || (sctp == '_'))
 		ska++;
 	adnmw2(ska);
-	return;
+	return(ska);
 }
 
 void adnmw2(uint16_t ska) {
@@ -491,11 +516,7 @@ void adnmw2(uint16_t ska) {
 			isav = i;
 			if (sss[i].symadr == ska) {     // symbol found at this address?
 				pts(sss[i].symbol);         // symbol to string
-#if SKA_AS_COMMENT
-				if (strlen(line_buffer) < 18)
-					ptc('\t');
-				pts_p("\t%X", ska);
-#endif
+
 				return;
 			}
 		}
@@ -564,11 +585,7 @@ void adnmw2(uint16_t ska) {
 		pts_p("%X", ska);
 	}
 	
-#if SKA_AS_COMMENT
-	if (strlen(line_buffer) < 18)
-		ptc('\t');
-	pts_p("\t%X", ska);
-#endif
+
 
 
 #define TEST 0
@@ -592,12 +609,12 @@ void adnmw2(uint16_t ska) {
 }
 
 
-void adnmb(uint8_t* ptr) {
+uint16_t adnmb(uint8_t* ptr) {
 	uint8_t byte;
 
 	byte = *ptr++;
 	adnmw2((uint16_t)byte);
-	return;
+	return(byte);
 }
 
 void phb(uint8_t* ptr) {
@@ -710,5 +727,16 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
 		segment++;
 	}
 	return(segment-1);
+}
+
+void pt_ska_comment(uint16_t ska) {
+
+#if SKA_AS_COMMENT
+	if (strlen(line_buffer) < 18)
+		ptc('\t');
+	pts_p("\t%X", ska);
+#endif
+
+
 }
 
