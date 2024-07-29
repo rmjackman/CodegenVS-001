@@ -26,7 +26,7 @@
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
-#define MAXSYMS 2000
+
 #define MAXMACSYMS 200
 #define MAXLOCLABS 50
 #define MXLBS 10				//maximum # of labels in present macro
@@ -790,7 +790,7 @@ int main(int argc, char* argv[])
 							strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
 							sss[symnum++].symadr = i;
 							if ((strcmp(opcode, "EQU") == 0) && (i < 256))
-								sss[symnum - 1].symtyp = '(';
+								sss[symnum - 1].symtyp = '[';
 							else //if (strcmp(opcode, "EPZ") == 0)
 								sss[symnum - 1].symtyp = '#';
 						}
@@ -1382,7 +1382,7 @@ int main(int argc, char* argv[])
 
 				txtptr++;
 				intval = expresstoi_p2();
-				if (pc == 0x548B) //0x4946
+				if (pc == 0x5249) //0x4946
 					i = 99;
 				if (operand[1] == '%')							// e.g. LDA #%11000000
 					sectyp('!');
@@ -1402,8 +1402,8 @@ int main(int argc, char* argv[])
 					{
 						if (intval > 255)
 							sectyp('&');
-						//else				// zero page
-							//sectyp('(');	// taken care of by distinguishing between EQU and EPZ.
+						else if (symfg)				// zero page
+							sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
 					}
 				}
 				if (strchr("!&@(", section_type) == 0) //if not one of these
@@ -2510,7 +2510,14 @@ uint32_t symtoi3(char* strbeg)
 
 void sectyp(char line_type)
 {
-	if (line_type == '&'  && pass == 2) {
+	if ((line_type == '&' || line_type == '(') && pass == 2) {
+		for (int i = 0; i < symnum; i++) {
+			if (sss[i].symadr == pc) {
+				sss[i].symtyp = line_type;
+				return;
+			}
+		}
+		
 		if (symnumext >= MAXSYMS)
 			error("Too many symbols");
 		else {
@@ -2520,7 +2527,7 @@ void sectyp(char line_type)
 		return;
 	}
 	
-	if (  !labflg && (line_type == ';') && strchr("!&'", section_type)  )
+	if (  !labflg && (line_type == ';') && strchr("!&'(", section_type)  )
 		line_type = section_type;
 
 

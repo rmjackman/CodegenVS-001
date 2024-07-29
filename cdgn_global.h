@@ -24,7 +24,7 @@
 #define DOS25_VOTC_DIR_SIZE 128+32
 #define MAX_FILENAME_LEN 256
 
-#define MAXSYMS 2000
+#define MAXSYMS 2500
 
 // Change color from green to violet
 #define uint8_t uint8_t

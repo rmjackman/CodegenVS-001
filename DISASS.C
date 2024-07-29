@@ -17,7 +17,7 @@ int getch(void);
 #define LINE_BUFFER_SIZE 1000
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
-#define SHOW_SECTYP_AND_ADDRESS 1
+#define SHOW_SECTYP_AND_ADDRESS 0
 #define USE_SYMTAB_OFFSET 1
 #define HIDE_JSR 1
 #define SKA_AS_COMMENT 1
@@ -100,7 +100,7 @@ void disassemble(const char* filename) {
 			//printf("    Segment = %d\n", segment-1);
 		}
 		if (found == 0)
-			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '(')) // Check if constant
+			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '[')) // Check if constant
 				fprintf(output_file, "%s\tEPZ $%x\n", sss[i].symbol, sss[i].symadr);
 			else
 				fprintf(output_file, "%s\tEQU $%x\n", sss[i].symbol, sss[i].symadr);
@@ -213,6 +213,7 @@ uint16_t disassln(uint16_t ska) {
 	case '<':	break; //normal opcodes
 
 	case '#':
+	case '['://(EQU CONSTANT <= $FF)
 		cnt = DFB_BYTES_PER_LINE - 1;
 		pts("DFB ");
 		while (1) {
@@ -412,11 +413,11 @@ uint16_t disassln(uint16_t ska) {
 				}
 			}
 			else {
-				if (*codeptr < 0x80) {//not user zero page variables
-					adnmb(codeptr);
-					pt_ska_comment((uint16_t)*codeptr);
-				}
-				else//avoid user zero page variables
+			//	if (*codeptr < 0x80) {//not user zero page variables
+			//		adnmb(codeptr);
+			//		pt_ska_comment((uint16_t)*codeptr);
+			//	}
+			//	else//avoid user zero page variables
 					phb(codeptr);
 				return(ska + 2);
 			}
