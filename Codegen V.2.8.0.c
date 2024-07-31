@@ -1611,30 +1611,8 @@ int main(int argc, char* argv[])
 
 	qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 
-	/* Symbol table */
-	if (strchr(outflgs, 'N') || strchr(outflgs, 'n'))
-	{
-		fprintf(stream2, "\n\n**** Symbol table *****\n\n");
-		for (i = 0; i < symnumext; i++)
-		{
-			if (sss[i].symbol)
-				list_label_f(i);
-		}
-	}
-	/* SOURCGEN symbol table */
-	if (strchr(outflgs, 'T') || strchr(outflgs, 't'))
-	{
-		fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n");
-		for (i = 0; i < symnumext; i++)
-		{
-			if (sss[i].symtyp)
-				fprintf(stream2, "%c ", sss[i].symtyp);
-			else fprintf(stream2, "  ");
-			fprintf(stream2, "%d ", sss[i].ofst);
-			list_label_f2(i);
-		}
-	}
-	if (lstflg) fclose(stream2);
+
+
 
 	puts("");
 	symnum = 0;
@@ -1671,7 +1649,57 @@ int main(int argc, char* argv[])
 
 	fclose(stream);
 
+#define SORT_EQU_EPZ
+#if SORT_EQU_EPZ 1
 
+	int j = 0;
+	int symno = 0;
+	ssstype temparray[0xff] = { 0 };
+
+	while (sss[symno].symadr <= 0xFF)
+		symno++;
+	symno--;
+	
+	while (sss[symno].symtyp != 0) {
+		if (sss[symno].symtyp == '[') {
+			temparray[j++] = sss[symno];
+			for (i = symno; i >= 0; i--)
+				sss[i] = sss[i - 1];
+			sss[0].symtyp = 0;
+		}
+		else symno--;
+	}
+	for (; j>=0; j--)
+		sss[i++] = temparray[j];
+	
+#endif // 
+
+
+
+
+	/* Symbol table */
+	if (strchr(outflgs, 'N') || strchr(outflgs, 'n')) {
+		fprintf(stream2, "\n\n**** Symbol table *****\n\n");
+		for (i = 0; i < symnumext; i++) {
+			if (sss[i].symbol)
+				list_label_f(i);
+		}
+	}
+
+
+
+	/* SOURCGEN symbol table */
+	if (strchr(outflgs, 'T') || strchr(outflgs, 't')) {
+		fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n");
+		for (i = 0; i < symnumext; i++) {
+			if (sss[i].symtyp)
+				fprintf(stream2, "%c ", sss[i].symtyp);
+			else fprintf(stream2, "  ");
+			fprintf(stream2, "%d ", sss[i].ofst);
+			list_label_f2(i);
+		}
+	}
+	if (lstflg) fclose(stream2);
 
 	/* APPEND  APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND*/
 	if (*append_filename)
