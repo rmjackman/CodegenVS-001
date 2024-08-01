@@ -55,9 +55,12 @@ uint16_t start_address[MAX_SEGMENTS];
 uint16_t end_address[MAX_SEGMENTS];
 uint16_t pc, adr;
 char comment_string[10] = "";
+int symtab_epz = 0;
+int symtab_init = 0;
 
 void disassemble(const char* filename) {
 	char ch;
+	int i = 0;
 	char output_filename[FILENAME_MAX];
 	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
 
@@ -78,11 +81,18 @@ void disassemble(const char* filename) {
 
 	number_of_segments = read_loadfile(filename); //loafilename
 
+/********      Init symtab_epz  *******/
+
+	symtab_epz = 0;
+	while (sss[symtab_epz].symtyp=='[')
+		symtab_epz++;
+	printf("symtab_epz = %d\n", symtab_epz);
+
 /********      Write header                  ********/
 	
 	printf ("Writing header\n");
 	bool found = 0;
-	uint16_t i;
+	
 	//printf("symnum = %d\n\n", symnum);
 	for (i = 0; i < symnum; i++) {
 		found = 0;
@@ -197,7 +207,7 @@ uint16_t disassln(uint16_t ska) {
 	pts_p("%s", linbuf);
 
 
-
+	symtab_init = symtab_epz;
 
 	codeptr = xlram + ska;
 	//printf("%c ", sctp);
@@ -352,6 +362,7 @@ uint16_t disassln(uint16_t ska) {
 		return(ska + 1);
 
 	case NN:
+		symtab_init = 0;
 		if (sctp == '\'') {
 			if (isprint(*codeptr)) {
 				pts_p(" '%c'", *codeptr);
@@ -511,7 +522,7 @@ void adnmw2(uint16_t ska) {
 	uint16_t i=0, isav=0;
 	uint16_t offset=0;
 
-	i = 0;
+	i = symtab_init;
 	while (sss[i].symadr <= ska) {
 		if (sss[i].symbol[0]) {         // symbol exists at this i
 			isav = i;

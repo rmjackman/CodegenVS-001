@@ -21,6 +21,7 @@
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr befor starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
+#define SORT_EQU_EPZ 1
 
 
 
@@ -788,11 +789,12 @@ int main(int argc, char* argv[])
 					{
 						if (i != NOTFOUND) {
 							strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
-							sss[symnum++].symadr = i;
+							sss[symnum].symadr = i;
 							if ((strcmp(opcode, "EQU") == 0) && (i < 256))
-								sss[symnum - 1].symtyp = '[';
+								sss[symnum].symtyp = '[';
 							else //if (strcmp(opcode, "EPZ") == 0)
-								sss[symnum - 1].symtyp = '#';
+								sss[symnum].symtyp = '#';
+							symnum++;
 						}
 					}
 					continue;
@@ -1359,11 +1361,14 @@ int main(int argc, char* argv[])
 
 			/* opc 'c */
 
-			if (operand[0] == '\'')
+			if (operand[0] == '\'' || (operand[0] == '#' && operand[1] == '\''))
 			{
 				sectyp('\'');
-				if (data[cnt][NN] == 0) error("direct addressing (') cannot be used with this opcode");
+				if (data[cnt][NN] == 0)
+					error("direct addressing (') cannot be used with this opcode");
 				txtptr++;
+				if (*txtptr == '\'')
+					txtptr++;
 				ch = *txtptr++;
 				if (*txtptr == '\'')
 					txtptr++;
@@ -1376,7 +1381,7 @@ int main(int argc, char* argv[])
 			/* opc #nn */
 
 
-			if (operand[0] == '#')
+			else if (operand[0] == '#')
 			{
 				if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
 
@@ -1612,6 +1617,32 @@ int main(int argc, char* argv[])
 	qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 
 
+#if SORT_EQU_EPZ
+
+	int j = 0;
+	int symno = 0;
+	ssstype temparray[0xff] = { 0 };
+
+	while (sss[symno].symadr <= 0xFF)		//find greatest zero page or constant entry
+		symno++;
+	symno--;
+
+	while (sss[symno].symtyp != 0) {		// while not empty
+		if (sss[symno].symtyp == '[') {		// if entry is a constant
+
+			temparray[j++] = sss[symno];	//move entry to temp array
+			printf("Found constant %s at $%X  \n ", sss[symno].symbol, sss[symno].symadr);
+
+			for (i = symno; i >= 0; i--) // move block down one
+				sss[i] = sss[i - 1];
+			sss[0].symtyp = 0;			// mark first entry as empty
+		}
+		else symno--;
+	}
+	while (j >= 0)
+		sss[i++] = temparray[j--];
+
+#endif // 
 
 
 	puts("");
@@ -1626,14 +1657,20 @@ int main(int argc, char* argv[])
 		{
 			if (sss[i].symadr == sss[symnum - 1].symadr)	/* double entry */
 			{
+				/*if ((sss[symnum - 1].symtyp == '[' && sss[i].symtyp != '[')
+					|| (sss[symnum - 1].symtyp != '[' && sss[i].symtyp == '[')) {
+					printf("%s and %s both = $%X\n", sss[i].symbol, sss[symnum - 1].symbol, sss[i].symadr);
+				
+					continue;
+				}*/
 				if (sss[symnum - 1].symbol[0] && sss[i].symbol[0]) /* 2 labels */
 				{
-					if ((sss[symnum - 1].macf == MACRO_LAB) || (sss[i].macf == MACRO_LAB))
-					{
+					if ((sss[symnum - 1].macf == MACRO_LAB) || (sss[i].macf == MACRO_LAB)) {
 						if (sss[symnum - 1].macf == MACRO_LAB)
 							strcpy_s(sss[symnum - 1].symbol, sizeof(sss[symnum - 1].symbol), sss[i].symbol);
 						continue;
 					}
+					
 					else
 						printf("%s and %s both = $%X\n", sss[i].symbol, sss[symnum - 1].symbol, sss[i].symadr);
 				}
@@ -1649,30 +1686,7 @@ int main(int argc, char* argv[])
 
 	fclose(stream);
 
-#define SORT_EQU_EPZ
-#if SORT_EQU_EPZ 1
 
-	int j = 0;
-	int symno = 0;
-	ssstype temparray[0xff] = { 0 };
-
-	while (sss[symno].symadr <= 0xFF)
-		symno++;
-	symno--;
-	
-	while (sss[symno].symtyp != 0) {
-		if (sss[symno].symtyp == '[') {
-			temparray[j++] = sss[symno];
-			for (i = symno; i >= 0; i--)
-				sss[i] = sss[i - 1];
-			sss[0].symtyp = 0;
-		}
-		else symno--;
-	}
-	for (; j>=0; j--)
-		sss[i++] = temparray[j];
-	
-#endif // 
 
 
 
