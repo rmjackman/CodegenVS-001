@@ -57,6 +57,7 @@ uint16_t pc, adr;
 char comment_string[10] = "";
 int symtab_epz = 0;
 int symtab_init = 0;
+bool epz_flg = 0;
 
 void disassemble(const char* filename) {
 	char ch;
@@ -110,10 +111,22 @@ void disassemble(const char* filename) {
 			//printf("    Segment = %d\n", segment-1);
 		}
 		if (found == 0)
-			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '[')) // Check if constant
+			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '[')) {
+				if (epz_flg == 0) {
+					fprintf(output_file, "\n");
+					epz_flg = 1;
+				}
 				fprintf(output_file, "%s\tEPZ $%x\n", sss[i].symbol, sss[i].symadr);
-			else
+				
+			}
+			else {
+				
+				epz_flg = 0;
+
 				fprintf(output_file, "%s\tEQU $%x\n", sss[i].symbol, sss[i].symadr);
+
+			}
+	
 	}
 
 	

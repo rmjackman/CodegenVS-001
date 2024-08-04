@@ -25,6 +25,7 @@
 #define MAX_FILENAME_LEN 256
 
 #define MAXSYMS 2500
+#define COMMENT_LEN 40
 
 // Change color from green to violet
 #define uint8_t uint8_t
@@ -33,6 +34,7 @@
 
 typedef struct {
 	char symbol[9];
+	char comment[COMMENT_LEN];
 	uint16_t symadr;
 	int8_t ofst;
 	uint8_t macf;

@@ -21,7 +21,7 @@
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr befor starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
-#define SORT_EQU_EPZ 1
+#define SORT_EQU_EPZ 1		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
 
 
 
@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
 	short rmbflg = 0;
 	int rmbadr = 0;
 	short smttoimg_flg = 0;
-
+	char tmptyp;
 	fpos_t pos1;
 
 
@@ -790,9 +790,11 @@ int main(int argc, char* argv[])
 						if (i != NOTFOUND) {
 							strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
 							sss[symnum].symadr = i;
+#if SORT_EQU_EPZ
 							if ((strcmp(opcode, "EQU") == 0) && (i < 256))
 								sss[symnum].symtyp = '[';
 							else //if (strcmp(opcode, "EPZ") == 0)
+#endif
 								sss[symnum].symtyp = '#';
 							symnum++;
 						}
@@ -1339,8 +1341,8 @@ int main(int argc, char* argv[])
 						(strcmp(opcode, "EQU") == 0))
 						error("Label missing at beginning of line"); // since otherwise these would have been taken care of
 
-					if ((pass == 1) && (strstr(assdirecs, opcode)))		//// added in V2.7.1
-						continue;										//// added in V2.7.1
+					if ((pass == 1) && (strstr(assdirecs, opcode)))
+						continue;
 					error("A subroutine can't have an operand");
 				}
 
@@ -1351,7 +1353,7 @@ int main(int argc, char* argv[])
 
 			if (!strcmp(opcode, "JSR"))
 			{
-				if (strchr(";'!(", section_type) == 0) sectyp(';');						//version 1.01
+				if (strchr(";'!(", section_type) == 0) sectyp(';');
 				symval = expresstoi_p2();
 				toxlbuf(0x20);
 				toxlbuf((char)symval);
@@ -1631,7 +1633,8 @@ int main(int argc, char* argv[])
 		if (sss[symno].symtyp == '[') {		// if entry is a constant
 
 			temparray[j++] = sss[symno];	//move entry to temp array
-			printf("Found constant %s at $%X  \n ", sss[symno].symbol, sss[symno].symadr);
+			
+			//printf("Found constant %s at $%X  \n ", sss[symno].symbol, sss[symno].symadr);
 
 			for (i = symno; i >= 0; i--) // move block down one
 				sss[i] = sss[i - 1];
@@ -1644,11 +1647,13 @@ int main(int argc, char* argv[])
 
 #endif // 
 
+/* Remove unneeded symbols */
 
 	puts("");
 	symnum = 0;
 	for (i = 0; i < symnumext; i++)
 	{
+		tmptyp = sss[symnum - 1].symtyp;
 		if (sss[i].macf == MACRO) continue;
 		if (((sss[i].macf == UNUSED) || (sss[i].macf == MACRO_UNUSED)) && sss[i].symbol[0])
 			printf("Unused symbol: %s\n", sss[i].symbol);
@@ -1657,31 +1662,27 @@ int main(int argc, char* argv[])
 		{
 			if (sss[i].symadr == sss[symnum - 1].symadr)	/* double entry */
 			{
-				/*if ((sss[symnum - 1].symtyp == '[' && sss[i].symtyp != '[')
-					|| (sss[symnum - 1].symtyp != '[' && sss[i].symtyp == '[')) {
-					printf("%s and %s both = $%X\n", sss[i].symbol, sss[symnum - 1].symbol, sss[i].symadr);
-				
-					continue;
-				}*/
 				if (sss[symnum - 1].symbol[0] && sss[i].symbol[0]) /* 2 labels */
 				{
 					if ((sss[symnum - 1].macf == MACRO_LAB) || (sss[i].macf == MACRO_LAB)) {
 						if (sss[symnum - 1].macf == MACRO_LAB)
-							strcpy_s(sss[symnum - 1].symbol, sizeof(sss[symnum - 1].symbol), sss[i].symbol);
+							
+							sss[symnum - 1] = sss[i];
 						continue;
 					}
 					
 					else
 						printf("%s and %s both = $%X\n", sss[i].symbol, sss[symnum - 1].symbol, sss[i].symadr);
 				}
-				if (!(sss[symnum - 1].symbol[0]))
-					strcpy_s(sss[symnum - 1].symbol, sizeof(sss[symnum - 1].symbol), sss[i].symbol);
-				if (sss[i].symtyp)
-					sss[symnum - 1].symtyp = sss[i].symtyp;
+				if (!(sss[symnum - 1].symbol[0])) // no symbol
+					sss[symnum - 1] = sss[i];
+
+				if (sss[i].symtyp == 0)
+					sss[symnum - 1].symtyp = tmptyp; //restore type
 				continue;
 			}
 		}
-		sss[symnum++] = sss[i];  // was memmove(sss[symnum++].symbol, sss[i].symbol, sizeof(ssstype));
+		sss[symnum++] = sss[i];
 	}
 
 	fclose(stream);
@@ -1865,7 +1866,7 @@ int main(int argc, char* argv[])
 			puts("    ##      ##");
 			puts("  ##          ##");
 			hit_Enter();
-			exit(1);
+			//exit(1);
 		}
 		else
 		{
