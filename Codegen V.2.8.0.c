@@ -22,6 +22,7 @@
 #define DELETE_TEMP_ATR    1// Delete temp.atr befor starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
 #define SORT_EQU_EPZ 1		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
+#define COMMENTS 1			//Set to 1 to include comments in generated code.
 
 
 
@@ -265,7 +266,7 @@ int main(int argc, char* argv[])
 	short smttoimg_flg = 0;
 	char tmptyp;
 	fpos_t pos1;
-
+	bool star_flg = 0;
 
 
 	/*xlram_codetpy = malloc (0xffff); /* each address is assigned a flag used in symtyp
@@ -643,12 +644,12 @@ int main(int argc, char* argv[])
 
 			/**********  Test first character of line ***********/
 
-			switch (*txtptr)
-			{
+			switch (*txtptr) {
 			case '\?':
 			case '\n':					// empty line
-			case ';':
-			case '*':	continue;		// comment
+			case ';':	continue;
+			case '*':	star_flg = 1;	// comment
+				continue;
 			case ' ':					// white space
 			case '\t':	break;
 			case '#':				//Skip block from '#' to the next line beginning with '#',
@@ -865,6 +866,26 @@ int main(int argc, char* argv[])
 				if ((pass == 1) && !(macroflg))
 				{
 					strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
+					
+#if COMMENTS
+					i = 0;
+					if (star_flg) {
+						ptr = linbegptr - 2;
+						while (*ptr != '\n')
+							ptr--;
+						ptr++;
+							if (*ptr++ == '*') { // comment at line begin
+								while (*ptr == ' ' || *ptr == '\t' || *ptr == '*')
+									ptr++;
+								while (*ptr != '\n') {
+									sss[symnum].comment[i++] = *ptr++;
+								}
+							}
+						printf_s("%s", sss[symnum].comment);
+						getchar();
+					}
+
+#endif
 					sss[symnum++].symadr = pc;
 				}
 			} /*END LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
@@ -2611,14 +2632,15 @@ char fptsmb(int i)
 	char* lnbfptr;
 	int cnt;
 	char len;
+	char temp_symtype;
 
 	if ((sss[i].symadr == sss[i - 1].symadr) && (i > 0))		/* double entry */
 	{
+		temp_symtype = sss[i].symtyp;
 		if (sss[i - 1].symbol[0])
-			strcpy_s(sss[i].symbol, sizeof(sss[i].symbol), sss[i - 1].symbol);
-		if (sss[i - 1].symtyp)
-			sss[i].symtyp = sss[i - 1].symtyp;
-		secsiz -= lensv;
+			sss[i] = sss[i - 1];
+		if (sss[i - 1].symtyp == 0)
+			sss[i].symtyp = temp_symtype;// restore symbol type
 		fsetpos(stream, &pos2);
 	}
 	lnbfptr = linbuf[0];
