@@ -1,8 +1,8 @@
-#define SRC_FILENAME "C:\\Users\\Acustica\\Google Drive\\CODEGEN-2\\SGEN32.SRC"
+//#define SRC_FILENAME "C:\\Users\\Acustica\\Google Drive\\CODEGEN-2\\SGEN32.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\AUTORUN.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\AUTORUN_1.SRC"
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\FINDBUGS.SRC"
-//#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32.SRC"
+#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32.SRC"
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\SecType.SRC" 
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\OPCTEST.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32_no_macros.SRC"
@@ -25,7 +25,7 @@
 #define MAX_FILENAME_LEN 256
 
 #define MAXSYMS 2500
-#define COMMENT_LEN 40
+#define COMMENT_LEN 60
 
 // Change color from green to violet
 #define uint8_t uint8_t

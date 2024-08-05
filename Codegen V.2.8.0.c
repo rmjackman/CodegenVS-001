@@ -877,12 +877,17 @@ int main(int argc, char* argv[])
 							if (*ptr++ == '*') { // comment at line begin
 								while (*ptr == ' ' || *ptr == '\t' || *ptr == '*')
 									ptr++;
-								while (*ptr != '\n') {
+								while (*ptr != '\n' && i < COMMENT_LEN - 3) {// -3 to be safe
 									sss[symnum].comment[i++] = *ptr++;
 								}
+								sss[symnum].comment[i] = 0;
+								if (sss[symnum].comment[0]) {
+									printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
+									//getchar();
+								}
 							}
-						printf_s("%s", sss[symnum].comment);
-						getchar();
+						
+						
 					}
 
 #endif
@@ -1648,7 +1653,8 @@ int main(int argc, char* argv[])
 
 	while (sss[symno].symadr <= 0xFF)		//find greatest zero page or constant entry
 		symno++;
-	symno--;
+	if (symno > 0) 
+		symno--;
 
 	while (sss[symno].symtyp != 0) {		// while not empty
 		if (sss[symno].symtyp == '[') {		// if entry is a constant
@@ -1732,7 +1738,10 @@ int main(int argc, char* argv[])
 				fprintf(stream2, "%c ", sss[i].symtyp);
 			else fprintf(stream2, "  ");
 			fprintf(stream2, "%d ", sss[i].ofst);
+			if (sss[i].comment[0])
+				fprintf(stream2, "*** %s ***\n", sss[i].comment);
 			list_label_f2(i);
+			
 		}
 	}
 	if (lstflg) fclose(stream2);

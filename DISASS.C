@@ -65,6 +65,10 @@ void disassemble(const char* filename) {
 	char output_filename[FILENAME_MAX];
 	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
 
+
+
+
+
 	if (extension_pos == NULL) {
 		fprintf(stderr, "Error: File has no extension.\n");
 		return;
@@ -147,6 +151,16 @@ void disassemble(const char* filename) {
 		}
 		if (sss[sno].symadr > pc) sno--;//symbol not found. Go back one
 										//If address in symbol table, stay there
+#define PRINT_COMMENTS 0
+#if PRINT_COMMENTS
+
+		//for (i = 0; i < symnumext; i++) {
+
+			//if (sss[i].comment[0])
+				//printf("*** %s ***\n", sss[i].comment);
+
+		//}
+#endif
 
 		ch = 0;
 		while (1) {
@@ -172,13 +186,18 @@ uint16_t disassln(uint16_t ska) {
 	uint8_t offset;
 	char* ptr;
 	uint8_t* codeptr;
-	
+
 	char cnt;
 	unsigned int temp;
 	char linbuf[] = "         ";
 	char* lnbfptr = linbuf;
-	char* lnbfptrsv;
+	//char* lnbfptrsv;
 	char ch;
+
+/*	if (sss[sno].comment[0]) {
+		pts_p("*** %s ***\n", sss[sno].comment);
+		printf("*** %s ***\n", sss[sno].comment);
+	}*/
 
 	line_buffer[0] = '\0';
 
@@ -216,8 +235,10 @@ uint16_t disassln(uint16_t ska) {
 	printf("$%X ", ska);
 
 #endif
+	if (sss[sno].comment[0] && sss[sno].symadr == pc)
+		pts_p("*** %s ***\n", sss[sno].comment);
 
-	pts_p("%s", linbuf);
+	pts_p("%s", linbuf); // Label at line beginning
 
 
 	symtab_init = symtab_epz;
