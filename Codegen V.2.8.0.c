@@ -798,33 +798,35 @@ int main(int argc, char* argv[])
 							else //if (strcmp(opcode, "EPZ") == 0)
 #endif
 								sss[symnum].symtyp = '#';
+
+
+#if COMMENTS2
+							i = 0;
+
+							ptr = txtptr;
+
+							while (*ptr == ' ' || *ptr == '\t' || *ptr == '*' || *ptr == ';')
+								ptr++;
+							while (*ptr != '\n' && i < COMMENT_LEN - 1) {
+								sss[symnum].comment[i++] = *ptr++;
+							}
+							sss[symnum].comment[i] = 0;
+							/*if (sss[symnum].comment[0]) {
+								printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
+								getchar();
+							}*/
+
+
+
+#endif
+
+
+
 							symnum++;
 						}
 					}
 					
 
-#if COMMENTS2
-					i = 0;
-					if (star_flg) {
-						ptr = linbegptr - 2;
-						while (*ptr != '\n')
-							ptr--;
-						ptr++;
-						if (*ptr++ == '*') { // comment at line begin
-							while (*ptr == ' ' || *ptr == '\t' || *ptr == '*')
-								ptr++;
-							while (*ptr != '\n' && *ptr != '*' && i < COMMENT_LEN - 1) {
-								sss[symnum].comment[i++] = *ptr++;
-							}
-							sss[symnum].comment[i] = 0;
-							//if (sss[symnum].comment[0]) {
-								//printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
-								//getchar();
-							//}
-						}
-					}
-
-#endif
 					continue;
 				}
 

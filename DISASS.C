@@ -58,6 +58,7 @@ char comment_string[10] = "";
 int symtab_epz = 0;
 int symtab_init = 0;
 bool epz_flg = 0;
+uint16_t isav = 0;
 
 void disassemble(const char* filename) {
 	char ch;
@@ -120,14 +121,14 @@ void disassemble(const char* filename) {
 					fprintf(output_file, "\n");
 					epz_flg = 1;
 				}
-				fprintf(output_file, "%s\tEPZ $%x\n", sss[i].symbol, sss[i].symadr);
+				fprintf(output_file, "%s\tEPZ $%x\t%s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
 				
 			}
 			else {
 				
 				epz_flg = 0;
 
-				fprintf(output_file, "%s\tEQU $%x\n", sss[i].symbol, sss[i].symadr);
+				fprintf(output_file, "%s\tEQU $%x %s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
 
 			}
 	
@@ -553,7 +554,7 @@ uint16_t adnmw(uint8_t* ptr) {
 
 void adnmw2(uint16_t ska) {
 
-	uint16_t i=0, isav=0;
+	uint16_t i=0;
 	uint16_t offset=0;
 
 	i = symtab_init;
@@ -562,7 +563,7 @@ void adnmw2(uint16_t ska) {
 			isav = i;
 			if (sss[i].symadr == ska) {     // symbol found at this address?
 				pts(sss[i].symbol);         // symbol to string
-
+				
 				return;
 			}
 		}
@@ -781,6 +782,8 @@ void pt_ska_comment(uint16_t ska) {
 	if (strlen(line_buffer) < 18)
 		ptc('\t');
 	pts_p("\t%X", ska);
+	ptc('\t');                  // tab
+	pts(sss[isav].comment);
 #endif
 
 
