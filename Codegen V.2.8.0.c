@@ -23,6 +23,7 @@
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
 #define SORT_EQU_EPZ 1		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
+#define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
 
 
@@ -800,6 +801,30 @@ int main(int argc, char* argv[])
 							symnum++;
 						}
 					}
+					
+
+#if COMMENTS2
+					i = 0;
+					if (star_flg) {
+						ptr = linbegptr - 2;
+						while (*ptr != '\n')
+							ptr--;
+						ptr++;
+						if (*ptr++ == '*') { // comment at line begin
+							while (*ptr == ' ' || *ptr == '\t' || *ptr == '*')
+								ptr++;
+							while (*ptr != '\n' && *ptr != '*' && i < COMMENT_LEN - 1) {
+								sss[symnum].comment[i++] = *ptr++;
+							}
+							sss[symnum].comment[i] = 0;
+							//if (sss[symnum].comment[0]) {
+								//printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
+								//getchar();
+							//}
+						}
+					}
+
+#endif
 					continue;
 				}
 
@@ -877,17 +902,15 @@ int main(int argc, char* argv[])
 							if (*ptr++ == '*') { // comment at line begin
 								while (*ptr == ' ' || *ptr == '\t' || *ptr == '*')
 									ptr++;
-								while (*ptr != '\n' && i < COMMENT_LEN - 3) {// -3 to be safe
+								while (*ptr != '\n' && *ptr != '*' && i < COMMENT_LEN - 1) {
 									sss[symnum].comment[i++] = *ptr++;
 								}
 								sss[symnum].comment[i] = 0;
-								if (sss[symnum].comment[0]) {
-									printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
+								//if (sss[symnum].comment[0]) {
+									//printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
 									//getchar();
-								}
+								//}
 							}
-						
-						
 					}
 
 #endif
@@ -1739,7 +1762,7 @@ int main(int argc, char* argv[])
 			else fprintf(stream2, "  ");
 			fprintf(stream2, "%d ", sss[i].ofst);
 			if (sss[i].comment[0])
-				fprintf(stream2, "*** %s ***\n", sss[i].comment);
+				fprintf(stream2, "*** %s\n", sss[i].comment);
 			list_label_f2(i);
 			
 		}
@@ -2636,10 +2659,9 @@ void sectyp(char line_type)
 	}
 }
 
-char fptsmb(int i)
-{
+char fptsmb(int i) {
 	char* lnbfptr;
-	int cnt;
+	int cnt, comment_bytes_cnt;
 	char len;
 	char temp_symtype;
 
@@ -2650,6 +2672,8 @@ char fptsmb(int i)
 			sss[i] = sss[i - 1];
 		if (sss[i - 1].symtyp == 0)
 			sss[i].symtyp = temp_symtype;// restore symbol type
+
+		secsiz -= lensv;
 		fsetpos(stream, &pos2);
 	}
 	lnbfptr = linbuf[0];
@@ -2658,8 +2682,23 @@ char fptsmb(int i)
 		return(0);
 	while (sss[i].symbol[cnt])
 		*lnbfptr++ = sss[i].symbol[cnt++];
-	if (sss[i].symtyp)
-	{
+
+
+#define TEMP 1
+#if TEMP	
+	if (sss[i].comment[0]) {
+		*lnbfptr++ = ';';
+		comment_bytes_cnt = 0;
+			cnt++;
+		while (sss[i].comment[comment_bytes_cnt]) {
+			*lnbfptr++ = sss[i].comment[comment_bytes_cnt++];
+			cnt++;
+		}
+	}
+#endif
+
+
+	if (sss[i].symtyp) {
 		*lnbfptr = sss[i].symtyp;
 		cnt++;
 	}
@@ -2670,8 +2709,7 @@ char fptsmb(int i)
 	fputc(sss[i].ofst, stream);
 	fputc(len, stream);
 	lnbfptr = linbuf[0];
-	while (cnt)
-	{
+	while (cnt) {
 		fputc(*lnbfptr++, stream);
 		cnt--;
 	}
