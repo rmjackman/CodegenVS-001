@@ -169,7 +169,7 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 
 
 
-	// open disk image file
+open_disk_image_file:
 
 
 	if (fopen_s(&filestream, diskimage_name, "rb") != 0)	// disk image not found
@@ -187,7 +187,7 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 		else if (errno == EACCES) {
 			printf("\n\aERROR: The file '%s' is currently in use.\nPlease close the Atari emulator.", diskimage_name);
 			hit_Enter();
-			exit(1);
+			goto open_disk_image_file;
 		}
 		
 		
