@@ -22,16 +22,6 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define HIDE_JSR 1
 #define SKA_AS_COMMENT 1
 
-//extern	ssstype sss[MAXSYMS];
-//extern	uint16_t symnum;
-//extern	uint8_t *xlram;
-
-
-//#define ptc(c) putchar(c)
-//#define pts(s) printf(s)
-//#define pts_p(s,p) printf(s,p)
-
-
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
 uint16_t adnmb(uint8_t* ptr);
@@ -54,7 +44,7 @@ uint8_t segment;
 uint8_t number_of_segments;
 uint16_t start_address[MAX_SEGMENTS];
 uint16_t end_address[MAX_SEGMENTS];
-uint16_t pc, adr;
+uint16_t pc, pcsav,adr;
 char comment_string[10] = "";
 int symtab_epz = 0;
 int symtab_init = 0;
@@ -172,15 +162,14 @@ void disassemble(const char* filename) {
 
 		ch = 0;
 		while (1) {
-			
+			pcsav = pc;
 			pc = disassln(pc);
 
 			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
 				
 				print_line(); //printline
 
-				//printf("%i: %s\n",diss_linnum, line_buffer);
-				//getch();
+			
 			}
 			if (pc == end_address[segment] + 1)
 				break;
@@ -406,7 +395,8 @@ uint16_t disassln(uint16_t ska) {
 	
 		if (offset == 0x7e) { //RTS
 			ptc('\n');
-			line_skip++;
+			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) 
+				line_skip++;
 		}
 
 	switch (opertytb[*codeptr++]) {
@@ -521,7 +511,8 @@ uint16_t disassln(uint16_t ska) {
 		pt_ska_comment(adr);
 		if (offset == 0x51) { //JMP
 			ptc('\n');
-			line_skip++;
+			if (!((lo_hi_task == 1) || (lo_hi_task == 2)))
+				line_skip++;
 		}
 		return(ska + 3);
 	case AAAAX:
@@ -549,7 +540,8 @@ uint16_t disassln(uint16_t ska) {
 		adnmw2(ska);
 		pt_ska_comment(ska);
 		ptc('\n');
-		line_skip++;
+		if (!((lo_hi_task == 1) || (lo_hi_task == 2))) 
+			line_skip++;
 		return(temp);
 
 	default:
@@ -799,8 +791,7 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
 void pt_ska_comment(uint16_t ska) {
 
 #if SKA_AS_COMMENT
-	//if (diss_linnum == 166)
-		//segment =segment;
+
 	if (strlen(line_buffer) < 18)
 		ptc('\t');
 	pts_p("\t%X", ska);
@@ -814,8 +805,11 @@ void pt_ska_comment(uint16_t ska) {
 
 void print_line() {
 	diss_linnum++;
-	//fprintf(outputfile, "%i: %s\n", diss_linnum, line_buffer);
-	fprintf(outputfile, "%s\n", line_buffer);
+	//if (diss_linnum == 5709)
+	//	getch();
+
+	fprintf(outputfile, "%i  $%04X\t%s\n", diss_linnum, pcsav, line_buffer);
+	//fprintf(outputfile, "%s\n", line_buffer);
 	diss_linnum += line_skip;
 	line_skip = 0;
 	*line_buffer = '\0'; // Reset line_buffer
