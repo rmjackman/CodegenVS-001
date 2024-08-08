@@ -44,6 +44,7 @@ void ptc(char c);
 char ptb(unsigned char num);
 uint8_t read_loadfile(const char filename[FILENAME_MAX]);
 void pt_ska_comment(uint16_t adr);
+void print_line();
 
 uint16_t sno;
 char sctp;
@@ -60,11 +61,13 @@ int symtab_init = 0;
 bool epz_flg = 0;
 uint16_t isav = 0;
 int diss_linnum = 0;
+int line_skip = 0;
+char output_filename[FILENAME_MAX];
+FILE* outputfile;
 
 void disassemble(const char* filename) {
 	char ch;
 	int i = 0;
-	char output_filename[FILENAME_MAX];
 	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
 
 
@@ -79,8 +82,8 @@ void disassemble(const char* filename) {
 	size_t base_filename_len = extension_pos - filename; // Calculate the length of the base filename
 	snprintf(output_filename, FILENAME_MAX, "%.*s.SRC", (int)base_filename_len, filename); // Create new filename
 
-	FILE* output_file;
-	if (fopen_s(&output_file, output_filename, "w") != 0) {
+	
+	if (fopen_s(&outputfile, output_filename, "w") != 0) {
 		perror("Error opening output file");
 		return;
 	}
@@ -120,18 +123,18 @@ void disassemble(const char* filename) {
 			diss_linnum++;
 			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '[')) {
 				if (epz_flg == 0) {
-					fprintf(output_file, "\n");
+					fprintf(outputfile, "\n");
 					diss_linnum++;
 					epz_flg = 1;
 				}
-				fprintf(output_file, "%s\tEPZ $%x\t%s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
+				fprintf(outputfile, "%s\tEPZ $%x\t%s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
 
 			}
 			else {
 
 				epz_flg = 0;
 
-				fprintf(output_file, "%s\tEQU $%x %s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
+				fprintf(outputfile, "%s\tEQU $%x %s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
 
 			}
 		}
@@ -143,8 +146,8 @@ void disassemble(const char* filename) {
 		printf("Writing segment %d\n", segment);
 		pc = start_address[segment];
 		
-		fprintf(output_file, "\n\t\tORG $%x\n\n", pc); // Write to the file
-		diss_linnum +=4;
+		fprintf(outputfile, "\n\t\tORG $%x\n\n", pc); // Write to the file
+		diss_linnum +=3;
 		
 		sno = 0;
 		while (sss[sno].symadr < pc) {
@@ -171,10 +174,13 @@ void disassemble(const char* filename) {
 		while (1) {
 			
 			pc = disassln(pc);
+
 			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
-				diss_linnum++;
-				fprintf(output_file, "%s\n", line_buffer);
-				//printf("%s\n", line_buffer);
+				
+				print_line(); //printline
+
+				//printf("%i: %s\n",diss_linnum, line_buffer);
+				//getch();
 			}
 			if (pc == end_address[segment] + 1)
 				break;
@@ -184,10 +190,11 @@ void disassemble(const char* filename) {
 			}
 		}
 	}
-	fclose(output_file); // Close the file
+	fclose(outputfile); // Close the file
 	puts("Done.\n");
 	return;
 }
+/****************** disassln  ********************/
 
 uint16_t disassln(uint16_t ska) {
 	uint8_t offset;
@@ -242,8 +249,11 @@ uint16_t disassln(uint16_t ska) {
 	printf("$%X ", ska);
 
 #endif
-	if (sss[sno].comment[0] && sss[sno].symadr == pc)
-		pts_p("*** %s ***\n", sss[sno].comment);
+	if (sss[sno].comment[0] && sss[sno].symadr == pc) {
+		pts_p("*** %s ***", sss[sno].comment);
+		print_line();
+	}
+
 
 	pts_p("%s", linbuf); // Label at line beginning
 
@@ -394,9 +404,10 @@ uint16_t disassln(uint16_t ska) {
 		ptc(*ptr++);
 		ptc(*ptr);
 	
-	if (offset == 0x7e) //RTS
-		ptc('\n');
-	
+		if (offset == 0x7e) { //RTS
+			ptc('\n');
+			line_skip++;
+		}
 
 	switch (opertytb[*codeptr++]) {
 	case OPC:		
@@ -508,9 +519,10 @@ uint16_t disassln(uint16_t ska) {
 		ptc(' ');
 		adr = adnmw(codeptr);
 		pt_ska_comment(adr);
-		if (offset == 0x51) //JMP
+		if (offset == 0x51) { //JMP
 			ptc('\n');
-			diss_linnum++;
+			line_skip++;
+		}
 		return(ska + 3);
 	case AAAAX:
 		ptc(' ');
@@ -537,7 +549,7 @@ uint16_t disassln(uint16_t ska) {
 		adnmw2(ska);
 		pt_ska_comment(ska);
 		ptc('\n');
-		diss_linnum++;
+		line_skip++;
 		return(temp);
 
 	default:
@@ -787,8 +799,8 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
 void pt_ska_comment(uint16_t ska) {
 
 #if SKA_AS_COMMENT
-	if (diss_linnum == 917)
-		getch();
+	//if (diss_linnum == 166)
+		//segment =segment;
 	if (strlen(line_buffer) < 18)
 		ptc('\t');
 	pts_p("\t%X", ska);
@@ -800,3 +812,11 @@ void pt_ska_comment(uint16_t ska) {
 
 }
 
+void print_line() {
+	diss_linnum++;
+	//fprintf(outputfile, "%i: %s\n", diss_linnum, line_buffer);
+	fprintf(outputfile, "%s\n", line_buffer);
+	diss_linnum += line_skip;
+	line_skip = 0;
+	*line_buffer = '\0'; // Reset line_buffer
+}
