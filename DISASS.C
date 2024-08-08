@@ -59,6 +59,7 @@ int symtab_epz = 0;
 int symtab_init = 0;
 bool epz_flg = 0;
 uint16_t isav = 0;
+int diss_linnum = 0;
 
 void disassemble(const char* filename) {
 	char ch;
@@ -115,23 +116,25 @@ void disassemble(const char* filename) {
 			}
 			//printf("    Segment = %d\n", segment-1);
 		}
-		if (found == 0)
+		if (found == 0) {
+			diss_linnum++;
 			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '[')) {
 				if (epz_flg == 0) {
 					fprintf(output_file, "\n");
+					diss_linnum++;
 					epz_flg = 1;
 				}
 				fprintf(output_file, "%s\tEPZ $%x\t%s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
-				
+
 			}
 			else {
-				
+
 				epz_flg = 0;
 
 				fprintf(output_file, "%s\tEQU $%x %s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
 
 			}
-	
+		}
 	}
 
 	
@@ -141,6 +144,7 @@ void disassemble(const char* filename) {
 		pc = start_address[segment];
 		
 		fprintf(output_file, "\n\t\tORG $%x\n\n", pc); // Write to the file
+		diss_linnum +=4;
 		
 		sno = 0;
 		while (sss[sno].symadr < pc) {
@@ -165,8 +169,10 @@ void disassemble(const char* filename) {
 
 		ch = 0;
 		while (1) {
+			
 			pc = disassln(pc);
 			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
+				diss_linnum++;
 				fprintf(output_file, "%s\n", line_buffer);
 				//printf("%s\n", line_buffer);
 			}
@@ -504,6 +510,7 @@ uint16_t disassln(uint16_t ska) {
 		pt_ska_comment(adr);
 		if (offset == 0x51) //JMP
 			ptc('\n');
+			diss_linnum++;
 		return(ska + 3);
 	case AAAAX:
 		ptc(' ');
@@ -530,6 +537,7 @@ uint16_t disassln(uint16_t ska) {
 		adnmw2(ska);
 		pt_ska_comment(ska);
 		ptc('\n');
+		diss_linnum++;
 		return(temp);
 
 	default:
@@ -779,11 +787,14 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
 void pt_ska_comment(uint16_t ska) {
 
 #if SKA_AS_COMMENT
+	if (diss_linnum == 917)
+		getch();
 	if (strlen(line_buffer) < 18)
 		ptc('\t');
 	pts_p("\t%X", ska);
 	ptc('\t');                  // tab
-	pts(sss[isav].comment);
+	if(sss[isav].symadr == ska)
+		pts(sss[isav].comment);
 #endif
 
 
