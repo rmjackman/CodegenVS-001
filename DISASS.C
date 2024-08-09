@@ -110,23 +110,22 @@ void disassemble(const char* filename) {
 			//printf("    Segment = %d\n", segment-1);
 		}
 		if (found == 0) {
-			diss_linnum++;
+			
 			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '[')) {
 				if (epz_flg == 0) {
-					fprintf(outputfile, "\n");
-					diss_linnum++;
+					print_line();//empty line
 					epz_flg = 1;
 				}
-				fprintf(outputfile, "%s\tEPZ $%x\t%s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
-
+				pts_p("%s\tEPZ ", sss[i].symbol);
 			}
 			else {
-
 				epz_flg = 0;
-
-				fprintf(outputfile, "%s\tEQU $%x %s\n", sss[i].symbol, sss[i].symadr, sss[i].comment);
-
+				pts_p("%s\tEQU ", sss[i].symbol);
 			}
+			pts_p("$%X", sss[i].symadr);
+			if (sss[i].comment[0])
+				pts_p("\t%s", sss[i].comment);
+			print_line();
 		}
 	}
 
@@ -394,9 +393,8 @@ uint16_t disassln(uint16_t ska) {
 		ptc(*ptr);
 	
 		if (offset == 0x7e) { //RTS
-			
-			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) 
-				line_skip++;
+
+			line_skip++;
 		}
 
 	switch (opertytb[*codeptr++]) {
@@ -510,9 +508,8 @@ uint16_t disassln(uint16_t ska) {
 		adr = adnmw(codeptr);
 		pt_ska_comment(adr);
 		if (offset == 0x51) { //JMP
-			
-			if (!((lo_hi_task == 1) || (lo_hi_task == 2)))
-				line_skip++;
+
+			line_skip++;
 		}
 		return(ska + 3);
 	case AAAAX:
@@ -539,8 +536,7 @@ uint16_t disassln(uint16_t ska) {
 		ptc(' ');
 		adnmw2(ska);
 		pt_ska_comment(ska);
-		
-		if (!((lo_hi_task == 1) || (lo_hi_task == 2))) 
+
 			line_skip++;
 		return(temp);
 
@@ -794,7 +790,7 @@ void pt_ska_comment(uint16_t ska) {
 
 	if (strlen(line_buffer) < 18)
 		ptc('\t');
-	pts_p("\t%X", ska);
+	pts_p("\t*%X", ska);
 	ptc('\t');                  // tab
 	if(sss[isav].symadr == ska)
 		pts(sss[isav].comment);
@@ -804,17 +800,23 @@ void pt_ska_comment(uint16_t ska) {
 }
 
 void print_line() {
-	diss_linnum++;
+	
 	//if (diss_linnum == 5709)
 	//	getch();
 
-	fprintf(outputfile, "%i  $%04X\t%s\n", diss_linnum, pcsav, line_buffer);
-	//fprintf(outputfile, "%s\n", line_buffer);
+	fprintf(outputfile, "%i  ", ++diss_linnum);
+	if (pcsav != 0)
+		fprintf(outputfile, "$%04X", pcsav);
+	fprintf(outputfile, "\t");
+
+	fprintf(outputfile, "%s\n", line_buffer);
 	if (line_skip) {
-diss_linnum ++;
-		fprintf(outputfile, "%i\n", diss_linnum);
-	line_skip = 0;
+		if (lo_hi_task != 1 && lo_hi_task != 2) {
+			
+			fprintf(outputfile, "%i\n", ++diss_linnum);
+		}
+		line_skip = 0;
 	}
-	
+
 	*line_buffer = '\0'; // Reset line_buffer
 }
