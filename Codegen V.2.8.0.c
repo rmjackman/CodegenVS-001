@@ -1940,6 +1940,11 @@ int main(int argc, char* argv[])
 	}
 	// end Compare with LOA file
 
+#if DISASSEMBLE
+	disassemble(loafilename);
+#endif
+
+
 		/*************Run Atari800 Emulator **************************************************/
 
 	if (*emul_filename)
@@ -1954,9 +1959,7 @@ int main(int argc, char* argv[])
 	// end Run Atari800 Emulator
 
 		/***************************************************************/
-#if DISASSEMBLE
-	disassemble(loafilename);
-#endif
+
 	free(txtbuf);
 	free(xlbuf);
 	free(xlram);
