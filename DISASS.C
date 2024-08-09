@@ -394,7 +394,7 @@ uint16_t disassln(uint16_t ska) {
 		ptc(*ptr);
 	
 		if (offset == 0x7e) { //RTS
-			ptc('\n');
+			
 			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) 
 				line_skip++;
 		}
@@ -510,7 +510,7 @@ uint16_t disassln(uint16_t ska) {
 		adr = adnmw(codeptr);
 		pt_ska_comment(adr);
 		if (offset == 0x51) { //JMP
-			ptc('\n');
+			
 			if (!((lo_hi_task == 1) || (lo_hi_task == 2)))
 				line_skip++;
 		}
@@ -539,7 +539,7 @@ uint16_t disassln(uint16_t ska) {
 		ptc(' ');
 		adnmw2(ska);
 		pt_ska_comment(ska);
-		ptc('\n');
+		
 		if (!((lo_hi_task == 1) || (lo_hi_task == 2))) 
 			line_skip++;
 		return(temp);
@@ -810,7 +810,11 @@ void print_line() {
 
 	fprintf(outputfile, "%i  $%04X\t%s\n", diss_linnum, pcsav, line_buffer);
 	//fprintf(outputfile, "%s\n", line_buffer);
-	diss_linnum += line_skip;
+	if (line_skip) {
+diss_linnum ++;
+		fprintf(outputfile, "%i\n", diss_linnum);
 	line_skip = 0;
+	}
+	
 	*line_buffer = '\0'; // Reset line_buffer
 }
