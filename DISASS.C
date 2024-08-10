@@ -21,6 +21,8 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define USE_SYMTAB_OFFSET 1
 #define HIDE_JSR 1
 #define SKA_AS_COMMENT 1
+#define PRINT_DISS_LINNUM 0
+#define PRINT_PC_ADDRESS 1
 
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
@@ -803,20 +805,31 @@ void print_line() {
 	
 	//if (diss_linnum == 5709)
 	//	getch();
+	diss_linnum++;
 
-	fprintf(outputfile, "%i  ", ++diss_linnum);
+#if	PRINT_DISS_LINNUM
+	fprintf(outputfile, "%i  ", diss_linnum);
+#endif
+
+#if PRINT_PC_ADDRESS
 	if (pcsav != 0)
 		fprintf(outputfile, "$%04X", pcsav);
 	fprintf(outputfile, "\t");
+#endif
+
+
 
 	fprintf(outputfile, "%s\n", line_buffer);
+
 	if (line_skip) {
 		if (lo_hi_task != 1 && lo_hi_task != 2) {
-			
-			fprintf(outputfile, "%i\n", ++diss_linnum);
+			diss_linnum++;
+
+#if PRINT_DISS_LINNUM
+			fprintf(outputfile, "%i\n", diss_linnum);
+#endif
 		}
 		line_skip = 0;
 	}
-
 	*line_buffer = '\0'; // Reset line_buffer
 }
