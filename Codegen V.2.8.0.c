@@ -42,17 +42,6 @@
 #define MAXDUMS 20
 #define LSTBYTES 8
 
-/*typedef struct		// Define the structure ssstype
-{
-	char symbol[9];
-	uint16_t symadr;
-	uint8_t ofst;
-	uint8_t macf;
-	char symtyp;
-}	ssstype;
-
-
-enum { OPC, NN, AA, AAAA, AAX, AAAAX, AAY, AAAAY, BAAXB, BAABY, BRA, BAAAAB, ERROR };*/
 enum { UNUSED, SYMBOL, MACRO, MACRO_UNUSED, MACRO_LAB };
 
 
@@ -2332,6 +2321,8 @@ uint32_t symtoi1()
 
 
 			symfg = 1;
+			if (pass == 2)
+				sssptr->frequency++;
 			return(sssptr->symadr);
 		}
 		else
@@ -2339,7 +2330,6 @@ uint32_t symtoi1()
 			error("label undefined");
 		}
 	}
-	//if (pass == 2) error("Label undefined"); //probably don't need this
 	return(NOTFOUND);
 }
 // end symtoi1

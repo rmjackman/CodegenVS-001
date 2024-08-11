@@ -23,7 +23,7 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define SKA_AS_COMMENT 1
 #define PRINT_DISS_LINNUM 0
 #define PRINT_PC_ADDRESS 1
-
+#define SHOW_B_W_FREQUENCY 1
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
 uint16_t adnmb(uint8_t* ptr);
@@ -119,14 +119,28 @@ void disassemble(const char* filename) {
 					epz_flg = 1;
 				}
 				pts_p("%s\tEPZ ", sss[i].symbol);
+	
 			}
 			else {
 				epz_flg = 0;
 				pts_p("%s\tEQU ", sss[i].symbol);
 			}
 			pts_p("$%X", sss[i].symadr);
+
+#if SHOW_B_W_FREQUENCY
+
+			if (sss[i].ofst) {
+				pts("  w");
+			}
+			else {
+				pts("  b");
+			}
+			pts_p("%i", sss[i].frequency); 
+#endif // 
+			
 			if (sss[i].comment[0])
 				pts_p("\t%s", sss[i].comment);
+			
 			print_line();
 		}
 	}
@@ -283,6 +297,8 @@ uint16_t disassln(uint16_t ska) {
 	case '=':
 	case '|':
        		pts("DFW ");
+			if (pc == 0x492c) // 0x492c (4742)
+				adr = adr;
 			adr = adnmw(codeptr);
 			pt_ska_comment(adr);
 		return (ska + 2);
@@ -568,6 +584,10 @@ void adnmw2(uint16_t ska) {
 	uint16_t offset=0;
 
 	i = symtab_init;
+
+	if (ska < sss[i].symadr)
+		isav = i;
+
 	while (sss[i].symadr <= ska) {
 		if (sss[i].symbol[0]) {         // symbol exists at this i
 			isav = i;

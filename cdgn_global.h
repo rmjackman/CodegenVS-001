@@ -1,8 +1,8 @@
-#define SRC_FILENAME "C:\\Users\\Acustica\\Google Drive\\CODEGEN-2\\SGEN32.SRC"
+//#define SRC_FILENAME "C:\\Users\\Acustica\\Google Drive\\CODEGEN-2\\SGEN32.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\AUTORUN.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\AUTORUN_1.SRC"
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\FINDBUGS.SRC"
-//#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32.SRC"
+#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32.SRC"
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\SecType.SRC" 
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\OPCTEST.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32_no_macros.SRC"
@@ -39,6 +39,8 @@ typedef struct {
 	int8_t ofst;
 	uint8_t macf;
 	char symtyp;
+	char word_or_byte;// 0 = byte, 1 = word
+	uint16_t frequency;
 }	ssstype;
 
 ssstype sss[MAXSYMS];
