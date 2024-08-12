@@ -441,7 +441,9 @@ uint16_t disassln(uint16_t ska) {
 				pt_ska_comment((uint16_t)*codeptr);
 				return(ska + 2);
 			}
-			else if (sctp == '(') {
+			else if (sss[sno].symtyp == '(') {
+				if (ska == 0x8b)
+					ska = ska;
 				adr = adnmb(codeptr);
 				pt_ska_comment(adr);
 				return(ska + 2);
@@ -583,10 +585,7 @@ void adnmw2(uint16_t ska) {
 	uint16_t i=0;
 	uint16_t offset=0;
 
-	i = symtab_init;
-
-	if (ska < sss[i].symadr)
-		isav = i;
+	isav = i = symtab_init;
 
 	while (sss[i].symadr <= ska) {
 		if (sss[i].symbol[0]) {         // symbol exists at this i

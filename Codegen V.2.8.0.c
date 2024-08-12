@@ -2601,6 +2601,8 @@ uint32_t symtoi3(char* strbeg)
 
 void sectyp(char line_type)
 {
+	if(pc == 0x4729)
+		pc=pc;
 	if ((line_type == '&' || line_type == '(') && pass == 2) {
 		for (int i = 0; i < symnum; i++) {
 			if (sss[i].symadr == pc) {
