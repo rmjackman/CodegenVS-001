@@ -1429,8 +1429,8 @@ int main(int argc, char* argv[])
 
 				txtptr++;
 				intval = expresstoi_p2();
-				if (pc == 0x5249) //0x4946
-					i = 99;
+				//if (pc == 0x5249) //0x4946
+					//i = 99;
 				if (operand[1] == '%')							// e.g. LDA #%11000000
 					sectyp('!');
 				else
@@ -1449,13 +1449,24 @@ int main(int argc, char* argv[])
 					{
 						if (intval > 255)
 							sectyp('&');
-						else if (symfg)				// zero page
-							sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
-					}
-				}
-				if (strchr("!&@(", section_type) == 0) //if not one of these
-					sectyp(';');//????????????????????????????????
+						else if (symfg) {			// zero page
+							for (i = 0; i < symnum; i++) {
 
+								if (sss[i].symadr == intval && sss[i].symtyp == '[') {
+									sectyp('[');
+									break;
+								}
+							}
+							if (sss[i].symtyp != '[') {
+								sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
+							}
+						}
+						//
+					}
+					
+				}
+				if (strchr("!&@([", section_type) == 0) //if not one of these
+					sectyp(';');//The above affact only single lines
 				toxlbuf((char)data[cnt][NN]);
 				toxlbuf((char)intval);
 				continue;
@@ -1752,8 +1763,8 @@ int main(int argc, char* argv[])
 				fprintf(stream2, "%c ", sss[i].symtyp);
 			else fprintf(stream2, "  ");
 			fprintf(stream2, "%d ", sss[i].ofst);
-			if (sss[i].comment[0])
-				fprintf(stream2, "*** %s\n", sss[i].comment);
+			//if (sss[i].comment[0])
+				//fprintf(stream2, "*** %s\n", sss[i].comment);
 			list_label_f2(i);
 			
 		}
@@ -2601,9 +2612,9 @@ uint32_t symtoi3(char* strbeg)
 
 void sectyp(char line_type)
 {
-	if(pc == 0x4729)
-		pc=pc;
-	if ((line_type == '&' || line_type == '(') && pass == 2) {
+	//if(pc == 0x4729)
+		//pc=pc;
+	if ((line_type == '&' || line_type == '(' || line_type == '[') && pass == 2) {
 		for (int i = 0; i < symnum; i++) {
 			if (sss[i].symadr == pc) {
 				sss[i].symtyp = line_type;
@@ -2620,7 +2631,7 @@ void sectyp(char line_type)
 		return;
 	}
 	
-	if (  !labflg && (line_type == ';') && strchr("!&'(", section_type)  )
+	if (  !labflg && (line_type == ';') && strchr("!&'([", section_type)  )
 		line_type = section_type;
 
 

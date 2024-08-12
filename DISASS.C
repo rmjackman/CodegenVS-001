@@ -275,10 +275,10 @@ uint16_t disassln(uint16_t ska) {
 	case '&':
 	case '@':
 	case '(': 
+	case '['://(EQU CONSTANT <= $FF)
 	case '<':	break; //normal opcodes
 
 	case '#':
-	case '['://(EQU CONSTANT <= $FF)
 		cnt = DFB_BYTES_PER_LINE - 1;
 		pts("DFB ");
 		while (1) {
@@ -442,8 +442,17 @@ uint16_t disassln(uint16_t ska) {
 				return(ska + 2);
 			}
 			else if (sss[sno].symtyp == '(') {
-				if (ska == 0x8b)
-					ska = ska;
+				//if (ska == 0x8b)
+					//ska = ska;
+				symtab_init = symtab_epz;
+				adr = adnmb(codeptr);
+				pt_ska_comment(adr);
+				return(ska + 2);
+			}
+			else if (sss[sno].symtyp == '[') {
+				//if (ska == 0x8b)
+					//ska = ska;
+				symtab_init = 0;
 				adr = adnmb(codeptr);
 				pt_ska_comment(adr);
 				return(ska + 2);
