@@ -1,4 +1,4 @@
-#define SRC_FILENAME "C:\\Users\\Acustica\\Google Drive\\CODEGEN-2\\SGEN32.SRC"
+#define SRC_FILENAME "C:\\Users\\Acustica\\Google Drive\\CODEGEN-2\\SGEN40.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\AUTORUN.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\AUTORUN_1.SRC"
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\FINDBUGS.SRC"

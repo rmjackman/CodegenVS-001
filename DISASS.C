@@ -816,6 +816,22 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
 
 void pt_ska_comment(uint16_t ska) {
 
+#if SHOW_B_W_FREQUENCY
+	if (sss[isav].symtyp != '[') {
+		if (sss[isav].symadr < 256) {
+			if (sss[isav].ofst)
+				pts("  *w");
+			else
+				pts("  *b");
+			pts_p("%i", sss[isav].frequency);
+		}
+	}
+	//else // if (sss[isav].symtyp == '[')
+		//if (sss[isav].symbol && sss[isav].symadr <= 256)
+			//pts("  *[");
+
+#endif // 
+
 #if SKA_AS_COMMENT
 
 	if (strlen(line_buffer) < 18)
