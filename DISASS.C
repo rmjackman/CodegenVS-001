@@ -20,10 +20,12 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define SHOW_SECTYP_AND_ADDRESS 0
 #define USE_SYMTAB_OFFSET 1
 #define HIDE_JSR 1
-#define SKA_AS_COMMENT 1
+
 #define PRINT_DISS_LINNUM 0
 #define PRINT_PC_ADDRESS 0
-#define SHOW_B_W_FREQUENCY 1
+#define SHOW_B_W_FREQUENCY 0
+#define SKA_AS_COMMENT 0
+#define SHOW_LEFT_COMMENT 1
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
 uint16_t adnmb(uint8_t* ptr);
@@ -837,12 +839,15 @@ void pt_ska_comment(uint16_t ska) {
 	if (strlen(line_buffer) < 18)
 		ptc('\t');
 	pts_p("\t*%X", ska);
-	ptc('\t');                  // tab
-	if(sss[isav].symadr == ska)
-		pts(sss[isav].comment);
+	
 #endif
-
-
+#if SHOW_LEFT_COMMENT
+	                  // tab
+	if (sss[isav].comment[0]) {
+		pts("\t*");
+		pts(sss[isav].comment);
+	}
+#endif
 }
 
 void print_line() {
