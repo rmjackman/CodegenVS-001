@@ -22,9 +22,9 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define HIDE_JSR 1
 
 #define PRINT_DISS_LINNUM 0
-#define PRINT_PC_ADDRESS 0
-#define SHOW_B_W_FREQUENCY 1
-#define SKA_AS_COMMENT 0
+#define PRINT_PC_ADDRESS 1
+#define SHOW_B_W_FREQUENCY 0
+#define SKA_AS_COMMENT 1
 #define SHOW_RH_COMMENT 1
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
@@ -241,7 +241,6 @@ uint16_t disassln(uint16_t ska) {
 	sctp = sss[sno].symtyp;
 
 #if SHOW_SECTYP_AND_ADDRESS
-
 	if (sss[sno].symadr == ska) {
 		if (sctp)
 			printf("%c ", sctp);
@@ -250,11 +249,9 @@ uint16_t disassln(uint16_t ska) {
 	}
 	else
 		printf("  ");
-
-	
 	printf("$%X ", ska);
-
 #endif
+
 	if (sss[sno].comment[0] && sss[sno].symadr == pc) {
 		pts_p("*** %s ***", sss[sno].comment);
 		print_line();
@@ -443,17 +440,13 @@ uint16_t disassln(uint16_t ska) {
 				pt_ska_comment((uint16_t)*codeptr);
 				return(ska + 2);
 			}
-			else if (sss[sno].symtyp == '(') {
-				//if (ska == 0x8b)
-					//ska = ska;
+			else if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '(')) {//this address is in the symbol table
 				symtab_init = symtab_epz;
 				adr = adnmb(codeptr);
 				pt_ska_comment(adr);
 				return(ska + 2);
 			}
-			else if (sss[sno].symtyp == '[') {
-				//if (ska == 0x8b)
-					//ska = ska;
+			else if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '[')) {//this address is in the symbol table
 				symtab_init = 0;
 				adr = adnmb(codeptr);
 				pt_ska_comment(adr);
@@ -461,7 +454,7 @@ uint16_t disassln(uint16_t ska) {
 			}
 			else if (sctp == '&') {
 				if (lo_hi_task == 0) {				// :L
-					if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '&')) {
+					if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '&')) {//this address is in the symbol table
 						lo_hi_task = 1;
 						ska_sav = ska;
 						return(ska + 2);
@@ -494,16 +487,12 @@ uint16_t disassln(uint16_t ska) {
 					return(ska + 2);					// :H
 				}
 			}
-			else {
-			//	if (*codeptr < 0x80) {//not user zero page variables
-			//		adnmb(codeptr);
-			//		pt_ska_comment((uint16_t)*codeptr);
-			//	}
-			//	else//avoid user zero page variables
-					phb(codeptr);
+			else {//treat as sctp == ';'
+			
+				phb(codeptr);
 				return(ska + 2);
 			}
-		}
+		}//end case NN
 		
 	case AA:
 		ptc(' ');

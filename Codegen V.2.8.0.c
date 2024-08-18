@@ -1736,11 +1736,11 @@ int main(int argc, char* argv[])
 		}
 		sss[symnum++] = sss[i];
 	}
+	
+	
 
-	fclose(stream);
 
-
-
+	
 
 
 
@@ -1757,7 +1757,8 @@ int main(int argc, char* argv[])
 
 	/* SOURCGEN symbol table */
 	if (strchr(outflgs, 'T') || strchr(outflgs, 't')) {
-		fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n");
+		if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n")<0)   
+			perror("Error writing to file");
 		for (i = 0; i < symnumext; i++) {
 			if (sss[i].symtyp)
 				fprintf(stream2, "%c ", sss[i].symtyp);
@@ -1771,6 +1772,8 @@ int main(int argc, char* argv[])
 	}
 	if (lstflg) fclose(stream2);
 
+
+	fclose(stream);
 	/* APPEND  APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND*/
 	if (*append_filename)
 	{
