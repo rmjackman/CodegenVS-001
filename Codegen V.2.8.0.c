@@ -21,7 +21,7 @@
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr befor starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
-#define SORT_EQU_EPZ 0		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
+#define SORT_EQU_EPZ 1		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
@@ -784,7 +784,7 @@ int main(int argc, char* argv[])
 							sss[symnum].symadr = i;
 #if SORT_EQU_EPZ
 							if ((strcmp(opcode, "EQU") == 0) && (i < 256))
-								sss[symnum].symtyp = '[';
+								sss[symnum].symtyp = ']';
 							else //if (strcmp(opcode, "EPZ") == 0)
 #endif
 								sss[symnum].symtyp = '#';
@@ -1454,12 +1454,12 @@ int main(int argc, char* argv[])
 						else if (symfg & syms_in_expr == 1) {			// zero page
 							for (i = 0; i < symnum; i++) {
 
-								if (sss[i].symadr == intval && sss[i].symtyp == '[') {
+								if (sss[i].symadr == intval && sss[i].symtyp == ']') {
 									sectyp('[');
 									break;
 								}
 							}
-							if (sss[i].symtyp != '[') {
+							if (sss[i].symtyp != ']') {
 								sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
 							}
 						}
@@ -1684,7 +1684,7 @@ int main(int argc, char* argv[])
 		symno--;
 
 	while (sss[symno].symtyp != 0) {		// while not empty
-		if (sss[symno].symtyp == '[') {		// if entry is a constant
+		if (sss[symno].symtyp == ']') {		// if entry is a constant
 
 			temparray[j++] = sss[symno];	//move entry to temp array
 			

@@ -88,7 +88,7 @@ void disassemble(const char* filename) {
 /********      Init symtab_epz  *******/
 
 	symtab_epz = 0;
-	while (sss[symtab_epz].symtyp=='[')
+	while (sss[symtab_epz].symtyp==']')
 		symtab_epz++;
 	printf("symtab_epz = %d\n", symtab_epz);
 
@@ -115,7 +115,7 @@ void disassemble(const char* filename) {
 		}
 		if (found == 0) {
 			
-			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == '[')) {
+			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == ']')) {
 				if (epz_flg == 0) {
 					print_line();//empty line
 					epz_flg = 1;
@@ -808,7 +808,7 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
 void pt_ska_comment(uint16_t ska) {
 
 #if SHOW_B_W_FREQUENCY
-	if (sss[isav].symtyp != '[') {
+	if (sss[isav].symtyp != ']') {
 		if (sss[isav].symadr < 256) {
 			if (sss[isav].ofst)
 				pts("  *w");
@@ -817,7 +817,7 @@ void pt_ska_comment(uint16_t ska) {
 			pts_p("%i", sss[isav].frequency);
 		}
 	}
-	//else // if (sss[isav].symtyp == '[')
+	//else // if (sss[isav].symtyp == ']')
 		//if (sss[isav].symbol && sss[isav].symadr <= 256)
 			//pts("  *[");
 
