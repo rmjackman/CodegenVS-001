@@ -21,7 +21,7 @@
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr befor starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
-#define SORT_EQU_EPZ 1		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
+#define SORT_EQU_EPZ 0		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
@@ -63,7 +63,7 @@ uint32_t symtoi3(char* strbeg);
 void sectyp(char line_type);
 char fptsmb(int i);
 int prec(char symbol);
-
+uint16_t parseNumber(char* txtptr);
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -136,6 +136,7 @@ int contnum = 0;
 int endifnum = 0;
 short bytcnt = 0;
 short prnlnum = 0;
+uint8_t syms_in_expr = 0;
 
 char tempstr[5] = { 0 };
 char prnlnbufbeg[120] = { 0 };
@@ -1425,6 +1426,7 @@ int main(int argc, char* argv[])
 
 			else if (operand[0] == '#')
 			{
+				syms_in_expr = 0;
 				if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
 
 				txtptr++;
@@ -1449,7 +1451,7 @@ int main(int argc, char* argv[])
 					{
 						if (intval > 255)
 							sectyp('&');
-						else if (symfg) {			// zero page
+						else if (symfg & syms_in_expr == 1) {			// zero page
 							for (i = 0; i < symnum; i++) {
 
 								if (sss[i].symadr == intval && sss[i].symtyp == '[') {
@@ -2004,10 +2006,10 @@ uint32_t expresstoi()
 	if (*operand == '(')      //because txtptr++ if beginning bracket (multiple beginning brackets?!!!!!!)
 		*ptr++ = '(';
 
-	if ((*txtptr == '-') || (*txtptr == '+'))
+	if ((*txtptr == '-') || (*txtptr == '+'))	// "- " is DO, "+ " is CONT
+
 		if (isspace(*(txtptr + 1)))
-			return (symtoi1());							// "- " is DO, "+ " is CONT
-	
+			return (symtoi1());	
 	do
 	{
 		switch (*txtptr)
@@ -2322,21 +2324,24 @@ uint32_t symtoi1()
 			else
 				sssptr->macf = SYMBOL;
 
-			if (*txtptr == '+' && !isalpha(*(txtptr + 1)) )	//e.g. LDA SYMBOL+2
+			char* txtptr_tmp = txtptr;
+			if (*txtptr == '+' && (isdigit(*(txtptr + 1))|| *(txtptr + 1)=='$'))	//e.g. LDA SYMBOL+2
 			{
-				if ((*(txtptr + 1) - '0') > sssptr->ofst)		// if offset > than what is already set
-					sssptr->ofst = *(txtptr + 1) - '0';						// Set offset
-				if (*(txtptr + 2) == '+')									//These two lines take care ???????
-					sssptr->ofst = sssptr->ofst + *(txtptr + 3) - '0';		//of hidden labels  ???????
+				uint8_t ofst_candidate = expresstoi(txtptr);
+				if (ofst_candidate > sssptr->ofst && ofst_candidate < 128)		// if offset > than what is already set
+					//sssptr->ofst = *(txtptr + 1) - '0';		// Set offset
+					sssptr->ofst = ofst_candidate;				// Set offset
+				printf("%x %d\n", sssptr->symadr, sssptr->ofst);
 			}
 			else if ((*txtptr == '-') && (!isalpha(*(txtptr + 1))))			//e.g. LDA SYMBOL-3
 				if ((signed char)(256 - (*(txtptr + 1) - '0')) < sssptr->ofst)		// if offset < than what is already set
 					sssptr->ofst = (signed char)(256 - (*(txtptr + 1) - '0')); // Set offset
 
-
+			txtptr = txtptr_tmp;
 			symfg = 1;
 			if (pass == 2)
 				sssptr->frequency++;
+			syms_in_expr++;
 			return(sssptr->symadr);
 		}
 		else
@@ -2669,7 +2674,7 @@ void sectyp(char line_type)
 			}
 	}
 }
-
+/***** symbol to be ported to SOURCGEN **/
 char fptsmb(int i) {
 	char* lnbfptr;
 	int cnt, comment_bytes_cnt;
@@ -2694,20 +2699,17 @@ char fptsmb(int i) {
 	while (sss[i].symbol[cnt])
 		*lnbfptr++ = sss[i].symbol[cnt++];
 
-
-#define TEMP 1
-#if TEMP	
 	if (sss[i].comment[0]) {
 		*lnbfptr++ = ';';
 		comment_bytes_cnt = 0;
 			cnt++;
 		while (sss[i].comment[comment_bytes_cnt]) {
+			if (sss[i].comment[comment_bytes_cnt] == 9)	//Replace tab with ATARI TAB
+				sss[i].comment[comment_bytes_cnt] = 127;
 			*lnbfptr++ = sss[i].comment[comment_bytes_cnt++];
 			cnt++;
 		}
 	}
-#endif
-
 
 	if (sss[i].symtyp) {
 		*lnbfptr = sss[i].symtyp;
@@ -2733,3 +2735,44 @@ void hit_Enter(void)
 	if (getchar() == EOF) error("ABORT");
 }
 
+uint16_t parseNumber(char* txtptr) {
+	char* endptr;
+	long int parsedValue = 0;
+
+	txtptr++;
+	while (*txtptr != '\0') {
+		long int number = 0;
+
+		if (*txtptr == '$') {
+			// Handle hexadecimal number
+			number = strtol(txtptr + 1, &endptr, 16);
+		}
+		else if (isdigit(*txtptr)) {
+			// Handle decimal number
+			number = strtol(txtptr, &endptr, 10);
+		}
+		else {
+			// Skip non-numeric characters
+			txtptr++;
+			continue;
+		}
+
+		parsedValue += number;
+
+		// Move to the next potential '+' sign
+		txtptr = endptr;
+
+		if (*txtptr == '+') {
+			txtptr++; // Move past the '+'
+		}
+	}
+
+	// Check for conversion errors
+	if (parsedValue >= 0 && parsedValue <= UINT16_MAX) {
+		return (uint16_t)parsedValue;
+	}
+	else {
+		// Error in conversion
+		return 0; // You can handle this error case accordingly
+	}
+}
