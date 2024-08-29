@@ -1175,7 +1175,12 @@ int main(int argc, char* argv[])
 			if (strcmp(opcode, "DFB") == 0)
 			{
 				data_flg = 1;
-				if (*(txtptr + 1) == '%')	sectyp('%'); else sectyp('#');
+				if (*(txtptr + 1) == '%')	
+					sectyp('%');
+				else if (isalpha(*(txtptr + 1))|| (*(txtptr + 1))=='\'') {
+					sectyp('?');
+				}
+				else sectyp('#');
 				do {
 					txtptr++;
 					toxlbuf((char)expresstoi_p2());
@@ -1451,7 +1456,7 @@ int main(int argc, char* argv[])
 					{
 						if (intval > 255)
 							sectyp('&');
-						else if (symfg & syms_in_expr == 1) {			// zero page
+						else if (symfg && syms_in_expr == 1) {			// zero page
 							for (i = 0; i < symnum; i++) {
 
 								if (sss[i].symadr == intval && sss[i].symtyp == ']') {
@@ -1949,6 +1954,9 @@ int main(int argc, char* argv[])
 	disassemble(loafilename);
 #endif
 
+//	free(txtbuf);
+//	free(xlbuf);
+//	free(xlram);
 
 		/*************Run Atari800 Emulator **************************************************/
 
@@ -1965,10 +1973,10 @@ int main(int argc, char* argv[])
 
 		/***************************************************************/
 
-	free(txtbuf);
-	free(xlbuf);
-	free(xlram);
+
 	hit_Enter();
+
+
 	return 0;
 }
 

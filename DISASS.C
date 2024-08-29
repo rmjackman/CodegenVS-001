@@ -288,6 +288,26 @@ uint16_t disassln(uint16_t ska) {
 			ptc(',');
 		}
 		return(ska);
+
+	case '?':
+		cnt = DFB_BYTES_PER_LINE - 1;
+		pts("DFB ");
+		while (1) {
+			symtab_init = 0;
+			if (isprint(codeptr[0]) && ( strchr("~{}", codeptr[0])==0))
+				pts_p("'%c'", codeptr++[0]);
+			else
+				adr = adnmb(codeptr++);
+
+			ska++;
+			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
+			if (cnt-- == 0) break;
+			ptc(',');
+		}
+		return(ska);
+
+
+
 	case '%':
 		pts("DFB ");
 		ptc('%');
