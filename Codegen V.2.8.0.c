@@ -1175,19 +1175,29 @@ int main(int argc, char* argv[])
 			if (strcmp(opcode, "DFB") == 0)
 			{
 				data_flg = 1;
-				if (*(txtptr + 1) == '%')	
+				txtptr++;
+				if (*txtptr == '%')	
 					sectyp('%');
-				else if (isalpha(*(txtptr + 1))|| (*(txtptr + 1))=='\'') {
-					sectyp('?');
+				else if (isalpha(*txtptr)) {
+					char* txtptr_save = txtptr;
+					char byte = (char)symtoi1();
+					if (memchr(esc_ch_tab, byte, 16))
+						sectyp('?');
+					else
+						sectyp('#');
+					txtptr = txtptr_save;
 				}
+				else if (*txtptr == '\'')
+					sectyp('?');
 				else sectyp('#');
+				txtptr--;
 				do {
 					txtptr++;
 					toxlbuf((char)expresstoi_p2());
 				} while (*txtptr == ',');
 				continue;
 			}
-
+			//( memchr(esc_ch_tab, *(txtptr + 1), sizeof(esc_ch_tab))
 			/* DFW */ //?????????????????????????????????????
 
 			if (strcmp(opcode, "DFW") == 0)
@@ -2339,7 +2349,6 @@ uint32_t symtoi1()
 				if (ofst_candidate > sssptr->ofst && ofst_candidate < 128)		// if offset > than what is already set
 					//sssptr->ofst = *(txtptr + 1) - '0';		// Set offset
 					sssptr->ofst = ofst_candidate;				// Set offset
-				printf("%x %d\n", sssptr->symadr, sssptr->ofst);
 			}
 			else if ((*txtptr == '-') && (!isalpha(*(txtptr + 1))))			//e.g. LDA SYMBOL-3
 				if ((signed char)(256 - (*(txtptr + 1) - '0')) < sssptr->ofst)		// if offset < than what is already set

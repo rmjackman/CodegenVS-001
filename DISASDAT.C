@@ -78,3 +78,5 @@ char opertytb[] = {OPC,BAAXB,Q,Q,Q,AA,AA,Q,				//256 bytes corespond to opcodes
 				OPC,NN,OPC,Q,AAAA,AAAA,AAAA,Q,
 				BRA,BAABY,Q,Q,Q,AAX,AAX,Q,				//$F0
 				OPC,AAAAY,Q,Q,Q,AAAAX,AAAAX,Q };
+
+char esc_ch_tab[16] = {27,28,29,30,31,125,126,127,155,156,157,158,159,253,254,255 };

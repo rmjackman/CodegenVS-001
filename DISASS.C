@@ -306,7 +306,7 @@ uint16_t disassln(uint16_t ska) {
 		}
 		return(ska);
 
-
+//if(  memchr(esc_ch_tab, codeptr[0], sizeof(esc_ch_tab)))
 
 	case '%':
 		pts("DFB ");
