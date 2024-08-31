@@ -64,6 +64,7 @@ void sectyp(char line_type);
 char fptsmb(int i);
 int prec(char symbol);
 uint16_t parseNumber(char* txtptr);
+int isSpecialCharacter(char ch);
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -2726,7 +2727,11 @@ char fptsmb(int i) {
 			*lnbfptr++ = sss[i].comment[comment_bytes_cnt++];
 			cnt++;
 		}
+		if(sss[i].symtyp == 0) //comment must end with valid tytpe char
+			if (isSpecialCharacter(sss[i].comment[--comment_bytes_cnt])) 
+				sss[i].symtyp = ';';
 	}
+
 
 	if (sss[i].symtyp) {
 		*lnbfptr = sss[i].symtyp;
@@ -2792,4 +2797,11 @@ uint16_t parseNumber(char* txtptr) {
 		// Error in conversion
 		return 0; // You can handle this error case accordingly
 	}
+}
+
+int isSpecialCharacter(char ch) {
+	if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || isdigit(ch) || isspace(ch))) {
+		return 1; // Character is a special character
+	}
+	return 0; // Character is not a special character
 }

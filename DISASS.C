@@ -22,7 +22,7 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define HIDE_JSR 1
 
 #define PRINT_DISS_LINNUM 0
-#define PRINT_PC_ADDRESS 1
+#define PRINT_PC_ADDRESS 0
 #define SHOW_B_W_FREQUENCY 0
 #define SKA_AS_COMMENT 1
 #define SHOW_RH_COMMENT 1
