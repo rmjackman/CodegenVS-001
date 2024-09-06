@@ -282,7 +282,7 @@ uint16_t disassln(uint16_t ska) {
 		while (1) {
 			pts_p("$%X", *codeptr++);
 			ska++;
-			if (ska > end_address[segment] + 1) return(ska-1);
+			if (ska > end_address[segment]) return(ska);
 			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
 			if (cnt-- == 0) break;
 			ptc(',');
@@ -300,7 +300,7 @@ uint16_t disassln(uint16_t ska) {
 				adr = adnmb(codeptr++);
 
 			ska++;
-			if (ska > end_address[segment] + 1) return(ska - 1);
+			if (ska > end_address[segment]) return(ska);
 			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
 			if (cnt-- == 0) break;
 			ptc(',');
@@ -335,7 +335,7 @@ uint16_t disassln(uint16_t ska) {
 		while (!((*codeptr) & 128)) {
 			ptc(*codeptr++);
 			ska++;
-			if (ska > end_address[segment] + 1) return(ska - 1);
+			//if (ska > end_address[segment]) return(ska);
 		}
 		ptc((*codeptr) & 127);
 		ptc('\\');
@@ -349,7 +349,7 @@ uint16_t disassln(uint16_t ska) {
 			while (*codeptr & 128) {
 				ptc(127 & *codeptr++);
 				ska++;
-				if (ska > end_address[segment] + 1) return(ska - 1);
+				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
 				if (cnt-- == 0) break;
 			}
@@ -361,7 +361,7 @@ uint16_t disassln(uint16_t ska) {
 			while (!(*codeptr & 128)) {
 				ptc(*codeptr++);
 				ska++;
-				if (ska > end_address[segment] + 1) return(ska - 1);
+				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
 				if (cnt-- == 0) break;
 			}
@@ -379,7 +379,7 @@ uint16_t disassln(uint16_t ska) {
 				ptc(127 & ch);
 				codeptr++;
 				ska++;
-				if (ska > end_address[segment] + 1) return(ska - 1);
+				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
 				if (cnt-- == 0) break;
 			}
@@ -393,7 +393,7 @@ uint16_t disassln(uint16_t ska) {
 				ptc(ch);
 				codeptr++;
 				ska++;
-				if (ska > end_address[segment] + 1) return(ska - 1);
+				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
 				if (cnt-- == 0) break;
 			}
