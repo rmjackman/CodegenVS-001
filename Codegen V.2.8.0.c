@@ -56,6 +56,7 @@ void toxlbuf(uint8_t);
 void find_operand(void);
 void operand_to_filename(char filename[]);
 void list_label(int i);
+void list_label_xasm(int i);
 void list_label_f(int i);		//label zu LIS file
 void list_label_f2(int i);		//label zu LIS file T
 //uint32_t symtoi2(char* strbeg);
@@ -1771,7 +1772,16 @@ int main(int argc, char* argv[])
 		}
 	}
 
-
+	/* xasm Symbol table */
+	if (strchr(outflgs, 'X') || strchr(outflgs, 'x')) {
+		fprintf(stream2, "Label table:\n");
+		for (i = 0; i < symnumext; i++) {
+			if (sss[i].symbol[0]) {
+				//printf("%s\n", sss[i].symbol);
+				list_label_xasm(i);
+			}
+		}
+	}
 
 	/* SOURCGEN symbol table */
 	if (strchr(outflgs, 'T') || strchr(outflgs, 't')) {
@@ -1925,7 +1935,7 @@ int main(int argc, char* argv[])
 	}
 	// end Save to image
 
-	/****************** Compare with LOA file ********************/
+	/****************** Result of comparison with LOA file made in pass2 ********************/
 
 	if (cpfflg)
 	{
@@ -2614,6 +2624,14 @@ void list_label_f2(int i) {
 	fprintf(stream2, "%s\n", sss[i].symbol);
 }
 
+void list_label_xasm(int i) {
+
+	if (sss[i].macf == MACRO)
+		fprintf(stream2, "MACRO\n");
+	else
+		fprintf(stream2, "     %04X  ", sss[i].symadr);
+	fprintf(stream2, "%s\n", sss[i].symbol);
+}
 
 
 uint32_t symtoi3(char* strbeg)
