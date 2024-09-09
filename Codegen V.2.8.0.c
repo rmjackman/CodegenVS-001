@@ -19,9 +19,9 @@
 #define ATARI800    1		// Set to 0 only if you are assembling code for a non-ATARI system.
 #define DISASSEMBLE 1		// 
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
-#define DELETE_TEMP_ATR    1// Delete temp.atr befor starting.
-#define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See next lines for examples.
-#define SORT_EQU_EPZ 1		//Set to 1 to place EQU constants before EPZ in symtab. Set to 0 for SOURCGEN 3.2
+#define DELETE_TEMP_ATR    1// Delete temp.atr before starting.
+#define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See cdgn_global.h for examples.
+#define SORT_EQU_EPZ 1		//Place EQU constants before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
@@ -37,7 +37,7 @@
 #define NOTFOUND 0xeffff
 #define MAX_TXT_SIZ 0xfffff
 
-#define MAX_LINE_SIZE 265
+#define MAX_LINE_SIZE 255
 #define MAX_LABEL_SIZE 80
 #define MAXDUMS 20
 #define LSTBYTES 8
@@ -638,7 +638,7 @@ int main(int argc, char* argv[])
 			/**********  Test first character of line ***********/
 
 			switch (*txtptr) {
-			case '\?':
+			case '?':
 			case '\n':					// empty line
 			case ';':	continue;
 			case '*':	star_flg = 1;	// comment
@@ -1184,13 +1184,13 @@ int main(int argc, char* argv[])
 					char* txtptr_save = txtptr;
 					char byte = (char)symtoi1();
 					if (memchr(esc_ch_tab, byte, 16))
-						sectyp('?');
+						sectyp(',');		//'?' changed to ','
 					else
 						sectyp('#');
 					txtptr = txtptr_save;
 				}
 				else if (*txtptr == '\'')
-					sectyp('?');
+					sectyp(',');		//'?' changed to ','
 				else sectyp('#');
 				txtptr--;
 				do {

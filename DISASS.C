@@ -289,7 +289,7 @@ uint16_t disassln(uint16_t ska) {
 		}
 		return(ska);
 
-	case '?':
+	case ',':		//'?' changed to ','
 		cnt = DFB_BYTES_PER_LINE - 1;
 		pts("DFB ");
 		while (1) {
