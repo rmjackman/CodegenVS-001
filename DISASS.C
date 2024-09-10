@@ -18,14 +18,21 @@ int getch(void);
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 
 #define SHOW_SECTYP_AND_ADDRESS 0
-#define USE_SYMTAB_OFFSET 1
-#define HIDE_JSR 1
+#define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
 
-#define PRINT_DISS_LINNUM 0
-#define PRINT_PC_ADDRESS 0
-#define SHOW_B_W_FREQUENCY 0
-#define SKA_AS_COMMENT 1
-#define SHOW_RH_COMMENT 1
+
+#define PRINT_DISS_LINNUM 0		// 0.
+		// Address in comment	// 1.
+#define SHOW_LEFT_COMMENT 1		// 2.
+#define PRINT_PC_ADDRESS  0		// 3.
+		// COMMAND				// 4.
+#define SKA_AS_COMMENT    1		// 5.
+#define SHOW_RH_COMMENT   1		// 6.
+#define HIDE_JSR          1		// 7.
+
+#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
+
+
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
 uint16_t adnmb(uint8_t* ptr);
@@ -250,12 +257,12 @@ uint16_t disassln(uint16_t ska) {
 		printf("  ");
 	printf("$%X ", ska);
 #endif
-
+#if SHOW_LEFT_COMMENT
 	if (sss[sno].comment[0] && sss[sno].symadr == pc) {
-		pts_p("*** %s ***", sss[sno].comment);
+		pts_p("* %s", sss[sno].comment);
 		print_line();
 	}
-
+#endif
 
 	pts_p("%s", linbuf); // Label at line beginning
 
@@ -280,7 +287,8 @@ uint16_t disassln(uint16_t ska) {
 		cnt = DFB_BYTES_PER_LINE - 1;
 		pts("DFB ");
 		while (1) {
-			pts_p("$%X", *codeptr++);
+			if (ska > 9) ptc('$'); // only if $ is needed
+			pts_p("%X", *codeptr++);
 			ska++;
 			if (ska > end_address[segment]) return(ska);
 			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
@@ -449,11 +457,13 @@ uint16_t disassln(uint16_t ska) {
 		if (sctp == '\'') {
 			if (isprint(*codeptr)) {
 				pts_p(" '%c'", *codeptr);
-				pt_ska_comment((uint16_t)* codeptr);
+				pt_ska_comment((uint16_t)*codeptr);
 			}
-			else
-			pts_p(" #$%X", *codeptr);
-
+			else {
+				pts(" #");
+				if (ska > 9) ptc('$'); // only if $ is needed
+				pts_p("%X", *codeptr);
+			}
 			return(ska + 2);
 		}
 		else {
@@ -856,7 +866,8 @@ void pt_ska_comment(uint16_t ska) {
 #endif
 
 #if SKA_AS_COMMENT
-	pts_p("\t;%X", ska);
+	if (sss[isav].symadr == ska)
+		pts_p("\t;%X", ska);
 #endif  
 
 #if SHOW_RH_COMMENT
