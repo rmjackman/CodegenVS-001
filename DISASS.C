@@ -26,9 +26,9 @@ char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 #define SHOW_LEFT_COMMENT 1		// 2.
 #define PRINT_PC_ADDRESS  0		// 3.
 		// COMMAND				// 4.
-#define SKA_AS_COMMENT    1		// 5.
-#define SHOW_RH_COMMENT   1		// 6.
-#define HIDE_JSR          1		// 7.
+#define SKA_AS_COMMENT    0		// 5.
+#define SHOW_RH_COMMENT   0		// 6.
+#define SHOW_JSR          0		// 7.
 
 #define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
@@ -189,11 +189,11 @@ void disassemble(const char* filename) {
 			pcsav = pc;
 			pc = disassln(pc);
 
-			if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
+
 				
 				print_line();
 			
-			}
+
 			if (pc == end_address[segment] + 1)
 				break;
 			if (pc > end_address[segment] + 1) {
@@ -215,10 +215,12 @@ uint16_t disassln(uint16_t ska) {
 
 	char cnt;
 	unsigned int temp;
-	char linbuf[] = "         ";
+	char linbuf[10] = {0};
+
 	char* lnbfptr = linbuf;
 	//char* lnbfptrsv;
 	char ch;
+	uint8_t apparent_line_length = 0;
 
 /*	if (sss[sno].comment[0]) {
 		pts_p("*** %s ***\n", sss[sno].comment);
@@ -227,7 +229,7 @@ uint16_t disassln(uint16_t ska) {
 
 	line_buffer[0] = '\0';
 
-	if ((sss[sno ].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
+	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
 		cnt = 0;
 		lnbfptr = linbuf;
 		if (sss[sno].symbol)
@@ -243,8 +245,11 @@ uint16_t disassln(uint16_t ska) {
 			while (sss[sno].symbol[cnt])
 				*lnbfptr++ = sss[sno].symbol[cnt++];
 	}
-	
+
+	*lnbfptr++ = '\t';
+	*lnbfptr='\0';
 	sctp = sss[sno].symtyp;
+
 
 #if SHOW_SECTYP_AND_ADDRESS
 	if (sss[sno].symadr == ska) {
@@ -257,11 +262,15 @@ uint16_t disassln(uint16_t ska) {
 		printf("  ");
 	printf("$%X ", ska);
 #endif
+
 #if SHOW_LEFT_COMMENT
-	if (sss[sno].comment[0] && sss[sno].symadr == pc) {
-		pts_p("* %s", sss[sno].comment);
+	if (sss[sno].symadr == pc) {
+		pts("* ");					//Change this back to pts("* ");
+		if (sss[sno].comment[0])
+			pts_p(" %s", sss[sno].comment);
 		print_line();
 	}
+
 #endif
 
 	pts_p("%s", linbuf); // Label at line beginning
@@ -287,7 +296,7 @@ uint16_t disassln(uint16_t ska) {
 		cnt = DFB_BYTES_PER_LINE - 1;
 		pts("DFB ");
 		while (1) {
-			if (ska > 9) ptc('$'); // only if $ is needed
+			if (*codeptr > 9) ptc('$'); // only if $ is needed
 			pts_p("%X", *codeptr++);
 			ska++;
 			if (ska > end_address[segment]) return(ska);
@@ -415,30 +424,32 @@ uint16_t disassln(uint16_t ska) {
 			return(ska);
 
 		
-	default:
-		pts_p("The section type '%c' is not yet implemented\n", sctp);
+		default:
+			pts_p("The section type '%c' is not yet implemented\n", sctp);
 
 	}
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
 
 
-#if HIDE_JSR
-	if (offset == 0x54) { //JSR
-		size_t current_length_sv = strlen(line_buffer);
-		
-		adr = adnmw(++codeptr);
-		pt_ska_comment(adr);
-
-		if (isalpha(line_buffer[current_length_sv]))
-			return(ska + 3);
-		else{ 
-			line_buffer[current_length_sv] = 0; 
-			codeptr--;
-		}
-	}
+#if SHOW_JSR
+	if (1 < 0)
 #endif
-	
+		if (offset == 0x54) { //JSR
+			size_t current_length_sv = strlen(line_buffer);
+
+			adr = adnmw(++codeptr);
+			pt_ska_comment(adr);
+
+			if (isalpha(line_buffer[current_length_sv]))
+				return(ska + 3);
+			else {
+				line_buffer[current_length_sv] = 0;
+				codeptr--;
+			}
+		}
+
+
 		ptc(*ptr++);// Print the opcode except JSR
 		ptc(*ptr++);
 		ptc(*ptr);
@@ -461,7 +472,7 @@ uint16_t disassln(uint16_t ska) {
 			}
 			else {
 				pts(" #");
-				if (ska > 9) ptc('$'); // only if $ is needed
+				if (*codeptr > 9) ptc('$'); // only if $ is needed
 				pts_p("%X", *codeptr);
 			}
 			return(ska + 2);
@@ -880,35 +891,37 @@ void pt_ska_comment(uint16_t ska) {
 }
 
 void print_line() {
-	
-	//if (diss_linnum == 5709)
-	//	getch();
-	diss_linnum++;
+	if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
+		//if (diss_linnum == 5709)
+		//	getch();
+		diss_linnum++;
 
 #if	PRINT_DISS_LINNUM
-	fprintf(outputfile, "%i  ", diss_linnum);
+		fprintf(outputfile, "%i  ", diss_linnum);
 #endif
 
 #if PRINT_PC_ADDRESS
-	if (pcsav != 0)
-		fprintf(outputfile, "$%04X", pcsav);
-	fprintf(outputfile, "\t");
+		if (pcsav != 0)
+			fprintf(outputfile, "$%04X", pcsav);
+		fprintf(outputfile, "\t");
 #endif
 
 
 
-	fprintf(outputfile, "%s\n", line_buffer);
+		fprintf(outputfile, "%s\n", line_buffer);
 
-	if (line_skip) {
-		if (lo_hi_task != 1 && lo_hi_task != 2) {
-			diss_linnum++;
+		if (line_skip) {
+
+				diss_linnum++;
 
 #if PRINT_DISS_LINNUM
-			fprintf(outputfile, "%i", diss_linnum);
+				fprintf(outputfile, "%i", diss_linnum);
 #endif
-			fprintf(outputfile, "\n");
+				fprintf(outputfile, "\n");
+
+			line_skip = 0;
 		}
-		line_skip = 0;
+
 	}
 	*line_buffer = '\0'; // Reset line_buffer
 }
