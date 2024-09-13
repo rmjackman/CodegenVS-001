@@ -28,10 +28,10 @@ int getch(void);
 #define PRINT_PC_ADDRESS  0		// 3. Turns on edit mode in SOURCGEN
 		// COMMAND				// 4. 
 #define SKA_AS_COMMENT    1		// 5.
-#define SHOW_RH_COMMENT   1		// 6.
+#define SHOW_RH_COMMENT   0		// 6.
 #define SHOW_JSR          0		// 7.
 
-#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
+#define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.
 
 
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
@@ -49,7 +49,7 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]);
 void pt_ska_comment(uint16_t adr);
 void print_line();
 
-bool symflg = false; // symflg
+bool offset_added = false; // offset_added
 bool flag[8] = {false};
 uint16_t sno;
 char sctp;
@@ -262,7 +262,7 @@ uint16_t disassln(uint16_t ska) {
 
 	line_buffer[0] = '\0';
 	linebeg_lablen = 0;
-	symflg = 0;
+	offset_added = false;
 
 	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
 		linebeg_lablen = 0;
@@ -708,7 +708,7 @@ void adnmw2(uint16_t ska) {
 			pts_p("%s+", sss[isav].symbol);
 			if (ska - sss[isav].symadr > 9) ptc('$'); // only if $ is needed
 			pts_p("%X", ska - sss[isav].symadr);
-			symflg = 1;
+			offset_added = true;
 		}
 		else {
 			if (ska > 9) ptc('$'); // only if $ is needed
@@ -722,7 +722,7 @@ void adnmw2(uint16_t ska) {
 			pts_p("%s-", sss[i].symbol);
 			if (sss[i].symadr - ska > 9) ptc('$'); // only if $ is needed
 			pts_p("%X", sss[i].symadr - ska);
-			symflg = 1;
+			offset_added = true;
 		}
 		else {
 			if (ska > 9) ptc('$'); // only if $ is needed
@@ -919,7 +919,7 @@ void pt_ska_comment(uint16_t ska) {
 
 	if (flag[5]) { // SKA_AS_COMMENT
 
-		if (sss[isav].symadr == ska || symflg) {
+		if (sss[isav].symadr == ska || offset_added) {
 			ptc('\t');
 			if (strlen(line_buffer) - linebeg_lablen <= 10)
 				ptc('\t');
@@ -929,7 +929,7 @@ void pt_ska_comment(uint16_t ska) {
 
 	if (flag[6]) { // SHOW_RH_COMMENT
 
-		if (sss[isav].comment[0]) {
+		if (sss[isav].comment[0] && sss[isav].symadr == ska) {
 			if (flag[5])
 				pts(" ");
 			else {
