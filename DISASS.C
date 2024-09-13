@@ -11,28 +11,30 @@
 int getch(void);
 
 #define SYMBOL_OFFSET 9 // SYMBOL+1, SYMBOL+2 ...
-#define ASC_STR_LEN 23
-#define DFB_BYTES_PER_LINE 8
 #define MAX_SEGMENTS 256
 #define LINE_BUFFER_SIZE 1000
-char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
+
 
 #define SHOW_SECTYP_AND_ADDRESS 0
 #define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
 
+#define ASC_STRING_LENGTH 20 //23
+#define DFB_BYTES_PER_LINE 6 //8
+#define SHOW_LO 0 // Show ':L'
 
 #define PRINT_DISS_LINNUM 0		// 0.
-		// Address in comment	// 1.
+#define ADDR_LEFT_COMMENT 1		// 1.
 #define SHOW_LEFT_COMMENT 1		// 2.
-#define PRINT_PC_ADDRESS  0		// 3.
-		// COMMAND				// 4.
-#define SKA_AS_COMMENT    0		// 5.
-#define SHOW_RH_COMMENT   0		// 6.
+#define PRINT_PC_ADDRESS  0		// 3. Turns on edit mode in SOURCGEN
+		// COMMAND				// 4. 
+#define SKA_AS_COMMENT    1		// 5.
+#define SHOW_RH_COMMENT   1		// 6.
 #define SHOW_JSR          0		// 7.
 
 #define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
 
+char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
 uint16_t adnmb(uint8_t* ptr);
@@ -47,6 +49,8 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]);
 void pt_ska_comment(uint16_t adr);
 void print_line();
 
+bool symflg = false; // symflg
+bool flag[8] = {false};
 uint16_t sno;
 char sctp;
 uint16_t ska_sav, lo_hi_operand; 
@@ -63,6 +67,7 @@ bool epz_flg = 0;
 uint16_t isav = 0;
 int diss_linnum = 0;
 int line_skip = 0;
+uint8_t linebeg_lablen = 0;
 char output_filename[FILENAME_MAX];
 FILE* outputfile;
 
@@ -91,6 +96,32 @@ void disassemble(const char* filename) {
 	printf("\n\n\nDIS Filename %s\n\n\n", output_filename);
 
 	number_of_segments = read_loadfile(filename); //loafilename
+
+
+
+
+#if PRINT_DISS_LINNUM
+	flag[0] = 1;
+#endif
+#if ADDR_LEFT_COMMENT
+	flag[1] = 1;
+#endif
+#if SHOW_LEFT_COMMENT
+	flag[2] = 1;
+#endif
+#if PRINT_PC_ADDRESS
+	flag[3] = 1;
+#endif
+#if SKA_AS_COMMENT
+	flag[5] = 1;
+#endif
+#if SHOW_RH_COMMENT
+	flag[6] = 1;
+#endif
+#if SHOW_JSR
+	flag[7] = 1;
+#endif
+
 
 /********      Init symtab_epz  *******/
 
@@ -134,21 +165,22 @@ void disassemble(const char* filename) {
 				epz_flg = 0;
 				pts_p("%s\tEQU ", sss[i].symbol);
 			}
-			pts_p("$%X", sss[i].symadr);
+			if (sss[i].symadr  > 9) ptc ('$');
+			pts_p("%X", sss[i].symadr);
 
 #if SHOW_B_W_FREQUENCY
 
 			if (sss[i].ofst) {
-				pts("  w");
+				pts(" w");
 			}
 			else {
-				pts("  b");
+				pts(" b");
 			}
 			pts_p("%i", sss[i].frequency); 
 #endif // 
 			
 			if (sss[i].comment[0])
-				pts_p("\t%s", sss[i].comment);
+				pts_p(" %s", sss[i].comment);
 			
 			print_line();
 		}
@@ -160,7 +192,7 @@ void disassemble(const char* filename) {
 		printf("Writing segment %d\n", segment);
 		pc = start_address[segment];
 		
-		fprintf(outputfile, "\n\t\tORG $%x\n\n", pc); // Write to the file
+		fprintf(outputfile, "\n\t\ORG $%X\n\n", pc); // Write to the file
 		diss_linnum +=3;
 		
 		sno = 0;
@@ -221,6 +253,7 @@ uint16_t disassln(uint16_t ska) {
 	//char* lnbfptrsv;
 	char ch;
 	uint8_t apparent_line_length = 0;
+	
 
 /*	if (sss[sno].comment[0]) {
 		pts_p("*** %s ***\n", sss[sno].comment);
@@ -228,22 +261,24 @@ uint16_t disassln(uint16_t ska) {
 	}*/
 
 	line_buffer[0] = '\0';
+	linebeg_lablen = 0;
+	symflg = 0;
 
 	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
-		cnt = 0;
+		linebeg_lablen = 0;
 		lnbfptr = linbuf;
 		if (sss[sno].symbol)
-			while (sss[sno].symbol[cnt])
-				*lnbfptr++ = sss[sno].symbol[cnt++];
+			while (sss[sno].symbol[linebeg_lablen])
+				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
 	}
 
 	if ((sss[sno + 1].symadr == ska) && (sno < symnum - 1)) {// needed for everything else
 		sno++;
-		cnt = 0;
+		linebeg_lablen = 0;
 		lnbfptr = linbuf;
 		if (sss[sno].symbol)
-			while (sss[sno].symbol[cnt])
-				*lnbfptr++ = sss[sno].symbol[cnt++];
+			while (sss[sno].symbol[linebeg_lablen])
+				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
 	}
 
 	*lnbfptr++ = '\t';
@@ -263,15 +298,20 @@ uint16_t disassln(uint16_t ska) {
 	printf("$%X ", ska);
 #endif
 
-#if SHOW_LEFT_COMMENT
+
 	if (sss[sno].symadr == pc) {
-		pts("* ");					//Change this back to pts("* ");
-		if (sss[sno].comment[0])
-			pts_p(" %s", sss[sno].comment);
+		pts("*");					//Change this back to pts("* ");
+		if (flag[1]) //ADDR_LEFT_COMMENT
+			pts_p("%X", pc);
+
+		if (flag[2]) // SHOW_LEFT_COMMENT
+			if (sss[sno].comment[0])
+				pts_p(" %s", sss[sno].comment);
+
 		print_line();
 	}
 
-#endif
+
 
 	pts_p("%s", linbuf); // Label at line beginning
 
@@ -346,29 +386,28 @@ uint16_t disassln(uint16_t ska) {
 		pts("-1");
 		pt_ska_comment(adr);
 		return (ska + 2);
+
 	case '\\':
 		pts("ASC ");
 		ptc('\\');
-		while (!((*codeptr) & 128)) {
+		while (!((*codeptr) & 128)) {// until end of original string
 			ptc(*codeptr++);
 			ska++;
-			//if (ska > end_address[segment]) return(ska);
 		}
 		ptc((*codeptr) & 127);
 		ptc('\\');
 		return(++ska);
 
 	case '"':
-		cnt = ASC_STR_LEN;
+		cnt = ASC_STRING_LENGTH;
 		pts("ASC ");
 		if (*codeptr & 128) {
 			ptc('/');
 			while (*codeptr & 128) {
 				ptc(127 & *codeptr++);
 				ska++;
-				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
-				if (cnt-- == 0) break;
+				if (--cnt == 0) break;
 			}
 			ptc('/');
 			return(ska);
@@ -378,15 +417,14 @@ uint16_t disassln(uint16_t ska) {
 			while (!(*codeptr & 128)) {
 				ptc(*codeptr++);
 				ska++;
-				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
-				if (cnt-- == 0) break;
+				if (--cnt == 0) break;
 			}
 			ptc('"');
 			return(ska);
 		}
 	case '$':
-		cnt = 23;
+		cnt = ASC_STRING_LENGTH;
 		
 		pts("ASC ");
 		if (*codeptr & 128) {
@@ -396,9 +434,8 @@ uint16_t disassln(uint16_t ska) {
 				ptc(127 & ch);
 				codeptr++;
 				ska++;
-				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
-				if (cnt-- == 0) break;
+				if (--cnt == 0) break;
 			}
 			ptc('$');
 			return(ska);
@@ -410,9 +447,8 @@ uint16_t disassln(uint16_t ska) {
 				ptc(ch);
 				codeptr++;
 				ska++;
-				//if (ska > end_address[segment]) return(ska);
 				if (sss[sno + 1].symadr == ska) break;
-				if (cnt-- == 0) break;
+				if (--cnt == 0) break;
 			}
 			ptc('%');
 			return(ska);
@@ -420,7 +456,7 @@ uint16_t disassln(uint16_t ska) {
 		case '*':
 			
     		ska = (sss[sno + 1].symadr);//next symbol-table entry
-			pts_p("\n\t\tORG $%X\n", ska);
+			pts_p("\n\tORG $%X\n", ska);
 			return(ska);
 
 		
@@ -450,14 +486,14 @@ uint16_t disassln(uint16_t ska) {
 		}
 
 
-		ptc(*ptr++);// Print the opcode except JSR
-		ptc(*ptr++);
-		ptc(*ptr);
-	
-		if (offset == 0x7e) { //RTS
+	ptc(*ptr++);// Print the opcode except JSR
+	ptc(*ptr++);
+	ptc(*ptr);
 
-			line_skip++;
-		}
+	if (offset == 0x7e) { //RTS
+
+		line_skip++;
+	}
 
 	switch (opertytb[*codeptr++]) {
 	case OPC:		
@@ -519,7 +555,9 @@ uint16_t disassln(uint16_t ska) {
 				else if (lo_hi_task == 2) {				// :L
 					lo_hi_operand += *codeptr;
 					adnmw2(lo_hi_operand);
+#if SHOW_LO
 					pts(":L");
+#endif
 					pt_ska_comment(lo_hi_operand);
 					lo_hi_task = 3;
 					return(ska + 2);
@@ -535,8 +573,13 @@ uint16_t disassln(uint16_t ska) {
 				}
 			}
 			else {//treat as sctp == ';'
-			
-				phb(codeptr);
+				uint8_t opcode = (uint8_t) * (codeptr - 1);
+				if ((opcode == 9) || (opcode == 41) || (opcode == 73)) {//AND, EOR, ORA
+					ptc('%');
+					ptb(*codeptr);// binary number
+				}
+				else
+					phb(codeptr);
 				return(ska + 2);
 			}
 		}//end case NN
@@ -658,13 +701,14 @@ void adnmw2(uint16_t ska) {
 
 #if USE_SYMTAB_OFFSET
 
-	if (ska == 0x549B)
-		ska = ska;
+
 
 	if (sss[isav].ofst > 0) {								// positive offset has priority
 		if (ska - sss[isav].symadr <= sss[isav].ofst) {     // eg. STA SYMBOL+1
-			pts_p("%s", sss[isav].symbol);
-			pts_p("+%d", ska - sss[isav].symadr);
+			pts_p("%s+", sss[isav].symbol);
+			if (ska - sss[isav].symadr > 9) ptc('$'); // only if $ is needed
+			pts_p("%X", ska - sss[isav].symadr);
+			symflg = 1;
 		}
 		else {
 			if (ska > 9) ptc('$'); // only if $ is needed
@@ -675,8 +719,10 @@ void adnmw2(uint16_t ska) {
 	else if (sss[i].ofst & 128) { // is negative
 		if (sss[i].symadr - ska <= (uint8_t)sss[i].ofst & 127) {    // eg. STA SYMBOL-1
 
-			pts_p("%s", sss[i].symbol);
-			pts_p("-%d", sss[i].symadr - ska);
+			pts_p("%s-", sss[i].symbol);
+			if (sss[i].symadr - ska > 9) ptc('$'); // only if $ is needed
+			pts_p("%X", sss[i].symadr - ska);
+			symflg = 1;
 		}
 		else {
 			if (ska > 9) ptc('$'); // only if $ is needed
@@ -870,24 +916,30 @@ void pt_ska_comment(uint16_t ska) {
 
 #endif // 
 
-#if SKA_AS_COMMENT || SHOW_RH_COMMENT
 
-	if (strlen(line_buffer) < 18)
-		ptc('\t');
-#endif
+	if (flag[5]) { // SKA_AS_COMMENT
 
-#if SKA_AS_COMMENT
-	if (sss[isav].symadr == ska)
-		pts_p("\t;%X", ska);
-#endif  
-
-#if SHOW_RH_COMMENT
-	                  // tab
-	if (sss[isav].comment[0]) {
-		pts("\t;");
-		pts(sss[isav].comment);
+		if (sss[isav].symadr == ska || symflg) {
+			ptc('\t');
+			if (strlen(line_buffer) - linebeg_lablen <= 10)
+				ptc('\t');
+			pts_p("%X", ska);
+		}
 	}
-#endif
+
+	if (flag[6]) { // SHOW_RH_COMMENT
+
+		if (sss[isav].comment[0]) {
+			if (flag[5])
+				pts(" ");
+			else {
+				ptc('\t');
+				if (strlen(line_buffer) - linebeg_lablen <= 10)
+					ptc('\t');
+			}
+			pts(sss[isav].comment);
+		}
+	}
 }
 
 void print_line() {
@@ -896,15 +948,15 @@ void print_line() {
 		//	getch();
 		diss_linnum++;
 
-#if	PRINT_DISS_LINNUM
-		fprintf(outputfile, "%i  ", diss_linnum);
-#endif
+		if (flag[0]) // PRINT_DISS_LINNUM
+			fprintf(outputfile, "%i  ", diss_linnum);
 
-#if PRINT_PC_ADDRESS
-		if (pcsav != 0)
-			fprintf(outputfile, "$%04X", pcsav);
-		fprintf(outputfile, "\t");
-#endif
+
+		if (flag[3]) { // PRINT_PC_ADDRESS
+			if (pcsav != 0)
+				fprintf(outputfile, "$%04X", pcsav);
+			fprintf(outputfile, "\t");
+		}
 
 
 
@@ -912,12 +964,12 @@ void print_line() {
 
 		if (line_skip) {
 
-				diss_linnum++;
+			diss_linnum++;
 
-#if PRINT_DISS_LINNUM
+			if (flag[0])  // PRINT_DISS_LINNUM
 				fprintf(outputfile, "%i", diss_linnum);
-#endif
-				fprintf(outputfile, "\n");
+
+			fprintf(outputfile, "\n");
 
 			line_skip = 0;
 		}
