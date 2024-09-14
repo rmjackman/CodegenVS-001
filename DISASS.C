@@ -18,7 +18,7 @@ int getch(void);
 #define SHOW_SECTYP_AND_ADDRESS 0
 #define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
 
-#define ASC_STRING_LENGTH 20 //23
+#define ASC_STRING_LENGTH 21 //23
 #define DFB_BYTES_PER_LINE 6 //8
 #define SHOW_LO 0 // Show ':L'
 
@@ -31,7 +31,7 @@ int getch(void);
 #define SHOW_RH_COMMENT   0		// 6.
 #define SHOW_JSR          0		// 7.
 
-#define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.
+#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
 
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
@@ -192,7 +192,7 @@ void disassemble(const char* filename) {
 		printf("Writing segment %d\n", segment);
 		pc = start_address[segment];
 		
-		fprintf(outputfile, "\n\t\ORG $%X\n\n", pc); // Write to the file
+		fprintf(outputfile, "\n\n\n\t\ORG $%X\n\n", pc); // Write to the file
 		diss_linnum +=3;
 		
 		sno = 0;
@@ -634,11 +634,12 @@ uint16_t disassln(uint16_t ska) {
 		pts(",Y");
 		pt_ska_comment(adr);
 		return(ska + 3);
-	case BAAAAB:
+	case BAAAAB: //JMP
 		pts(" (");
 		adr = adnmw(codeptr);
 		ptc(')');
 		pt_ska_comment(adr);
+		line_skip++;
 		return(ska + 3);
 	case BRA:
 		temp = ska + 2;
