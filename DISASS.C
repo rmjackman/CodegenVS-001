@@ -548,6 +548,7 @@ uint16_t disassln(uint16_t ska) {
 					}
 				}
 				else if (lo_hi_task == 1) {				// :H
+					line_skip=0;
 					lo_hi_operand = *codeptr << 8;
 					lo_hi_task = 2;
 					return(ska_sav);
@@ -945,7 +946,7 @@ void pt_ska_comment(uint16_t ska) {
 
 void print_line() {
 	if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
-		//if (diss_linnum == 5709)
+		if (diss_linnum == 6791)
 		//	getch();
 		diss_linnum++;
 
