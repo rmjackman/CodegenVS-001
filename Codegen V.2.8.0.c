@@ -1452,13 +1452,14 @@ int main(int argc, char* argv[])
 					//i = 99;
 				if (operand[1] == '%')							// e.g. LDA #%11000000
 					sectyp('!');
+
 				else
 				{
 					lo_fg = 1;
 					if (*txtptr == ':')							// e.g. LDA #OKTXT:H
 					{
 						txtptr++;
-						if ((*txtptr == 'H') || (*txtptr == 'h'))
+						if (toupper(*txtptr) == 'H')
 						{
 							intval >>= 8;
 							lo_fg = 0;
@@ -2063,7 +2064,7 @@ uint32_t expresstoi()
 	} while (!(isspace(*txtptr) || (*txtptr == ',') || (*txtptr == ':')));
 
 	if (*txtptr == ',')					//if ",X)"
-		if (*(txtptr + 1) == 'X' || *(txtptr + 1) == 'x')
+		if (toupper(*(txtptr + 1)) == 'X')
 			if (*(txtptr + 2) == ')')
 				if (isspace(*(txtptr + 3)))
 					*ptr++ = ')';			// add ')'
