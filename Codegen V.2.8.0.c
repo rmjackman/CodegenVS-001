@@ -25,7 +25,7 @@
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
-
+#define NN_NEW 1
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -1448,30 +1448,62 @@ int main(int argc, char* argv[])
 
 				txtptr++;
 				intval = expresstoi_p2();
-				//if (pc == 0x5249) //0x4946
-					//i = 99;
+				if (pc == 0x3165) //0x4946
+					i = 99;
 				if (operand[1] == '%')							// e.g. LDA #%11000000
 					sectyp('!');
 
-				else
+				else // all other possibilities
+#if NN_NEW
+				{
+					if (pass == 2) {
+						lo_fg = 1;
+
+						if (*txtptr == ':')							// e.g. LDA #OKTXT:H
+						{											// where OKTXT is any address
+							txtptr++;
+							if (toupper(*txtptr) == 'H') {
+								intval >>= 8;
+								lo_fg = 0;
+							}
+						}
+						if (lo_fg) {
+							if (intval > 255)	// e.g. LDA #OKTXT:L
+								sectyp('&');
+							else if (symfg && syms_in_expr == 1) {			// zero page
+								for (i = 0; i < symnum; i++) {
+									if (sss[i].symadr == intval && sss[i].symtyp == ']') {
+										sectyp('[');
+										break;
+									}
+								}
+								if (sss[i].symtyp != ']') {
+									sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
+								}
+							}
+						}
+						else if (lo_fg == 0)
+							if (intval > 255)	// e.g. LDA #OKTXT:L
+								sectyp('@');
+					}
+				}
+#else // NN old
 				{
 					lo_fg = 1;
 					if (*txtptr == ':')							// e.g. LDA #OKTXT:H
-					{
+					{											// where OKTXT is any address
 						txtptr++;
-						if (toupper(*txtptr) == 'H')
-						{
+						if (toupper(*txtptr) == 'H') {
 							intval >>= 8;
 							lo_fg = 0;
 						}
 					}
-					if (lo_fg && (pass == 2))//??????????????????
+					if (lo_fg && (pass == 2))
 					{
 						if (intval > 255)
 							sectyp('&');
 						else if (symfg && syms_in_expr == 1) {			// zero page
 							for (i = 0; i < symnum; i++) {
-
 								if (sss[i].symadr == intval && sss[i].symtyp == ']') {
 									sectyp('[');
 									break;
@@ -1481,10 +1513,11 @@ int main(int argc, char* argv[])
 								sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
 							}
 						}
-						//
 					}
-					
 				}
+
+
+#endif
 				if (strchr("!&@([", section_type) == 0) //if not one of these
 					sectyp(';');//The above affact only single lines
 				toxlbuf((char)data[cnt][NN]);
@@ -2659,7 +2692,7 @@ void sectyp(char line_type)
 {
 	//if(pc == 0x4729)
 		//pc=pc;
-	if ((line_type == '&' || line_type == '(' || line_type == '[') && pass == 2) {
+	if ((line_type == '&' || line_type == '@' || line_type == '(' || line_type == '[') && pass == 2) {
 		for (int i = 0; i < symnum; i++) {
 			if (sss[i].symadr == pc) {
 				sss[i].symtyp = line_type;
@@ -2676,7 +2709,7 @@ void sectyp(char line_type)
 		return;
 	}
 	
-	if (  !labflg && (line_type == ';') && strchr("!&'([", section_type)  )
+	if (  !labflg && (line_type == ';') && strchr("!&@'([", section_type)  )
 		line_type = section_type;
 
 
@@ -2695,7 +2728,10 @@ void sectyp(char line_type)
 			{
 				sss[symnum - 1].symtyp = '&';
 			}
-
+			if ((pass == 2) && (line_type == '@')) /**/
+			{
+				sss[symnum - 1].symtyp = '@';
+			}
 
 		}
 		else /* no label */
