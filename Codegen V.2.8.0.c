@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 	int offset = 0;
 	unsigned int operval = 0;
 	int operno = 0;
-	int i = 0, intval = 0;
+	int i = 0, intval = 0, intval_sav = 0;
 	char label[MAX_LABEL_SIZE] = { 0 };
 	char labelstr[MAX_LABEL_SIZE] = { 0 };
 	char opcstr[MAX_LABEL_SIZE] = { 0 };
@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
 	char tmptyp;
 	fpos_t pos1;
 	bool star_flg = 0;
-
+	bool first_NNsymbol = 1;
 
 	/*xlram_codetpy = malloc (0xffff); /* each address is assigned a flag used in symtyp
 				Addresses in normal code which do not coincide with an opcode are assigned zero */
@@ -1456,7 +1456,9 @@ int main(int argc, char* argv[])
 				else // all other possibilities
 #if NN_NEW
 				{
+					
 					if (pass == 2) {
+						intval_sav = intval;
 						lo_fg = 1;
 
 						if (*txtptr == ':')							// e.g. LDA #OKTXT:H
@@ -1468,8 +1470,15 @@ int main(int argc, char* argv[])
 							}
 						}
 						if (lo_fg) {
-							if (intval > 255)	// e.g. LDA #OKTXT:L
-								sectyp('&');
+							if (intval > 255) {	// e.g. LDA #OKTXT:L
+								if (first_NNsymbol) {
+									sectyp('&');
+									first_NNsymbol = false;
+								}
+								else
+									first_NNsymbol = true;
+							}
+
 							else if (symfg && syms_in_expr == 1) {			// zero page
 								for (i = 0; i < symnum; i++) {
 									if (sss[i].symadr == intval && sss[i].symtyp == ']') {
@@ -1483,8 +1492,14 @@ int main(int argc, char* argv[])
 							}
 						}
 						else if (lo_fg == 0)
-							if (intval > 255)	// e.g. LDA #OKTXT:L
-								sectyp('@');
+							if (intval_sav > 255) {	// e.g. LDA #OKTXT:L
+								if (first_NNsymbol) {
+									sectyp('@');
+									first_NNsymbol = false;
+								}
+								else
+									first_NNsymbol = true;
+							}
 					}
 				}
 #else // NN old
