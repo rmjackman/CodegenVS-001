@@ -1491,7 +1491,7 @@ int main(int argc, char* argv[])
 								}
 							}
 						}
-						else if (lo_fg == 0)
+						else //lo_fg == 0
 							if (intval_sav > 255) {	// e.g. LDA #OKTXT:L
 								if (first_NNsymbol) {
 									sectyp('@');

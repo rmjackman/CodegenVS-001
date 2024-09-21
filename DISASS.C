@@ -542,13 +542,13 @@ uint16_t disassln(uint16_t ska) {
 						ska_sav = ska;
 						return(ska + 2);
 					}
-					else{//treat as sctp == ';'
+					else {//treat as sctp == ';'
 						phb(codeptr);
 						return(ska + 2);
 					}
 				}
 				else if (lo_hi_task == 1) {				// :H
-					line_skip=0;
+					line_skip = 0;
 					lo_hi_operand = *codeptr << 8;
 					lo_hi_task = 2;
 					return(ska_sav);
@@ -568,8 +568,47 @@ uint16_t disassln(uint16_t ska) {
 					adnmw2(lo_hi_operand);
 					pts(":H");
 					pt_ska_comment(lo_hi_operand);
-					lo_hi_operand = *codeptr << 8;
-					
+					//lo_hi_operand = *codeptr << 8;
+
+					return(ska + 2);					// :H
+				}
+			}
+			else if (sctp == '@') {
+				if (lo_hi_task == 0) {				// :H
+					if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '@')) {//this address is in the symbol table
+						lo_hi_task = 1;
+						ska_sav = ska;
+						lo_hi_operand = *codeptr << 8;
+						return(ska + 2);
+					}
+					else {//treat as sctp == ';'
+						phb(codeptr);
+						return(ska + 2);
+					}
+				}
+				else if (lo_hi_task == 1) {				// :L
+					line_skip = 0;
+					lo_hi_operand += *codeptr;
+					lo_hi_task = 2;
+					return(ska_sav);
+				}
+				else if (lo_hi_task == 2) {				// :H
+
+					adnmw2(lo_hi_operand);
+					pts(":H");
+					pt_ska_comment(lo_hi_operand);
+					lo_hi_task = 3;
+					return(ska + 2);
+				}
+				else if (lo_hi_task == 3) {					//:L
+					lo_hi_task = 0;
+					adnmw2(lo_hi_operand);
+#if SHOW_LO
+					pts(":L");
+#endif
+					pt_ska_comment(lo_hi_operand);
+					//lo_hi_operand = *codeptr << 8;
+
 					return(ska + 2);					// :H
 				}
 			}
