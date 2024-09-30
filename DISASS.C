@@ -247,18 +247,18 @@ uint16_t disassln(uint16_t ska) {
 
 	char cnt;
 	unsigned int temp;
-	char linbuf[10] = {0};
+	char linbuf[10] = { 0 };
 
 	char* lnbfptr = linbuf;
 	//char* lnbfptrsv;
 	char ch;
 	uint8_t apparent_line_length = 0;
-	
 
-/*	if (sss[sno].comment[0]) {
-		pts_p("*** %s ***\n", sss[sno].comment);
-		printf("*** %s ***\n", sss[sno].comment);
-	}*/
+
+	/*	if (sss[sno].comment[0]) {
+			pts_p("*** %s ***\n", sss[sno].comment);
+			printf("*** %s ***\n", sss[sno].comment);
+		}*/
 
 	line_buffer[0] = '\0';
 	linebeg_lablen = 0;
@@ -282,7 +282,7 @@ uint16_t disassln(uint16_t ska) {
 	}
 
 	*lnbfptr++ = '\t';
-	*lnbfptr='\0';
+	*lnbfptr = '\0';
 	sctp = sss[sno].symtyp;
 
 
@@ -328,7 +328,7 @@ uint16_t disassln(uint16_t ska) {
 	case '!':
 	case '&':
 	case '@':
-	case '(': 
+	case '(':
 	case '['://(EQU CONSTANT <= $FF)
 	case '<':	break; //normal opcodes
 
@@ -351,7 +351,7 @@ uint16_t disassln(uint16_t ska) {
 		pts("DFB ");
 		while (1) {
 			symtab_init = 0;
-			if (isprint(codeptr[0]) && ( strchr("~{}", codeptr[0])==0))
+			if (isprint(codeptr[0]) && (strchr("~{}", codeptr[0]) == 0))
 				pts_p("'%c'", codeptr++[0]);
 			else
 				adr = adnmb(codeptr++);
@@ -364,7 +364,7 @@ uint16_t disassln(uint16_t ska) {
 		}
 		return(ska);
 
-//if(  memchr(esc_ch_tab, codeptr[0], sizeof(esc_ch_tab)))
+		//if(  memchr(esc_ch_tab, codeptr[0], sizeof(esc_ch_tab)))
 
 	case '%':
 		pts("DFB ");
@@ -373,11 +373,11 @@ uint16_t disassln(uint16_t ska) {
 		return(++ska);
 	case '=':
 	case '|':
-       		pts("DFW ");
-			if (pc == 0x492c) // 0x492c (4742)
-				adr = adr;
-			adr = adnmw(codeptr);
-			pt_ska_comment(adr);
+		pts("DFW ");
+		if (pc == 0x492c) // 0x492c (4742)
+			adr = adr;
+		adr = adnmw(codeptr);
+		pt_ska_comment(adr);
 		return (ska + 2);
 	case '-':
 	case '_':
@@ -425,7 +425,7 @@ uint16_t disassln(uint16_t ska) {
 		}
 	case '$':
 		cnt = ASC_STRING_LENGTH;
-		
+
 		pts("ASC ");
 		if (*codeptr & 128) {
 			ptc('$');
@@ -453,24 +453,23 @@ uint16_t disassln(uint16_t ska) {
 			ptc('%');
 			return(ska);
 		}
-		case '*':
-			
-    		ska = (sss[sno + 1].symadr);//next symbol-table entry
-			pts_p("\n\tORG $%X\n", ska);
-			return(ska);
+	case '*':
 
-		
-		default:
-			pts_p("The section type '%c' is not yet implemented\n", sctp);
+		ska = (sss[sno + 1].symadr);//next symbol-table entry
+		pts_p("\n\tORG $%X\n", ska);
+		return(ska);
+
+
+	default:
+		pts_p("The section type '%c' is not yet implemented\n", sctp);
 
 	}
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
 
 
-#if SHOW_JSR
-	if (1 < 0)
-#endif
+	if (flag[7] != 1) { //SHOW_JSR
+
 		if (offset == 0x54) { //JSR
 			size_t current_length_sv = strlen(line_buffer);
 
@@ -484,7 +483,7 @@ uint16_t disassln(uint16_t ska) {
 				codeptr--;
 			}
 		}
-
+	}
 
 	ptc(*ptr++);// Print the opcode except JSR
 	ptc(*ptr++);
