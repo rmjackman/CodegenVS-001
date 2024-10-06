@@ -302,7 +302,7 @@ int main(int argc, char* argv[])
 	puts("* - assembles a source-file (.SRC)                                    *");
 	puts("* - creates a boot image (temp.atr) containing DOS25 and AUTORUN.SYS  *");
 	puts("*                                                                     *");
-	puts("* See read_me.txt and SGEN32.SRC for further options and instructions.*");
+	puts("* See read_me.txt and SGEN42.SRC for further options and instructions.*");
 	puts("*                                                                     *");
 	puts("***********************************************************************\n");
 	
