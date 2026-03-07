@@ -10,10 +10,10 @@
 
 * Use the CPFL directive to compare the generated code with another file
 
-*	CPFL SGEN414.LOAorig
+	CPFL SGEN414.LOAorig
 	
-	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
-*	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
+*	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 	SMTFILE TEMP.SMB
@@ -24,7 +24,7 @@
 
 
 *	DSKIMAGE W1_DD_test.ATR	TURBO DOS double density image -- empty
-	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
+*	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
 *	DSKIMAGE FormatedED.XFD	just Turbo DOS, 
 *	DSKIMAGE DISK_10_Turbo_DOS_21_test.xfd	no TURBODOS
 *	DSKIMAGE NoDOS_ED.XFD
@@ -45,9 +45,11 @@
 
 *	DISASS 123456
 
-	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+
+*	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
 *	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
-*	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
+	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
+*	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
 
 * Use the OUT directive to create a text output file with the extension ".LIS"
 *            L: Listing will be creatied. Assembly and CPFL mismatches will be shown.
@@ -531,6 +533,7 @@ DSI1	MovlB PRF,0
 	Dsta TOA
 	STA INVFLG
 	STA COLCRS
+	STA SCTP
 	
 	MovlB ICAX1+$20,12
 	MovlB SHFLOK,64
@@ -621,9 +624,10 @@ APD	      JMP DSI
 skip	MovaB SKA,ADR
          STA ADRV 	
 	MovaB SKA+1,ADR+1
-         STA ADRV+1        
-	Cmpl CONSOL,7	OPTION SELECT SHIFT8
-	BCC APD
+         STA ADRV+1  
+	
+	
+	CONSOLR
 
 	LDA OLNFG
 	BEQ +
@@ -853,17 +857,24 @@ NORTZ	ASC "%"
 INVTZ	ASC "$"
 *
 StrTy	AOI
-	BPL WS
+	BPL WSCTL	screen cntrl char found
 
-	  AND #%01100000
+	  AND #%01100000	is ASCII
 	  BNE WASC
 
-STT1	  PTDFB
-	  LDA BYTSV
-	  JMP PHB
-*
-WS	STT1
-*	PutS \ [S]\
+STT1	PTDFB
+-	LDA BYTSV
+	JMP PHB
+* Write DFB and screen control char
+WSCTL	PTDFB
+* Write screen control char	
+WSCTL1	STA SKA
+	MovlB SKA+1,0
+	FADR1
+	BPL -
+	CKCONSTY
+	BNE -
+	Wadnm
 	RTS
 
 WASC	PTAS
@@ -936,7 +947,7 @@ AOI	MovaB BYTSV,BYT
 
 +	ADC ASTB,X
 	STA BYT
-*** Is BYT a screen control char?
+*** Is BYT a screen control char? MI:not found
 CkScrCtl	LDA BYT
 	LDX #FLerrTb-ESCchTB	=16
 
@@ -1007,10 +1018,7 @@ DFBphb	LDA BYT
 	PHB
 	JMP NXTbyt
 	
-DFBsym	STA SKA
-	MovlB SKA+1,0
-	FADR1
-	Wadnm
+DFBsym	WSCTL1
 	
 NXTbyt	DEC TCT
 	  BEQ +
@@ -1157,7 +1165,7 @@ QQUIT	Cmpl AD,1
 	CMP 'N'
 	BEQ Q1
 	LDA 'S'
-	skip
+	NP
 	JMP DSI
 
 Q1	MovaW $C,JDOS+1
@@ -1180,7 +1188,7 @@ INPT	MovlB LS,0
 	STA CRSINH
 	GETC
 	AND #%01111111	include inverted
-skip	INC CRSINH
+NP	INC CRSINH
 	STA GTC
 
 
@@ -2108,21 +2116,22 @@ IL2	STA (ADR1),Y
 
 	CLC
 	LDA MTAB,X
-	BEQ GT		X==8
+	BEQ skip		X==8
 
 	ADC ADR1
 	STA ADR1
-	BCC IL4
+	BCC +
 
 	INC ADR1+1
-IL4	INX
++	INX
 	BNE INVLN
 
-GT	GETC
+skip	GETC		inverts 9B to 1B
+	BMI +		break key?
 	CMP #ESC
 	BNE skip
 
-	LDY #0
++	LDY #0
 *** Restore 4 lines and exit
 loop	LDA OUTMENSV,Y
 	  STA (SAVMSK),Y
@@ -2467,12 +2476,8 @@ LHEAD	WHDCONST
 LH	MovlB LSPOS,0
 	Dsta A2
 
-LHLOOP	Cmpl CONSOL,7
-	BCS +
-	
-	  JMP DSI
-
-+	LDA LEN
+LHLOOP	CONSOLR
+	LDA LEN
 	BNE +
 	  LDA LEN+1
 	  BNE +
@@ -2533,12 +2538,12 @@ J1	INC JF1
 JND	JMP API
 *
 LPV	DFB 0
-
+*
 ASCty	CkScrCtl
 	BMI AST1
 
 	STA BYTSV
-	JMP WS
+	JMP WSCTL
 
 AST1	LDA BYT
 	AND #%01100000
@@ -2832,7 +2837,9 @@ CD4	SEC	Write-only symbol
 *** search for SKA, ADR1:=SYMTAB
 FADR1	MovlB CONSTFG,1
 	LDA SCTP
-	CMP ','		'?' changed to ','
+	CMP '"'
+	BEQ skip
+	CMP ','
 	BEQ skip
 	CMP ']'		SGEN408
 	BEQ skip		SGEN408
@@ -2879,7 +2886,7 @@ FADR1A	LDA SKA			push ska
 	FLA
 	
 	RTS
-*
+*** Need D40F/<SYMBOL>
 FLAERR	LDY #$D
 	JMP IOERR
 *** incorporates MMOVER
@@ -3218,7 +3225,7 @@ IE2	INY
 	AND #%01111111
 	PTCH
 	LDA (A2),Y
-	BPL IE2AC
+	BPL IE2
 
 IE8	PREL
 
@@ -3260,7 +3267,8 @@ fSEMICOL	CHKTOA
 	FADR1A			SGEN408
 	PRINT
 	DFB DBS,0
-loop	LADNM
+loop	CONSOLR
+	LADNM
 	  CLC
 	  LDA ADR1OF
 	  ADC ADR1
@@ -5330,7 +5338,7 @@ CI1	DEC CHIF
 	PTHW
 	WRL
 	GETC
-	CMP #ESC
+	CMP #ESC		(or EOL)
 	BNE CDADR
 
 	JMP DSI	
@@ -5540,8 +5548,14 @@ WHCND	PRL
 
 	
 ***	
-
-
+CONSOLR	LDA CONSOL
+	CMP #6	START
+	BNE +
+	BEQ CONSOLR
++	CMP #7	OPTION SELECT
+	BCC +
+	  RTS
++	JMP DSI
 
 
 
