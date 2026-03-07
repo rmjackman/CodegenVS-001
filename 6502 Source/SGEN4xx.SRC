@@ -67,10 +67,13 @@ CPOINT	EQU $25
 CNOTE	EQU $26
 
 ESC	EQU $1B
-CURSUP	EQU $1C
-DBS	EQU $7E		
+CRSUP	EQU $1C
+DBS	EQU $7E
+TAB	EQU $7F		
 EOL	EQU $9b
 DLN	EQU $9c
+INSLN	EQU $9D
+BELL	EQU $FD
 
 CRSINH	EQU $2F0
 DSPFLG	EQU $2FE
@@ -320,15 +323,11 @@ adjND	RTS
 	
 *	GETC
 *	RTS
-
-	ORG $2200
-
-GENBEG	JMP BEG
-
-PKT	DFB 9,192,226,20,3   cursor, colours etc.
+*********************************************************
 
 SK	EQU $100
 
+*segment 2200 4c1F -- now 4bcf
 
 SCREEN	EQU $4C20
 CRAMTOP	EQU $50
@@ -340,27 +339,41 @@ LSmin4	EQU $5000+35-4
 LN	EQU $5090
 OSV	EQU $50E0
 FTV	EQU $50F0
-X	EQU $56
-SEGTAB	EQU $5680
+*segment 5100 56FF -- now 561F
+
+X	EQU $57	increase by 1 --> extra page for segment 5100--
+
+*segment 5640 567f -- now 5668
+
+SEGTAB	EQU $5780
 
 OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
-DLB	DFB X
+*******************************************************************
+
+	ORG $2200
+
+GENBEG	JMP BEG
+
+PKT	DFB 9,192,226,20,3   cursor, colours etc.
+
+DLB	DFB X		57
 DLE	DFW 0
 *** Head Label table begin Hi byte
-ZLB	DFB X+1
+ZLB	DFB X+1		58
 ZLE	DFW 0
-BLB	DFB X+4
+BLB	DFB X+4		5b
 BLE	DFW 0
-*** J-label table begin Hi byte
-JLB	DFB X+$C	
+*** J-label table begin Hi bytef
+JLB	DFB X+$C		63	
 *** J-label # bytes in use
 JLE	DFW 0
-TLB	DFB X+$11
+TLB	DFB X+$11	68
 TLE	DFW 0
-SYMTAB	DFB X+$17
+SYMTAB	DFB X+$17	6f
 SYTL	DFW 0
-RAMTOPSV	DFB $BC
+RAMTOPSV	DFB $BC		Don't change this!
+
 *** DDDZZZHHHJJJTTT
 LBTB	ASC "DDDZZZHHHJJJTTT"
 LOFST	DFW 0
@@ -511,7 +524,7 @@ DSI1	MovlB PRF,0
 	LDX #$70
 	ComCiov CCLOSE	close printer
 	PRINT
-	DFB 156
+	DFB DLN
 	ASC "?"		print prompt: ?
 	DFB 0
 	
@@ -519,51 +532,7 @@ DSI1	MovlB PRF,0
 
 	JMP DSI		loop end
 **********************************************************
-#
-*** Find first EPZ in symbol table
-FNDEPZ	MovaB ADR1+1,SYMTAB		adr1 = symtab
-	MovlB ADR1,0
-	
-loop	LDY #3
-	LDA (ADR1),Y	offset
-	STA ADR1OF
-	TAY		offset in Y
-	DEY
-	LDA (ADR1),Y	ch type
-	CMP ']'
-	BNE EPZFND
 
-	  AddaB ADR1,ADR1OF
-	  JMP loop
-
-EPZFND	RTS
-#
-*** Write head constants
-WHDCONST	MovaB ADR1+1,SYMTAB		adr1 = symtab
-	MovlB ADR1,0
-	
-loop	LDY #3
-	LDA (ADR1),Y	offset
-	STA ADR1OF
-	TAY		offset in Y
-	DEY
-	LDA (ADR1),Y	ch type
-	CMP ']'
-	BNE WHCND
-	
-	  ifNE ZFG
-	    WADNM
-	    PutTAB
-	    PutS \EQU \
-	    LDY #0
-	    LDA (ADR1),Y
-	    PHB
-	    PRL
-
-endif	  AddaB ADR1,ADR1OF
-	  JMP loop
-
-WHCND	RTS
 *** Check segment
 CKSG	CmpaW AD,STAD
 	BCC CKSD
@@ -671,7 +640,7 @@ skip	MovaB SKA,ADR
 
 +	DEC CRSINH
 	PRINT
-	DFB 28,127,0	up, tab
+	DFB CRSUP,TAB,0
 	MovaW LEN,ADR
 	INPP
 	LDA #$FF
@@ -680,7 +649,7 @@ skip	MovaB SKA,ADR
 	BC
 	RDBYT
 	PRINT
-	DFB 28,0		up
+	DFB CRSUP,0
 	PTFG4
 WI3	INCADRw
 	JMP APLOOP
@@ -734,7 +703,7 @@ DOTRACE	PRINT
 	  
 	  PHA
 	  PRINT
-	  DFB $9C,0
+	  DFB DLN,0
 	  PLA
 	  CMP #ESC
 	  BEQ AP3
@@ -1080,7 +1049,7 @@ WGLP	STX XSAV
 	    AND #127
 	    PUTR
 +	    PRINT
-	    DFB EOL,127,0
+	    DFB EOL,TAB,0
 	    Cmpl CNT,'V'
 	    BEQ WGD
 
@@ -1983,9 +1952,6 @@ WRAD	PutS \$\
 	CmpaW MNLB,SKA
 	BCS AN3D
 
-*	LDA CONSTFG	v403
-*	BNE AN3D		v403
-
 	WRL
 	LDY #$E
 	JMP IOERR
@@ -2195,7 +2161,7 @@ loop	    INY
 	    BNE loop
 
 FA	PRINT
-	DFB 156,0	del line
+	DFB DLN,0	del line
 	LDA FLV		get saved file name
 	BEQ FE1		error - no file
 
@@ -2342,7 +2308,7 @@ f6to0	SEC
 * B.BYTE
 BBYTE	INC CBF
 	PRINT
-	DFB 28,0
+	DFB CRSUP,0
 	LDA FLFG
 	BEQ +
 	  MovlB OPD1+1,$C
@@ -2792,7 +2758,7 @@ FADR1	MovlB CONSTFG,1
 	
 	
 +	DEC CONSTFG
-	WHDCONST
+	FNDEPZ
 
 
 	
@@ -3045,7 +3011,7 @@ endif	LDA DFG		write to disk?
 	LDA PRF		to Atari printer?
 	BEQ PRND
 
-PRLA	PUT CURSUP	Atari Printer. Get line from screen
+PRLA	PUT CRSUP	Atari Printer. Get line from screen
 	LDX #$20		E:
 	MovlBX ICAX1,13
 	ICBadrl LN		set address to LN
@@ -3057,7 +3023,7 @@ PRLA	PUT CURSUP	Atari Printer. Get line from screen
 	  CMP #EOL
 	  BNE skip
 
-	    PUT CURSUP
+	    PUT CRSUP
 	    JMP PRLA
 *** write line to Atari printer
 skip	MovlBX ICAX1,12	
@@ -3131,7 +3097,7 @@ IE6	MovaW ADR,ADRV
 IE9	MovlB ROWCRS,23
 	MovlB LSPOS,0
 	PRINT
-	DFB $FD,$9D,0
+	DFB BELL,INSLN,0		$FD,$9D
 	PutS \Error- \
 	LDA ERNO
 	PHB
@@ -3689,7 +3655,7 @@ S3	MovlB A3,2
 	BEQ +
 
 	  PutS \>\
-+	LDA #CURSUP
++	LDA #CRSUP
 	PTCH
 	MovlB CRSINH,0
 	PRL
@@ -3871,7 +3837,7 @@ STFND	WSEC1
 *
 WSEC	FADR1
 WSEC1	MovlB ROWCRS,22
-	PUT DLN 		DLN $9C
+	PUT DLN
 
 	MovlB TOA,$FF
 	STA TOA+1
@@ -4045,7 +4011,7 @@ GETR	MovlBX ICBLEN,0
 	STA ICBLEN+1,X
 	ComCiov CGBINR	7
 	RTS
-*** Print a string ending in 0
+*** Print string ending in 0 to screen
 PRINT	PLA
 	STA A2
 	PLA
@@ -4340,7 +4306,7 @@ LABTB	ASC "AHJTS"
 PutTAB	LDA DFG
 	BNE TAB1
 
-	LDA #127		tab ascii
+	LDA #TAB		tab ascii
 	PTCH
 	RTS
 
@@ -4411,9 +4377,6 @@ JD	INC LBFG
 *** Write J-, T-, Z-label
 WJLTL	CmpaW SKA,MNLB
 	BCC WJND
-
-*	LDA CONSTFG	v403
-*	BNE WJND		v403
 
 	WIS JLB
 	BCC WJT5
@@ -4717,7 +4680,7 @@ ASTB	DFB 32,64,0,96,160,192,128,224
 *** Control character table
 ESCchTB	DFB 27,28,29,30,31
 	DFB 125,126,127
-	DFB EOL,156,157,158,159
+	DFB 155,156,157,158,159
 	DFB 253,254,255
 
 
@@ -5433,6 +5396,48 @@ RESTSEG	  MovaW STAD,STADSV
 	  MovaB DBYT,DBYTSV
 
 	RTS
+	
+
+*** Find first EPZ in symbol table
+FNDEPZ	MovaB ADR1+1,SYMTAB		adr1 = symtab
+	MovlB ADR1,0
+	
+loop	CKCONSTY
+	BNE EPZFND
+
+	  AddaB ADR1,ADR1OF
+	  JMP loop
+
+EPZFND	RTS
+
+*** Find ADR1OF, Check ']' 
+CKCONSTY	LDY #3
+	LDA (ADR1),Y	offset
+	STA ADR1OF
+	TAY		offset in Y
+	DEY
+	LDA (ADR1),Y	ch type
+	CMP ']'
+	RTS
+	
+*** Write head constants
+WHDCONST	MovaB ADR1+1,SYMTAB		adr1 = symtab
+	MovlB ADR1,0
+loop	CKCONSTY
+	BNE WHCND
+	
+	  WADNM
+	  PutTAB
+	  PutS \EQU \
+	  LDY #0
+	  LDA (ADR1),Y
+	  PHB
+	  PRL
+	  AddaB ADR1,ADR1OF
+	  JMP loop
+
+WHCND	PRL
+	RTS	
 **********************************************************	
 #	'#' causes the following lines to be ignored up until the next '#'.	
 	ORG $600
