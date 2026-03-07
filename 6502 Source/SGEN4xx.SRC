@@ -125,6 +125,7 @@ HF	EPZ $A1
 LSsav	EPZ $A2
 STABEPZ	EPZ $A3
 
+CONSTFG	EPZ $A8
 TXPT	EPZ $A9
 EDADV	EPZ $AA
 KBADV	EPZ $AC
@@ -139,7 +140,7 @@ ANF	EPZ $B6	Address not found
 ADR1OF	EPZ $B7
 XSAV	EPZ $B8	Save X register
 PRF	EPZ $B9
-PFG	EPZ $BA	Prepare-flag
+PREPFG	EPZ $BA	Prepare-flag
 AOF	EPZ $BB
 SEF	EPZ $BC
 BYTSV	EPZ $BD
@@ -372,7 +373,7 @@ ADV	DFW 0
 *** table of sec type characters
 TypTab	ASC ".(;!'\#"
 	DFB '"'
-	ASC "=-%$*&<_|@["
+	ASC "=-%$*&<_|@[]"
 	ASC /=-/
 *	DFB 0,0	SG32
 	DFB 0	SG40
@@ -380,7 +381,7 @@ TypTab	ASC ".(;!'\#"
 TyPtrTb	DFW TXTty,NormTy,NormTy,NormTy,NormTy,ASCty,DFBty
 	DFW StrTy
 	DFW DFWeqTy,DFWmiTy,BinTy,StrTy,ORGty
-	DFW NormTy,NormTy,DFWmiTy,DFWeqTy,NormTy,NormTy
+	DFW NormTy,NormTy,DFWmiTy,DFWeqTy,NormTy,NormTy,NormTy
 	DFW DFWeqTy,DFWmiTy,0
 
 ANFV	DFB 0
@@ -496,7 +497,7 @@ skip	ComCiov CCLOSE
 DSI1	MovlB PRF,0
 	STA CRSINH
 	STA DSPFLG
-	STA PFG
+	STA PREPFG
 	STA DFG
 	Dsta TOA
 	STA INVFLG
@@ -527,7 +528,7 @@ loop	LDY #3
 	TAY		offset in Y
 	DEY
 	LDA (ADR1),Y	ch type
-	CMP '['
+	CMP ']'
 	BNE EPZFND
 
 	  AddaB ADR1,ADR1OF
@@ -984,7 +985,7 @@ DFBD	RTS
 * Check next ADR
 CKNA	INCADRw
 	JMP CKNA1
-*
+*** Find type (SCTP)
 FTY	MovaW SKA,ADR
 	FADR1
 	PHP
@@ -1479,7 +1480,7 @@ BR	CPY #16
 BR3	MovaW SKA,ADRV
 	CALCBRA
 	DETZ
-	LDA PFG
+	LDA PREPFG
 	BEQ BR2
 *	STS BLB
 	MovlW $20,BLB
@@ -1642,11 +1643,14 @@ WA2	LDA FG
 WA3	SEC
 WAND	RTS
 *
-WCM2	LDA PFG
+WCM2	LDA PREPFG
 	BEQ CPND
 
 	CmpaW SKA,MNLB
 	BCC CPND
+
+	LDA CONSTFG	v403 This works
+	BNE CPND		v403 This works
 
 	LDA HILOFG
 	BNE CPHL
@@ -1663,10 +1667,10 @@ WCM2	LDA PFG
 	CMP '-'
 	BEQ CP3
 
-CPHL	STS TLB
-	RTS
+CPHL	STS TLB		MovlW $20,TLB  ILSR
+	RTS		
 
-CP3	STS JLB
+CP3	STS JLB		MovlW $20,JLB  ILSR
 	RTS
 
 CPND	LDA ANF
@@ -1738,7 +1742,7 @@ WCM1	MovaW ADR1,ADR1V
 	  LDA ADR
 	  AND #1
 	  STA ODF
-	  LDA PFG
+	  LDA PREPFG
 	  BEQ skip
 
 	    LDY #2
@@ -1950,6 +1954,9 @@ WRAD	PutS \$\
 	CmpaW MNLB,SKA
 	BCS AN3D
 
+*	LDA CONSTFG	v403
+*	BNE AN3D		v403
+
 	WRL
 	LDY #$E
 	JMP IOERR
@@ -2089,7 +2096,7 @@ PPREPARE	LDA LS
 	  Dsta JLE
 	  Dsta TLE
 	  STA SWTP
-+	INC PFG
++	INC PREPFG
 	MovaW LOFST,NWA
 	MovlB FG4,128
 	JMP API
@@ -2337,34 +2344,32 @@ BC	LDA LS
 +	RTS
 
 BE	JMP IOERR
-*
+
+*** Do if ZF (head flag) is set
 DETZ	LDA ZF
 	BEQ DZD		exit
 
 	LDA FFG
-	BEQ DZ4
+	BEQ +
 
-	CKSEGTAB
-	BCC DZ1
-	BCS PLRETADR
-			
-DZ4	CmpaW SKA,AD	not file
-	BCC DZ1		ska < ad
+	  CKSEGTAB
+	  BCC skip
+	  BCS PLRETADR
+*** not file			
++	CmpaW SKA,AD
+	BCC skip		ska < ad
 
-	CmpaW TOA,SKA	if ska <= toa	
-	BCS PLRETADR		pull retadress
+	  CmpaW TOA,SKA	if ska <= toa	
+	  BCS PLRETADR	pull retadress
+*** ska outside, so add to tab
+skip	CKD000
+	BCC skip
 
-DZ1	CKD000		ska outside
-	BCC DZ3		thus add to tab
+	  MovlW $20,DLB
+	  ILSR
+	  JMP PLRETADR
 
-*	STS DLB
-	MovlW $20,DLB
-	ILSR
-	JMP PLRETADR
-
-*DZ3	STS ZLB
-
-DZ3	MovlW $20,ZLB
+skip	MovlW $20,ZLB
 	ILSR
 PLRETADR	RTS		???????????
 	PLA		???????????
@@ -2746,15 +2751,18 @@ CD4	SEC	Write-only symbol
 
 
 *** search for SKA, ADR1:=SYMTAB
-FADR1	LDA SCTP
+FADR1	MovlB CONSTFG,1
+	LDA SCTP
 	CMP '['
 	BNE +
+
 	  MovaB ADR1+1,SYMTAB	adr1 = symtab		adr1 = symtab
 	  MovlB ADR1,0
 	  BEQ FADR1A	forced branch
 	
 	
-+	FNDEPZ
++	DEC CONSTFG
+	FNDEPZ
 
 
 	
@@ -2873,7 +2881,7 @@ WISR	LDY #0
 	ADC A1+1
 	STA A3+1
 
-	LDA LBFG
+	LDA LBFG		only place where LBFG is tested
 	BEQ INSTR
 
 WWI1	SublB A3,2
@@ -2971,14 +2979,14 @@ PRL9	LDA JF1
 	BNE PRL5
 	LDA ZF
 	BNE PRL5
-	LDA PFG
-	BEQ skip if not printing
+	LDA PREPFG
+	BEQ skip
+*** char to top right corner. J. H. P.
+PRL5	  LDA ADR+1
+	  LDY #39
+	  STA (SAVMSK),Y	of screen
 
-PRL5	LDA ADR+1
-	LDY #39		top right corner
-	STA (SAVMSK),Y	of screen
-
-	JMP PRND
+	  JMP PRND
 
 skip	LDX DFG
 	BNE PRL1
@@ -4370,9 +4378,12 @@ JJ2	INC JKF
 JD	INC LBFG
 	RTS
 	
-*** Write J-label, T-label
+*** Write J-, T-, Z-label
 WJLTL	CmpaW SKA,MNLB
 	BCC WJND
+
+*	LDA CONSTFG	v403
+*	BNE WJND		v403
 
 	WIS JLB
 	BCC WJT5
@@ -5001,7 +5012,7 @@ WA22	RTS
 *
 
 OFSI	DETZ
-	LDA PFG
+	LDA PREPFG
 	BEQ OFD
 
 	JMP CPHL
@@ -5199,7 +5210,7 @@ CI	LDA LS
 
 	INC C3F
 	MovlB CHIF,0
-	MovlB PFG,1
+	MovlB PREPFG,1
 	JMP API
 CID	RTS
 
