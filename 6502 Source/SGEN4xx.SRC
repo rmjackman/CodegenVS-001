@@ -157,7 +157,7 @@ JF2	EPZ $C3
 HIF	EPZ $C4	HI flag
 JKF	EPZ $C5
 JKF1	EPZ $C6
-HILOFG	EPZ $C7	HI-LO-flag
+HIloopG	EPZ $C7	HI-LO-flag
 ZZF	EPZ $C8	second head flag
 SKF	EPZ $C9
 HIF1	EPZ $CA
@@ -286,49 +286,12 @@ PORTB	EQU $D301
 	DFW BEGIN	INITAD
 
 
-	ORG $5740
 
-
-*** If found, could be D:,F:,P:,S:etc ***
-*** If ":" not found, "D:" is assumed ***
-adjstDX	LDA ':'
-	CMP LS+1
-	BEQ adjND
-	  CMP LS+2
-	  BEQ adjND
-
-	LDY NML
-	INC NML
-	INC NML
-	LDX NML
-
-adjLP	LDA LS,Y		'X'
-	  STA LS,X	
-	  DEX
-	  DEY
-	  BPL adjLP
-
-	LDA 'D'
-	STA LS
-	LDA ':'
-	STA LS+1
-
-adjND	RTS	
-
-*	LDY 0		write filename
-*adj1	LDA LS,Y
-*	PTCH
-*	INY
-*	CPY NML
-*	BNE adj1
-	
-*	GETC
-*	RTS
 *********************************************************
 
 SK	EQU $100
 
-*segment 2200 4c1F -- now 4bcf
+*segment 2200 4c1F -- now 4c07
 
 SCREEN	EQU $4C20
 CRAMTOP	EQU $50
@@ -342,11 +305,12 @@ OSV	EQU $50E0
 FTV	EQU $50F0
 *segment 5100 56FF -- now 561F
 
+***************************************************************
 X	EQU $57	increase by 1 --> extra page for segment 5100--
-
+***************************************************************
 *segment 5640 567f -- now 5668
 
-SEGTAB	EQU $5780
+SEGTAB	EQU X*256+$80		$5780
 
 OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
@@ -355,8 +319,6 @@ OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 	ORG $2200
 
 GENBEG	JMP BEG
-
-PKT	DFB 9,192,226,20,3   cursor, colours etc.
 
 DLB	DFB X		57
 DLE	DFW 0
@@ -372,17 +334,18 @@ JLE	DFW 0
 TLB	DFB X+$11	68
 TLE	DFW 0
 SYMTAB	DFB X+$17	6f
+*** symbol table length
 SYTL	DFW 0
 RAMTOPSV	DFB $BC		Don't change this!
 
+PKT	DFB 9,192,226,20,3   cursor, colours etc.
 *** DDDZZZHHHJJJTTT
 LBTB	ASC "DDDZZZHHHJJJTTT"
-LOFST	DFW 0
+loopST	DFW 0
 SGFG	DFB 0
 ADRV	DFW 0
 FLFG	DFB 0
 DFG	DFB 0
-*ZF	DFB 0
 MNLB	DFW $80
 ADV	DFW 0
 *** table of sec type characters
@@ -584,7 +547,7 @@ APLOOP	LDX STKV
 	  FTY
 	  ITLB
 
-+	MovlB HILOFG,0
++	MovlB HIloopG,0
 	STA LBFG
 	STA J9FG
 	LDA FLFG
@@ -966,42 +929,42 @@ TXTD	RTS
 DFBty	MovlB TCT,6
 DFBT1	DecW ADR
 	PTDFB
--	LDA SCTP
+DFBloop	LDA SCTP
 	CMP '#'
-	BEQ DFBc1
+	BEQ DFBphb
 	
 	  LDA BYT
 	  CkScrCtl
-	  BEQ skip
+	  BEQ DFBsym
 
 	  LDA BYT
-	  BMI DFBc1
+	  BMI DFBphb
 
 	    AND #%01100000
-	    BEQ DFBc1
+	    BEQ DFBphb
 	
-	      PutS \'\
+	      PutS \'\	put character
 	      LDA BYT
 	      PTCH
 	      PutS \'\
-	      JMP +
+	      JMP NXTbyt
 
-DFBc1	LDA BYT
+DFBphb	LDA BYT
 	PHB
-	JMP +
+	JMP NXTbyt
 	
-skip	STA SKA
+DFBsym	STA SKA
 	MovlB SKA+1,0
 	FADR1
 	Wadnm
 	
-+	DEC TCT
+NXTbyt	DEC TCT
 	  BEQ +
 
 	    CKNA
 	    BCS DFBchD
 	    PutS \,\
-	    JMP -
+	    JMP DFBloop
 
 +	INCADRw
 DFBchD	RTS
@@ -1030,8 +993,8 @@ FTY	MovaW SKA,ADR
 	LDA (ADR1),Y
 	SWTYP
 	STA SCTP
-YY	RTS
-
+YY	RTS		YY is in PICTAB
+********************************************
 *** Address-table for Menu
 PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW	
 	DFW fBLANK,INPT,INPT,INPT,INPT
@@ -1368,7 +1331,7 @@ J9SB	MovaW SKA,ADR
 
 	PutS \#\
 	MovaW ADR1SV,ADR1
-	INC HILOFG
+	INC HIloopG
 	WHILO
 	BEQ J9S1
 
@@ -1680,7 +1643,7 @@ WCM2	LDA PREPFG
 	LDA CONSTFG	v403 This works
 	BNE CPND		v403 This works
 
-	LDA HILOFG
+	LDA HIloopG
 	BNE CPHL
 
 	Cmpl BT1,32	jsr no
@@ -2122,7 +2085,7 @@ PPREPARE	LDA LS
 	  Dsta TLE
 	  STA SWTP
 +	INC PREPFG
-	MovaW LOFST,NWA
+	MovaW loopST,NWA
 	MovlB FG4,128
 	JMP API
 	
@@ -2183,7 +2146,7 @@ FFILE	MovlB FLFG,0
 	adjstDX
 
 	  LDY #$FF
-***  Save LS to FLV	  
+***  Save file name (LS to FLV)	  
 loop	    INY
 	    LDA LS,Y
 	    STA FLV,Y
@@ -2460,13 +2423,15 @@ skip	AddlB ADR,2
 	JMP LHLOOP
 
 LHD	JMP PRL
-*
+
+*** Error if no to-address
 ERTOA0	CmplW TOA,0
 	BNE ETD
 
 	  LDY #$B
 	  JMP IOERR
 ETD	RTS
+
 * C.CODE
 CCODE	MovlB SWTP,0
 	MovlB FG3,128
@@ -2682,12 +2647,20 @@ skip	LDX #0
 	    INX
 	    BNE -
 MMD	RTS
+
 *** Find SKA in symtab
 FLA	MovlB ANF,0
 	STA PVA+1
 	STA SEF
 *** long loop
-loop	CA1MX
+loop	LDA SCTP
+	CMP ']'
+	BNE +
+
+	  CKCONSTY
+	  BNE NOTF	if next szmbol not constant
+
++	CA1MX
 	  BCC +
 	  BEQ NOTF1
 
@@ -2781,10 +2754,12 @@ FADR1	MovlB CONSTFG,1
 	LDA SCTP
 	CMP '?'
 	BEQ skip
+	CMP ']'
+	BEQ skip
 	CMP '['
 	BNE +
 
-skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab		adr1 = symtab
+skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab
 	  MovlB ADR1,0
 	  BEQ FADR1A	forced branch
 	
@@ -2820,7 +2795,9 @@ FADR1A	LDA SKA			push ska
 	STA SKA+1
 	PLA
 	STA SKA
+	
 	FLA
+	
 	RTS
 *
 FLAERR	LDY #$D
@@ -3119,7 +3096,7 @@ IE6	MovaW ADR,ADRV
 	CPY #128
 	BEQ JINP
 
-	LDA HILOFG
+	LDA HIloopG
 	BEQ IE9
 
 	LDA BT2
@@ -3168,7 +3145,7 @@ IE2	INY
 
 IE8	PREL
 
-	LDA HILOFG
+	LDA HIloopG
 	BEQ JINP
 
 	PREL
@@ -3201,11 +3178,12 @@ skip	PLA
 LSTADNM	MovaW SKA,AD
 *** Show more items in the symbol-table
 fSEMICOL	CHKTOA
-	FADR1
+	  MovaB ADR1+1,SYMTAB	adr1 = symtab
+	  MovlB ADR1,0
+	FADR1A
 	PRINT
 	DFB DBS,0
 loop	LADNM
-
 	  CLC
 	  LDA ADR1OF
 	  ADC ADR1
@@ -3227,41 +3205,41 @@ LADNM1	CA1MX
 
 	MovPZ SKA,ADR1
 	LDA LFG
-	BEQ LAD1
+	BEQ +
 
-	CmpaW TOA,SKA
-	BCC LADND
+	  CmpaW TOA,SKA
+	  BCC LADND
 
-LAD1 	MovaW A3,SKA
++ 	MovaW A3,SKA
 
 	PTHW
 	BLK
 	LDY #2
 	LDA (ADR1),Y
-	BEQ LAN2
+	BEQ skip
 	BPL +
 
 	  DEC SKA+1
 +	CLC
 	ADC SKA
 	STA SKA
-	BCC LAN1
-	INC SKA+1
+	BCC +
+	  INC SKA+1
 
-LAN1	PTHW
++	PTHW
 	BLK
-LAN2	PutS \/\
+skip	PutS \/\
 
 	LDY #3
 	LDA (ADR1),Y
 	STA ADR1OF
 
 	INY
-LOF	LDA (ADR1),Y
-	PTCH
-	INY
-	CPY ADR1OF
-	BNE LOF
+-	LDA (ADR1),Y
+	  PTCH
+	  INY
+	  CPY ADR1OF
+	  BNE -
 
 	PRL
 	MovaW SKA,A3
@@ -3329,13 +3307,13 @@ ADGTTO	LDA FFG
 	JMP IOERR
 AGTND	RTS
 
-*** (Y)
+*** Parsing input line LS after '/' (Y)
 INA	LDX #$FF
 	STX FG
 	MovaW ADR,AD
 loop	INY
 	  INX		X starts at 0
-	  LDA LS,Y
+	  LDA LS,Y	Y starts at pos after '/'
 	  STA LS,X
 	  CMP ' '
 	  BNE IA1
@@ -3348,7 +3326,7 @@ loop	INY
 IA1	CMP ';'
 	BNE +
 
-	  INC FG
+	  INC FG		FG = 0
 +	STA HF
 	CMP '`'		diamond
 	BEQ +
@@ -3364,12 +3342,14 @@ LTAB	ASC "BCDGHJKMPRT
 	DFB 0
 *** Please enter address
 ADRERR	LDY #$11
-	JMP IOERR	
-*
+	JMP IOERR
+	
+*** Parsing input line LS
 INO	MovaB LSsav,LS
 	CMP #EOL
 	BNE +
 	LDX #$FF
+*** no input error
 -	INX
 	  LDA LTAB,X
 	  BEQ +
@@ -3406,24 +3386,24 @@ loop	LDA LS,Y
 NNB	INC NMC
 NXN	LDA LS,Y
 	CMP ' '
-	BNE INP2
+	BNE skip
 
-NNB2	INY
+-	INY
 	LDA LS,Y
 	CMP ' '
-	BEQ NNB2
+	BEQ -
 	BNE NNB	J
 
-INP2	STA HF
+skip	STA HF
 	CMP '`'
 	BEQ INPND
 	CMP #EOL
 	BEQ INPND
 	
-	LDX HILOFG
+	LDX HIloopG
 	BEQ +
 
-	  CMP ':'
+	  CMP ':'	??????
 	  BEQ INPND
 	  BNE FHX
 +	CMP '/'
@@ -3456,7 +3436,7 @@ FNDHEX	CMP HXTB,X
 	INY
 	BNE NXN
 
-INPND	LDA HILOFG
+INPND	LDA HIloopG
 	BNE IPD
 
 	MovaW ADR,AD
@@ -3464,7 +3444,7 @@ INPND	LDA HILOFG
 	STA NML
 IPD	RTS
 
-SYNER	LDA HILOFG
+SYNER	LDA HIloopG
 	BEQ SNE1
 
 	LDA #0
@@ -3484,6 +3464,7 @@ SNE1	LDA NMC
 *** INVALID SYNTAX
 SNTXERR	LDY #1
 	JMP IOERR
+	
 *** main EDIT routine
 ED1	LDA AD
 	BNE +
@@ -3503,24 +3484,24 @@ ED1	LDA AD
 +	CKDX
 	BMI EDT1
 
--	LDA LS,X
+-	LDA LS,X		move contents of LS 4 to the right
 	  STA LS+4,X
 	  DEX
 	  BPL -
 
-	MovaW LS,AD
-	MovlB LS+2,0
+	MovaW LS,AD	write address
+	MovlB LS+2,0	offset = 0
 
 	LDA TOA
 	BNE +
 	  LDA TOA+1
 	  BEQ EDT1
 
-+	EquDif LS+2,TOA,AD
++	EquDif LS+2,TOA,AD	write offset
 
 EDT1	CLC
-	LDA NML
-	BEQ +
+	LDA NML		name length
+	BEQ +		add 4 if NML = 0
 	  ADC #4
 +	STA SVL
 	MovlB SVL+1,0
@@ -3596,7 +3577,7 @@ ADJTBLN	SubaW SYTL,OLL
 BRERR	LDY #9
 	JMP IOERR
 *
-DetLEN	MovaB LEN,SYTL
+DetLEN	MovaB LEN,SYTL	LEN = SYTL+SYMTAB 
 	CLC
 	LDA SYTL+1
 	ADC SYMTAB
@@ -3604,31 +3585,31 @@ DetLEN	MovaB LEN,SYTL
 
 	CmpaW LEN,ADR1
 	BCC DLERR
-	SubaW LEN,ADR1
+	SubaW LEN,ADR1	LEN -= ADR1
 	RTS
 
 DLERR	LDY #$32
 	JMP IOERR
+	
 *** Determine ADR1 and ADR2
 DTADR12	ADGTTO
-	MovaW SKA,AD
+	MovaW SKA,AD	SKA=AD
 
 	FADR1
-	MovaW ADR2,ADR1
-	MovaW SKA,TOA
+	
+	MovaW ADR2,ADR1	ADR2=ADR1
+	MovaW SKA,TOA	SKA=TOA
 
 	FADR1
 	BEQ D12
 
 	LDY #3
-	LDA (ADR1),Y
+	LDA (ADR1),Y	entry length
 	CLC
 	ADC ADR1
 	STA ADR1
-*	LDA ADR1+1	sgen32
-
 	BCC D12
-	  INC ADR1+1
+	  INC ADR1+1	ADR1 += entry length
 D12	RTS
 *** D. DELETE
 DDELETE	ClearW SVL
@@ -3639,14 +3620,16 @@ CKDX	MovlB BT1,156
 	LDX NML
 	DEX
 	LDA LS,X
+	STA SCTP		need for ']'
 	CMP '<'
 	BNE D3
 
 	INC BT1
 D3	TXA
 	RTS
-*
+	
 
+*
 OL	DFB 0
 
 *** S. SAVE
@@ -4565,7 +4548,7 @@ WBL1	PutS \H\
 	ROR CNT+1
 	ROR CNT
 	MovaW $20,SKA
-	EquSum SKA,CNT,LOFST
+	EquSum SKA,CNT,loopST
 	PTHW
 	MovaW SKA,$20
 	SEC
@@ -4763,16 +4746,7 @@ OPCtab	ASC " ? ANDASLBCCBCSBEQBITBMI
 	ASC "STXSTYTAXTAYTSXTXATXSTYA
 	ASC "ADC
 *
-*** Display menu
-MENU	ASC %1.address 2.comment %
-	ASC %                    %
-	ASC %3.ADDRESS 4.COMMAND %
-	ASC %5.address 6.comment   %
-	ASC "MMMMMMM"
-	ASC % 7.JSR    %	
-	ASC % 8.binary  9.ASC     %
-	ASC $<A><1>..<9><RETURN>
-	ASC "NNNNNNNNNNNNNNNNNNNNF"
+
 *** Menu A to U
 MenTab	ASC \ADDRESS/symbol-search\
 	ASC \BYTE-change\
@@ -5390,7 +5364,7 @@ NDADSV	DFW 0
 DSECSV	DFW 0
 DBYTSV	DFB 0
 
-***needed for H.HEAD
+*** Create segment table for H.HEAD
 SETSGTAB	LDA FFG
 	BEQ END		RTS
 	
@@ -5469,8 +5443,61 @@ loop	CKCONSTY
 	  JMP loop
 
 WHCND	PRL
-	RTS	
+	RTS
+
 	
+***	
+
+
+
+
+*** If found, could be D:,F:,P:,S:etc ***
+*** If ":" not found, "D:" is assumed ***
+adjstDX	LDA ':'
+	CMP LS+1
+	BEQ adjND
+	  CMP LS+2
+	  BEQ adjND
+
+	LDY NML
+	INC NML
+	INC NML
+	LDX NML
+
+adjLP	LDA LS,Y		'X'
+	  STA LS,X	
+	  DEX
+	  DEY
+	  BPL adjLP
+
+	LDA 'D'
+	STA LS
+	LDA ':'
+	STA LS+1
+
+adjND	RTS	
+
+*	LDY 0		write filename
+*adj1	LDA LS,Y
+*	PTCH
+*	INY
+*	CPY NML
+*	BNE adj1
+	
+*	GETC
+*	RTS
+
+
+*** Display menu
+MENU	ASC %1.address 2.comment %
+	ASC %                    %
+	ASC %3.ADDRESS 4.COMMAND %
+	ASC %5.address 6.comment   %
+	ASC "MMMMMMM"
+	ASC % 7.JSR    %	
+	ASC % 8.binary  9.ASC     %
+	ASC $<A><1>..<9><RETURN>
+	ASC "NNNNNNNNNNNNNNNNNNNNF"
 
 **********************************************************	
 #	'#' causes the following lines to be ignored up until the next '#'.	
