@@ -10,10 +10,10 @@
 
 * Use the CPFL directive to compare the generated code with another file
 
-	CPFL SGEN410.LOAorig
+*	CPFL SGEN411.LOAorig
 	
-*	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
-	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
+	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+*	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 	SMTFILE TEMP.SMB
@@ -24,7 +24,7 @@
 
 
 *	DSKIMAGE W1_DD_test.ATR	TURBO DOS double density image -- empty
-*	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
+	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
 *	DSKIMAGE FormatedED.XFD	just Turbo DOS, 
 *	DSKIMAGE DISK_10_Turbo_DOS_21_test.xfd	no TURBODOS
 *	DSKIMAGE NoDOS_ED.XFD
@@ -211,7 +211,7 @@ COLOR3	EQU $2C7
 COLOR4	EQU $2C8
 KRPDEL	EQU $2D9
 KEYREP	EQU $2DA
-DBYTLO	EQU $308	 Sector size	
+DBYTLO	EQU $308	 Sector size
 CONSOL	EQU $D01F
 VCOUNT	EQU $D40B
 **
@@ -339,7 +339,7 @@ CRAMTOP	EQU $50
 FKTB	EQU $5000	20 bytes
 FLV	EQU $5000+20	File-Save (15 bytes)
 
-LS	EQU $5000+35	Input line
+LS	EQU $5000+$23	Input line
 LSmin4	EQU $5000+35-4
 LN	EQU $5090
 OSV	EQU $50E0	Obtained File-save
@@ -394,7 +394,7 @@ DFG	DFB 0
 MNLB	DFW $80
 ADV	DFW 0
 *** table of sec type characters
-TypTab	ASC ".(;!'\#?"
+TypTab	ASC ".(;!'\#,"		'?' changed to ','
 	DFB '"'
 	ASC "=-%$*&<_|@[]"
 	ASC /=-/
@@ -1079,7 +1079,7 @@ fGRthan	IncW ADV
 
 +	PRINT
 	DFB EOL,EOL,0
-*** List from last entered address 	
+*** List from last entered address
 fEQUAL	MovaW AD,ADV
 	PRINT
 	DFB EOL,0
@@ -1442,7 +1442,7 @@ J9S5	LDA BT2
 	BEQ skip		[
 	CPX '('		(
 	BNE +		(
-*** [ and (	
+*** [ and (
 skip	  STA SKA
 	  MovlB SKA+1,0
 	  PutS \#\
@@ -1450,7 +1450,7 @@ skip	  STA SKA
 	  LDA ';'
 	  STA SCTP
 	  JMP WCM2
-*** '''	
+*** '''
 +	CPX #39		'''
 	BNE skip
 
@@ -1726,6 +1726,8 @@ CP3	STS JLB		MovlW $20,JLB  ILSR
 
 CPND	LDA ANF
 	BEQ WC2ND
+	LDA ZF		SGEN412
+	BNE WC2ND	SGEN412
 
 	LDA FG5
 	BPL WC22
@@ -1854,10 +1856,14 @@ endif	LDA FG1
 	  WCM
 endif	JMP PRL
 *
+WHeadCmt	LDA FG2		SGEN412
+	BMI +		SGEN412
+	BPL WCD		SGEN412
+	
 WCM	LDA ANF
 	BEQ WCD
 
-	LDY #3
++	LDY #3
 	LDA (ADR1),Y
 	TAX
 	DEX
@@ -2124,7 +2130,7 @@ loop	STA FG1,X
 	DEX
 	BPL loop
 	BMI GETLP
-*** <1> to <9> are vadid	
+*** <1> to <9> are vadid
 skip	SEC
 	SBC '1'
 	CMP #FGD-FG1
@@ -2206,7 +2212,7 @@ FFILE	MovlB FLFG,0
 	adjstDX
 
 	  LDY #$FF
-***  Save file name (LS to FLV)	  
+***  Save file name (LS to FLV)
 loop	    INY
 	    LDA LS,Y
 	    STA FLV,Y
@@ -2291,20 +2297,20 @@ skip	INC JKF1
 	BNE GGO
 * T.TRACE
 TTRACE	MovaW TV,AD
-	INC TF
+	INC TF		on
 	BNE GGO
 * H.HEAD
-HHEAD	ERTOA0
+HHEAD	ERTOA0		Error if no to-address
 	SETSGTAB
-	ClearW ZLE
-	Dsta DLE
-	INC ZF
+	ClearW ZLE	0
+	Dsta DLE		0
+	INC ZF		on
 	
-	LDX #127		MovlB FG3,127
-	STX FG3
+	LDX #127
+	STX FG3		off
 	INX
-	STX FG4		MovlB FG4,128
-* G.GO	
+	STX FG4		on
+* G.GO
 GGO	MovlB ROWCRS,23
 	MovlB SWTP,0
 
@@ -2403,7 +2409,7 @@ DETZ	LDA ZF
 	  CKSEGTAB
 	  BCC skip
 	  BCS PLRETADR
-*** not file			
+*** not file
 +	CmpaW SKA,AD
 	BCC skip		ska < ad
 
@@ -2427,7 +2433,7 @@ DZD	RTS		???????????
 *** List head
 LHEAD	WHDCONST
 	ITLB
-	INC LBFG
+	INC LBFG		on
 	MovlB ADR,0
 	STA BT1		= 0
 	MovaB ADR+1,ZLB
@@ -2477,6 +2483,7 @@ LH5	PutTAB
 
 +	PutS \EPZ $\
 LH2	PTHW
+	WHeadCmt		SGEN412
 	PRL
 skip	AddlB ADR,2
 	SublB LEN,2
@@ -2635,11 +2642,10 @@ PTAS	DecW ADR
 	
 **** "0123456789ABCDEF"
 HXTB	ASC "0123456789ABCDEF"
-LNPTRMX	DFB $60
+LNPTRMX	DFB LN-LS
 NMC	DFB 0
 DBYT	DFB 0
 DSEC	DFW 0
-*NML	DFB 0	sgen32
 SGC	DFB 0
 *** "D1:AUTOLOAD"
 AUT	ASC "D1:AUTOLOAD"
@@ -2813,7 +2819,7 @@ CD4	SEC	Write-only symbol
 *** search for SKA, ADR1:=SYMTAB
 FADR1	MovlB CONSTFG,1
 	LDA SCTP
-	CMP '?'
+	CMP ','		'?' changed to ','
 	BEQ skip
 	CMP ']'		SGEN408
 	BEQ skip		SGEN408
@@ -4047,7 +4053,7 @@ R4	INC FG
 
 R5	MovaW ADR1,TMP
 
-RLP	LDY #1
+RLOOP	LDY #1
 	LDA TOA+1
 	CMP (ADR1),Y
 	BNE R2
@@ -4085,20 +4091,23 @@ RO	CLC
 	LDA ADR1
 	ADC (ADR1),Y
 	STA ADR1
-	BCC RLP
+	BCC RLOOP
 	INC ADR1+1
-	BCS RLP
+	BCS RLOOP
+**************************************	
 *** Get char from keyboard. MI = error
 GETC	LDX #$30
 	GETR
 	BMI skip
 	AND #%01111111
 skip	RTS
+**************************************
 *** Get char from keyboard. MI = error
 GETR	MovlBX ICBLEN,0
 	STA ICBLEN+1,X
 	ComCiov CGBINR	7
 	RTS
+**************************************
 *** Print string ending in 0 to screen
 PRINT	PLA
 	STA A2
@@ -4120,7 +4129,8 @@ PRINT	PLA
 	LDA A2
 	PHA
 	RTS
-*
+**************************************
+
 POINT	LDA FLFG
 	BNE PO1
 	RTS
@@ -4152,13 +4162,14 @@ PO31	SBC SECSZ
 	IncW AX63
 
 PO4	STA AX65
-*
+
 	LDX #$60
 	MovlBX ICCOM,37
 	POINI
 	BPL POND
 	JMP IOERR
 POND	RTS
+**************************************
 *** Read BYT from RAM or file
 RDBYT	TYA
 	PHA
@@ -4207,7 +4218,8 @@ skip	PLA
 	TAY
 	LDA BYT
 	RTS
-*
+**************************************
+
 WHILO	LDY #3
 
 	LDA (ADR1),Y
@@ -4232,7 +4244,8 @@ WH1	INY
 
 	LDA LS,Y
 	RTS
-*
+**************************************
+
 ILN	LDX #$10
 	INPTLS
 	BMI IER
@@ -4249,7 +4262,7 @@ ILN	LDX #$10
 	RTS
 
 ID	JMP DSI
-
+**************************************
 
 *** List DIR
 IINDEX	CLC
@@ -4276,7 +4289,7 @@ D0	ASC "D0:*.*"
 
 AX63	EQU 844+$60
 AX65	EQU 846+$60
-*
+**************************************
 
 **** RD6B sets STAD,NDAD,DSEC,DBYT
 RD6B	LDX #$60
@@ -4307,7 +4320,8 @@ NOTE	ComCiov CNOTE
 	MovaB DBYT,AX65
 	CLC
 	RTS
-*
+**************************************
+
 GTBT	MovlB EOFG,0
 	GETR
 	BPL GB1
@@ -4321,7 +4335,8 @@ GTBT	MovlB EOFG,0
 	SEC
 GB1	RTS
 FER	JMP IOERR
-*
+**************************************
+
 RD6B1	RD6B
 	BCC GB1
 	DEC EOFG
@@ -4332,6 +4347,7 @@ RD6B2	RD6B
 	BCS FER
 *
 AUFG	DFB 1
+**************************************
 *** N.New
 NNEW	LDX #11
 	STX NML
@@ -4342,7 +4358,7 @@ LSY1	LDA AUT,X
 	BPL LSY1
 
 	JMP OOBTAIN
-	
+**************************************	
 *** Show bytes in A,H,J,T,S tables ***
 fCOMMA	PRINT
 	DFB DBS,EOL
@@ -4401,7 +4417,7 @@ PutTAB	LDA DFG
 TAB1	LDA #9
 	PTCH		tab atmas
 	RTS
-	
+**************************************	
 *** Junk
 XV	DFB 0	(use EPZ local, save 3
 YV	DFB 0	(use EPZ local, save 3
@@ -4461,7 +4477,7 @@ JJ2	INC JKF
 
 JD	INC LBFG
 	RTS
-	
+**************************************	
 *** Write J-, T-, Z-label
 WJLTL	CmpaW SKA,MNLB
 	BCC WJND
@@ -4488,13 +4504,14 @@ WJND	RTS
 SRC	ASC ".SRC"
 	DFB EOL
 *
-
+**************************************
 *** Write SWTP to SCTP
 SWTYP	LDY SWTP
 	BEQ +
 	TYA
 	STA SCTP
 +	RTS
+**************************************
 *** Check next ADR
 CKNA1	TOAINSEG
 	BCC CN33
@@ -4514,7 +4531,7 @@ CN33	RDBYT
 
 	WIS BLB
 	BCS CAF
-	
+**************************************	
 *** Check J, T labels
 CKJLTL	WIS JLB
 	BCS CAF
@@ -4524,6 +4541,7 @@ CANF	CLC
 	RTS
 CAF	SEC
 	RTS
+**************************************
 *** Check Type
 CKTY	STA $21
 	TYA
@@ -4544,7 +4562,8 @@ SKP3	CLC
 	TAY
 	LDA $21
 	RTS
-*
+**************************************
+
 ANO1	MovaW PVA,PVAV
 ANO	MovaW SKAV,SKA
 	MovlB ANF,0
@@ -4626,7 +4645,7 @@ WBL1	PutS \H\
 	MovaW SKA,$20
 	SEC
 WD	RTS
-
+**************************************
 *** A1MX.w = SYTL.w + SYMTAB.b
 AJA1MX	MovaB A1MX,SYTL	
 	CLC
@@ -4637,6 +4656,7 @@ AJA1MX	MovaB A1MX,SYTL
 *** ADR1 > A1MX?
 CA1MX	CmpaW ADR1,A1MX
 	RTS
+**************************************
 *** K.Keys
 KKEYS	Cmpl TOA,10
 	BCS KD
@@ -4644,6 +4664,7 @@ KKEYS	Cmpl TOA,10
 	TAX
 	MovaWX FKTB,AD
 KD	RTS
+**************************************
 *** Initialize lable tables
 ITLB	LDY #13 
 loop	LDA DLB-1,Y
@@ -4655,6 +4676,7 @@ loop	LDA DLB-1,Y
 	DEY
 	BPL loop
 	RTS
+**************************************
 *** Print Menu
 PRMEN	PRINT
 	DFB CLS
@@ -5511,7 +5533,8 @@ loop	CKCONSTY
 	  LDY #0
 	  LDA (ADR1),Y
 	  PHB
-	  PRL
+	  WHeadCmt	SGEN412
++	  PRL
 	  AddaB ADR1,ADR1OF
 	  JMP loop
 
