@@ -10,7 +10,7 @@
 
 * Use the CPFL directive to compare the generated code with another file
 
-*	CPFL SGEN32.LOAorig
+	CPFL SGEN410.LOAorig
 	
 *	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
 *	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
@@ -45,6 +45,7 @@
 
 
  	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+*	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
 
 * Use the OUT directive to create a text output file with the extension ".LIS"
 *            L: Listing will be creatied. Assembly and CPFL mismatches will be shown.
@@ -155,9 +156,9 @@ LFG	EPZ $C1
 JF1	EPZ $C2
 JF2	EPZ $C3
 HIF	EPZ $C4	HI flag
-JKF	EPZ $C5
-JKF1	EPZ $C6
-HIloopG	EPZ $C7	HI-LO-flag
+JKF	EPZ $C5	Flag JUNK FROM TO
+JKF1	EPZ $C6	Flag JUNK FROM TO 1
+HILOFG	EPZ $C7	HI-LO-flag
 ZZF	EPZ $C8	second head flag
 SKF	EPZ $C9
 HIF1	EPZ $CA
@@ -286,7 +287,44 @@ PORTB	EQU $D301
 	DFW BEGIN	INITAD
 
 
+	ORG $5740	
 
+
+*** If found, could be D:,F:,P:,S:etc ***
+*** If ":" not found, "D:" is assumed ***
+adjstDX	LDA ':'
+	CMP LS+1
+	BEQ adjND
+	  CMP LS+2
+	  BEQ adjND
+
+	LDY NML
+	INC NML
+	INC NML
+	LDX NML
+
+adjLP	LDA LS,Y		'X'
+	  STA LS,X	
+	  DEX
+	  DEY
+	  BPL adjLP
+
+	LDA 'D'
+	STA LS
+	LDA ':'
+	STA LS+1
+
+adjND	RTS	
+
+*	LDY 0		write filename
+*adj1	LDA LS,Y
+*	PTCH
+*	INY
+*	CPY NML
+*	BNE adj1
+	
+*	GETC
+*	RTS
 *********************************************************
 
 SK	EQU $100
@@ -320,6 +358,7 @@ OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
 GENBEG	JMP BEG
 
+PKT	DFB 9,192,226,20,3   cursor, colours etc.					
 DLB	DFB X		57
 DLE	DFW 0
 *** Head Label table begin Hi byte
@@ -338,10 +377,10 @@ SYMTAB	DFB X+$17	6f
 SYTL	DFW 0
 RAMTOPSV	DFB $BC		Don't change this!
 
-PKT	DFB 9,192,226,20,3   cursor, colours etc.
+
 *** DDDZZZHHHJJJTTT
 LBTB	ASC "DDDZZZHHHJJJTTT"
-loopST	DFW 0
+LOFST	DFW 0
 SGFG	DFB 0
 ADRV	DFW 0
 FLFG	DFB 0
@@ -547,7 +586,7 @@ APLOOP	LDX STKV
 	  FTY
 	  ITLB
 
-+	MovlB HIloopG,0
++	MovlB HILOFG,0
 	STA LBFG
 	STA J9FG
 	LDA FLFG
@@ -1331,7 +1370,7 @@ J9SB	MovaW SKA,ADR
 
 	PutS \#\
 	MovaW ADR1SV,ADR1
-	INC HIloopG
+	INC HILOFG
 	WHILO
 	BEQ J9S1
 
@@ -1643,7 +1682,7 @@ WCM2	LDA PREPFG
 	LDA CONSTFG	v403 This works
 	BNE CPND		v403 This works
 
-	LDA HIloopG
+	LDA HILOFG
 	BNE CPHL
 
 	Cmpl BT1,32	jsr no
@@ -1853,9 +1892,9 @@ ADNM1	LDA ANF
 	BEQ AN1ND
 	BNE ADN15
 
-ADN12	MovaW PVA,PVAV
-	ANO
-	BNE ADN13
+ADN12	  MovaW PVA,PVAV
+	  ANO
+	  BNE ADN13
 
 ADN15	WJLTL
 	BCS AN1ND
@@ -1887,7 +1926,7 @@ ADN16	LDA JKF1
 
 AN1ND	RTS
 
-AN1D	DEC JKF1
+AN1D	DEC JKF1		Print junk1 address
 	PRL
 	INC JKF1
 	RTS
@@ -2085,7 +2124,7 @@ PPREPARE	LDA LS
 	  Dsta TLE
 	  STA SWTP
 +	INC PREPFG
-	MovaW loopST,NWA
+	MovaW LOFST,NWA
 	MovlB FG4,128
 	JMP API
 	
@@ -2653,14 +2692,15 @@ FLA	MovlB ANF,0
 	STA PVA+1
 	STA SEF
 *** long loop
-loop	LDA SCTP
-	CMP ']'
-	BNE +
 
-	  CKCONSTY
-	  BNE NOTF	if next szmbol not constant
+loop	LDA SCTP		SGEN408
+	CMP ']'		SGEN408
+	BNE +		SGEN408
 
-+	CA1MX
+	  CKCONSTY	SGEN408
+	  BNE NOTF	SGEN408	if next symbol not a constant
+
++	CA1MX		SGEN408 loop replaced with +
 	  BCC +
 	  BEQ NOTF1
 
@@ -2754,8 +2794,8 @@ FADR1	MovlB CONSTFG,1
 	LDA SCTP
 	CMP '?'
 	BEQ skip
-	CMP ']'
-	BEQ skip
+	CMP ']'		SGEN408
+	BEQ skip		SGEN408
 	CMP '['
 	BNE +
 
@@ -3096,7 +3136,7 @@ IE6	MovaW ADR,ADRV
 	CPY #128
 	BEQ JINP
 
-	LDA HIloopG
+	LDA HILOFG
 	BEQ IE9
 
 	LDA BT2
@@ -3145,7 +3185,7 @@ IE2	INY
 
 IE8	PREL
 
-	LDA HIloopG
+	LDA HILOFG
 	BEQ JINP
 
 	PREL
@@ -3178,9 +3218,9 @@ skip	PLA
 LSTADNM	MovaW SKA,AD
 *** Show more items in the symbol-table
 fSEMICOL	CHKTOA
-	  MovaB ADR1+1,SYMTAB	adr1 = symtab
-	  MovlB ADR1,0
-	FADR1A
+	  MovaB ADR1+1,SYMTAB	SGEN408	adr1 = symtab
+	  MovlB ADR1,0		SGEN408
+	FADR1A			SGEN408
 	PRINT
 	DFB DBS,0
 loop	LADNM
@@ -3349,7 +3389,7 @@ INO	MovaB LSsav,LS
 	CMP #EOL
 	BNE +
 	LDX #$FF
-*** no input error
+*** Error: no-input
 -	INX
 	  LDA LTAB,X
 	  BEQ +
@@ -3400,17 +3440,18 @@ skip	STA HF
 	CMP #EOL
 	BEQ INPND
 	
-	LDX HIloopG
+	LDX HILOFG
 	BEQ +
 
-	  CMP ':'	??????
+	  CMP ':'
 	  BEQ INPND
 	  BNE FHX
 +	CMP '/'
 	BNE FHX
 	  JMP INA
-
+	  
 FHX	LDX #$F
+*** Find Hex
 FNDHEX	CMP HXTB,X
 	BEQ +
 	DEX
@@ -3436,7 +3477,7 @@ FNDHEX	CMP HXTB,X
 	INY
 	BNE NXN
 
-INPND	LDA HIloopG
+INPND	LDA HILOFG
 	BNE IPD
 
 	MovaW ADR,AD
@@ -3444,7 +3485,7 @@ INPND	LDA HIloopG
 	STA NML
 IPD	RTS
 
-SYNER	LDA HIloopG
+SYNER	LDA HILOFG
 	BEQ SNE1
 
 	LDA #0
@@ -3620,7 +3661,7 @@ CKDX	MovlB BT1,156
 	LDX NML
 	DEX
 	LDA LS,X
-	STA SCTP		need for ']'
+	STA SCTP		SGEN408	need for ']'
 	CMP '<'
 	BNE D3
 
@@ -4548,7 +4589,7 @@ WBL1	PutS \H\
 	ROR CNT+1
 	ROR CNT
 	MovaW $20,SKA
-	EquSum SKA,CNT,loopST
+	EquSum SKA,CNT,LOFST
 	PTHW
 	MovaW SKA,$20
 	SEC
@@ -5451,42 +5492,6 @@ WHCND	PRL
 
 
 
-*** If found, could be D:,F:,P:,S:etc ***
-*** If ":" not found, "D:" is assumed ***
-adjstDX	LDA ':'
-	CMP LS+1
-	BEQ adjND
-	  CMP LS+2
-	  BEQ adjND
-
-	LDY NML
-	INC NML
-	INC NML
-	LDX NML
-
-adjLP	LDA LS,Y		'X'
-	  STA LS,X	
-	  DEX
-	  DEY
-	  BPL adjLP
-
-	LDA 'D'
-	STA LS
-	LDA ':'
-	STA LS+1
-
-adjND	RTS	
-
-*	LDY 0		write filename
-*adj1	LDA LS,Y
-*	PTCH
-*	INY
-*	CPY NML
-*	BNE adj1
-	
-*	GETC
-*	RTS
-
 
 *** Display menu
 MENU	ASC %1.address 2.comment %
@@ -5531,7 +5536,7 @@ MESSAGE	PHP
 
 	PutS \ STAD=\
 	PutW STAD
-	PutS \ NDAD=\AV
+	PutS \ NDAD=\
 	PutW NDAD
 	
 	PRL
