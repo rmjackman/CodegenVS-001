@@ -116,44 +116,45 @@ SKAV	EPZ $92	SKA save
 PVAV	EPZ $94
 ADR1V	EPZ $96	ADR1 save
 CHC	EPZ $98
-NML	EPZ $99
+NML	EPZ $99	name length
 STAD	EPZ $9A	segment begin-address
-A1MX	EPZ $9C
+A1MX	EPZ $9C	A1 max
 TV	EPZ $9E
-GTC	EPZ $A0	Main menu char input (A-U, f.keys)
+GTC	EPZ $A0	Main menu get char(A-U, f.keys)
 HF	EPZ $A1
 LSsav	EPZ $A2
 STABEPZ	EPZ $A3
 
-CONSTFG	EPZ $A8
+ZF	EPZ $A7	head flag
+CONSTFG	EPZ $A8	constants flag eg. COPN EQU 3
 TXPT	EPZ $A9
-EDADV	EPZ $AA
-KBADV	EPZ $AC
+EDADV	EPZ $AA	editor address save
+KBADV	EPZ $AC	keyboard address save
 OLL	EPZ $AE
 SCTP	EPZ $B0	section type
 
 SWTP	EPZ $B2	Swap-type
-TPNO	EPZ $B3
-LBFG	EPZ $B4
+TPNO	EPZ $B3	type no.
+LBFG	EPZ $B4	Label flag
 STKV	EPZ $B5	Stack-save
 ANF	EPZ $B6	Address not found
-ADR1OF	EPZ $B7
+ADR1OF	EPZ $B7	ADR1 offset flag
 XSAV	EPZ $B8	Save X register
-PRF	EPZ $B9
+PRF	EPZ $B9	printer flag
 PREPFG	EPZ $BA	Prepare-flag
 AOF	EPZ $BB
 SEF	EPZ $BC
-BYTSV	EPZ $BD
+BYTSV	EPZ $BD	BYT save
 SPV	EPZ $BE
 BTC	EPZ $BF	#EOFG-BTC
 LFG	EPZ $C1
 JF1	EPZ $C2
 JF2	EPZ $C3
-HIF	EPZ $C4
+HIF	EPZ $C4	HI flag
 JKF	EPZ $C5
 JKF1	EPZ $C6
 HILOFG	EPZ $C7	HI-LO-flag
-ZZF	EPZ $C8
+ZZF	EPZ $C8	second head flag
 SKF	EPZ $C9
 HIF1	EPZ $CA
 SP	EPZ $CB
@@ -367,7 +368,7 @@ SGFG	DFB 0
 ADRV	DFW 0
 FLFG	DFB 0
 DFG	DFB 0
-ZF	DFB 0
+*ZF	DFB 0
 MNLB	DFW $80
 ADV	DFW 0
 *** table of sec type characters
@@ -429,6 +430,7 @@ BG1	TSX
 	MovlB LMARGN,0
 	STA BGFG
 	STA SWTP
+	STA ZF
 	fSLASH
 
 *Loop begin
@@ -517,7 +519,7 @@ DSI1	MovlB PRF,0
 
 	JMP DSI		loop end
 **********************************************************
-
+#
 *** Find first EPZ in symbol table
 FNDEPZ	MovaB ADR1+1,SYMTAB		adr1 = symtab
 	MovlB ADR1,0
@@ -532,10 +534,36 @@ loop	LDY #3
 	BNE EPZFND
 
 	  AddaB ADR1,ADR1OF
-+	  JMP loop
+	  JMP loop
 
 EPZFND	RTS
+#
+*** Write head constants
+WHDCONST	MovaB ADR1+1,SYMTAB		adr1 = symtab
+	MovlB ADR1,0
+	
+loop	LDY #3
+	LDA (ADR1),Y	offset
+	STA ADR1OF
+	TAY		offset in Y
+	DEY
+	LDA (ADR1),Y	ch type
+	CMP ']'
+	BNE WHCND
+	
+	  ifNE ZFG
+	    WADNM
+	    PutTAB
+	    PutS \EQU \
+	    LDY #0
+	    LDA (ADR1),Y
+	    PHB
+	    PRL
 
+endif	  AddaB ADR1,ADR1OF
+	  JMP loop
+
+WHCND	RTS
 *** Check segment
 CKSG	CmpaW AD,STAD
 	BCC CKSD
@@ -950,7 +978,7 @@ loop	LDA BYT
 	  LDA TXTB2,Y
 	  BEQ skip		skip cha
 
-+	    CMP #155
++	    CMP #EOL
 	    BEQ cont
 
 	    PTCH
@@ -1607,7 +1635,7 @@ PB2	PTCH
 	DEX
 	BNE PB1
 PBND	RTS
-*
+*** Write address name (ADR1)
 WADNM	MovlB FG,0
 	LDY #3
 	LDA (ADR1),Y	length of entry in symbol table
@@ -1618,29 +1646,30 @@ WADNM	MovlB FG,0
 
 	DEY
 	LDA (ADR1),Y
-	BPL WA4
+	BPL +
 	WADNMI
 
-WA4	LDY #3
-WA1	INY
-	CPY #12
-	BEQ WA2
-	LDA (ADR1),Y
-	CKTY
-	BCS WA2
++	LDY #3		
+loop	INY
+	  CPY #12
+	  BEQ skip
+	  
+	    LDA (ADR1),Y
+	    CKTY
+	    BCS skip
 
-	PTCH
-	INC FG
-	DEX
-	BNE WA1
+	      PTCH
+	      INC FG	set if symbol
+	      DEX
+	      BNE loop
 
-WA2	LDA FG
-	BNE WA3
+skip	LDA FG
+	BNE +
 
 	WJLTL
 	BCC WAND
 
-WA3	SEC
++	SEC
 WAND	RTS
 *
 WCM2	LDA PREPFG
@@ -2376,8 +2405,9 @@ PLRETADR	RTS		???????????
 	PLA		???????????
 DZD	RTS		???????????
 *
-
-LHEAD	ITLB
+*** List head
+LHEAD	WHDCONST
+	ITLB
 	INC LBFG
 	MovlB ADR,0
 	STA BT1
@@ -2394,7 +2424,7 @@ LHEAD	ITLB
 LH	MovlB LSPOS,0
 	Dsta A2
 
-LH0	Cmpl CONSOL,7
+LHLOOP	Cmpl CONSOL,7
 	BCS +
 	
 	  JMP DSI
@@ -2431,7 +2461,7 @@ LH2	PTHW
 	PRL
 skip	AddlB ADR,2
 	SublB LEN,2
-	JMP LH0
+	JMP LHLOOP
 
 LHD	JMP PRL
 *
@@ -2539,7 +2569,7 @@ PTFG4	PutTAB
 	LDA BYT
 WO	PHB1
 	PutS \ ` \	diamond
-	Cmpl BYT,155
+	Cmpl BYT,EOL
 	ifNE
 	  PutC #ESC
 	  PutC BYT
@@ -2551,7 +2581,7 @@ endif	PutS \EOL\
 	AOI
 	PutS \  \
 	PutC #ESC
-	Cmpl BYT,155
+	Cmpl BYT,EOL
 	BNE +
 	  LDA #ESC
 +	PTCH
@@ -2593,7 +2623,7 @@ SGC	DFB 0
 *** "D1:AUTOLOAD"
 AUT	ASC "D1:AUTOLOAD"
 SMB	ASC ".SMB"
-	DFB 155
+	DFB EOL
 *** Move LEN bytes from ADR1.. to ADR2..
 MovER	MovaW LOCALW1,ADR1
 	MovaW LOCALW2,ADR2
@@ -2762,7 +2792,7 @@ FADR1	MovlB CONSTFG,1
 	
 	
 +	DEC CONSTFG
-	FNDEPZ
+	WHDCONST
 
 
 	
@@ -4405,7 +4435,7 @@ WJT6	PTHW
 WJND	RTS
 *
 SRC	ASC ".SRC"
-	DFB 155
+	DFB EOL
 *
 
 *** Write SWTP to SCTP
@@ -4687,7 +4717,7 @@ ASTB	DFB 32,64,0,96,160,192,128,224
 *** Control character table
 ESCchTB	DFB 27,28,29,30,31
 	DFB 125,126,127
-	DFB 155,156,157,158,159
+	DFB EOL,156,157,158,159
 	DFB 253,254,255
 
 
@@ -5421,7 +5451,7 @@ MESSAGE	PHP
 	TYA
 	PHA
 
-	MovaW SAVV1,ZF
+	MovaW SAVV1,ZF		ZF is 1 byte!!!!!
 	MovaW SAVV2,SKA
 	MovaW SAVV3,STAD
 	MovaW SAVV4,NDAD
