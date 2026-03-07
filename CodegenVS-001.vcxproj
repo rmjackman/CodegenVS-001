@@ -140,6 +140,9 @@
       <FileType>CppCode</FileType>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="6502 Source\SGEN4xx.SRC" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
