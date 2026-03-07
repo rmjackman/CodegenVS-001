@@ -68,6 +68,7 @@ CNOTE	EQU $26
 
 ESC	EQU $1B
 CRSUP	EQU $1C
+CLS	EQU $7D
 DBS	EQU $7E
 TAB	EQU $7F		
 EOL	EQU $9b
@@ -285,7 +286,7 @@ PORTB	EQU $D301
 	DFW BEGIN	INITAD
 
 
-	ORG $5640
+	ORG $5740
 
 
 *** If found, could be D:,F:,P:,S:etc ***
@@ -385,14 +386,14 @@ DFG	DFB 0
 MNLB	DFW $80
 ADV	DFW 0
 *** table of sec type characters
-TypTab	ASC ".(;!'\#"
+TypTab	ASC ".(;!'\#?"
 	DFB '"'
 	ASC "=-%$*&<_|@[]"
 	ASC /=-/
 *	DFB 0,0	SG32
 	DFB 0	SG40
 *** Table of sec type pointers
-TyPtrTb	DFW TXTty,NormTy,NormTy,NormTy,NormTy,ASCty,DFBty
+TyPtrTb	DFW TXTty,NormTy,NormTy,NormTy,NormTy,ASCty,DFBty,DFBty
 	DFW StrTy
 	DFW DFWeqTy,DFWmiTy,BinTy,StrTy,ORGty
 	DFW NormTy,NormTy,DFWmiTy,DFWeqTy,NormTy,NormTy,NormTy
@@ -524,10 +525,8 @@ DSI1	MovlB PRF,0
 	LDX #$70
 	ComCiov CCLOSE	close printer
 	PRINT
-	DFB DLN
-	ASC "?"		print prompt: ?
-	DFB 0
-	
+	DFB DLN,'?',0	print prompt: ?
+		
 	INPT
 
 	JMP DSI		loop end
@@ -842,11 +841,11 @@ StrTy	AOI
 	  AND #%01100000
 	  BNE WASC
 
-loop	  PTDFB
+STT1	  PTDFB
 	  LDA BYTSV
 	  JMP PHB
 *
-WS	loop
+WS	STT1
 	PutS \ [S]\
 	RTS
 
@@ -909,15 +908,16 @@ AOI	MovaB BYTSV,BYT
 
 	MovlB NORTZ,'%'
 	MovlB INVTZ,'$'
+	
 	LDA BYT
 	LDX #0
-ATLP	CMP #32
-	  BCC TYE2
+-	CMP #32
+	  BCC +
 	  INX
 	  SBC #32
-	  JMP ATLP
+	  JMP -
 
-TYE2	ADC ASTB,X
++	ADC ASTB,X
 	STA BYT
 *** Is BYT a screen control char?
 CkScrCtl	LDA BYT
@@ -961,27 +961,57 @@ skip	  CKNA
 cont	INCADRw
 
 TXTD	RTS
-*********************************************************
+
+*** DFB Character
 DFBty	MovlB TCT,6
 DFBT1	DecW ADR
 	PTDFB
+-	LDA SCTP
+	CMP '#'
+	BEQ DFBc1
+	
+	  LDA BYT
+	  CkScrCtl
+	  BEQ skip
 
-DFB1	LDA BYT
+	  LDA BYT
+	  BMI DFBc1
+
+	    AND #%01100000
+	    BEQ DFBc1
+	
+	      PutS \'\
+	      LDA BYT
+	      PTCH
+	      PutS \'\
+	      JMP +
+
+DFBc1	LDA BYT
 	PHB
+	JMP +
+	
+skip	STA SKA
+	MovlB SKA+1,0
+	FADR1
+	Wadnm
+	
++	DEC TCT
+	  BEQ +
 
-	DEC TCT
-	BEQ DFB3
+	    CKNA
+	    BCS DFBchD
+	    PutS \,\
+	    JMP -
 
-	CKNA
-	BCS DFBD
-	PutS \,\
-	JMP DFB1
-
-DFB3	INCADRw
-DFBD	RTS
++	INCADRw
+DFBchD	RTS
+	
 * Check next ADR
 CKNA	INCADRw
 	JMP CKNA1
+	
+
+	
 *** Find type (SCTP)
 FTY	MovaW SKA,ADR
 	FADR1
@@ -2749,10 +2779,12 @@ CD4	SEC	Write-only symbol
 *** search for SKA, ADR1:=SYMTAB
 FADR1	MovlB CONSTFG,1
 	LDA SCTP
+	CMP '?'
+	BEQ skip
 	CMP '['
 	BNE +
 
-	  MovaB ADR1+1,SYMTAB	adr1 = symtab		adr1 = symtab
+skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab		adr1 = symtab
 	  MovlB ADR1,0
 	  BEQ FADR1A	forced branch
 	
@@ -3548,7 +3580,7 @@ BLOKR	DTADR12
 
 	MovaW TMP,ADR2
 	AddaW ADR2,SVL
-	DTLN
+	DetLEN
 	CmpaW ADR1,ADR2
 	BCC LONG
 
@@ -3564,7 +3596,7 @@ ADJTBLN	SubaW SYTL,OLL
 BRERR	LDY #9
 	JMP IOERR
 *
-DTLN	MovaB LEN,SYTL
+DetLEN	MovaB LEN,SYTL
 	CLC
 	LDA SYTL+1
 	ADC SYMTAB
@@ -4569,7 +4601,7 @@ loop	LDA DLB-1,Y
 	RTS
 *** Print Menu
 PRMEN	PRINT
-	DFB $7D
+	DFB CLS
 	ASC "/ . RET BRK  + - = *  <  > ?"
 	ASC " ; , (0..9)"
 	DFB EOL,0
@@ -4885,7 +4917,7 @@ C22	STY RAMTOPSV
 	BNE C21
 
 	PRINT
-	DFB $FD
+	DFB BELL
 	ASC "No F-Ramdisk"
 	DFB EOL,0
 	JMP DSI
@@ -5438,6 +5470,8 @@ loop	CKCONSTY
 
 WHCND	PRL
 	RTS	
+	
+
 **********************************************************	
 #	'#' causes the following lines to be ignored up until the next '#'.	
 	ORG $600
