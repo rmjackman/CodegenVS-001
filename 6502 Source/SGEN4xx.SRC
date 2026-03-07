@@ -10,7 +10,7 @@
 
 * Use the CPFL directive to compare the generated code with another file
 
-*	CPFL SGEN413.LOAorig
+*	CPFL SGEN414.LOAorig
 	
 	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
 *	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
@@ -45,8 +45,9 @@
 
 *	DISASS 123456
 
- 	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
 *	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
+*	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
 
 * Use the OUT directive to create a text output file with the extension ".LIS"
 *            L: Listing will be creatied. Assembly and CPFL mismatches will be shown.
@@ -228,8 +229,9 @@ BEGIN	LDA #$C0
 
 	STA RAMTOP
 *
-YL0	LDA #OKTXT
-	LDX #OKTXT:HI
+YL0	LDX #OKTXT:HI
+	LDA #OKTXT
+
 	JSR TITLE
 	RTS
 
@@ -360,6 +362,8 @@ OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
 GENBEG	JMP BEG
 
+DFBLEN	DFB 6	DFBsequence length
+ASCLEN	DFB 21	ASCstring length
 PKT	DFB 9	COLOR1	
 	DFB 192	COLOR2
 	DFB 226	COLOR4
@@ -704,18 +708,22 @@ NormTy	INC LBFG
 
 ******************************
 DOTRACE	PRINT
-	  ASC "<R><T><*><RET>
+	  ASC /<R><T><*><SPACE><RET>/
 	  DFB 0
 	  GETC
-	  BMI ALERR
+	  BPL +
+	  JMP ALERR
 	  
-	  PHA
++	  PHA
 	  PRINT
 	  DFB DLN,0
 	  PLA
 	  CMP #ESC
+	  BNE +
+	    DEC TF
+	    JMP DSI1
++	  CMP ' '
 	  BEQ AP3
-
 	  CMP 'R'
 	  BEQ RT1
 	  CMP '*'
@@ -972,7 +980,7 @@ cont	INCADRw
 TXTD	RTS
 
 *** DFB Character
-DFBty	MovlB TCT,6	length of DFB-sequence
+DFBty	MovaB TCT,DFBLEN	length of DFB-sequence
 DFBT1	DecW ADR
 	PTDFB
 DFBloop	LDA SCTP
@@ -1042,35 +1050,51 @@ FTY	MovaW SKA,ADR
 YY	RTS		YY is in PICTAB
 ********************************************
 *** Address-table for Menu
-PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW	
-*	DFW fBLANK,DECOL1,INCOL1,INPT,DECOL2,INCOL2
-	DFW fBLANK,INPT,INPT,INPT,INPT,INPT	
-	DFW INPT,INPT,INPT,INPT
+PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW
+	DFW fBLANK,DECOL1,INCOL1,INPT,DECOL2,INCOL2	
+*	DFW fBLANK,INPT,INPT,INPT,INPT,INPT
+	DFW INPT,INPT,LBRACK,RBRACK
 	DFW fSTAR,fPL,fCOMMA,fMI,fPERIOD,fSLASH
 	DFW f6to0,f1to5,f1to5,f1to5,f1to5,f1to5
 	DFW f6to0,f6to0,f6to0,f6to0,YY
-	DFW fSEMICOL,fLEthan,fEQUAL,fGRthan,fBLANK,SHIFT8
+	DFW fSEMICOL,fLEthan,fEQUAL,fGRthan,fQUEST,SHIFT8	fQUEST: next line
 	DFW AAdrSym,BBYTE,CCODE,DDELETE,EEDIT,FFILE
 	DFW GGO,HHEAD,IINDEX,JJUNK,KKEYS,LLIST
 	DFW MMINLAB,NNEW,OOBTAIN,PPREPARE,QQUIT
 	DFW RReADR,SSAVE,TTRACE,UUTILITY,0
+* one-line-flag
 OLNFG	DFB 0
-#
-DECOL1	DEC COLOR1
-	DEC COLOR1
-	JMP INPT
-INCOL1	INC COLOR1
-	INC COLOR1
-	JMP INPT
-DECOL2	DEC COLOR2
-	DEC COLOR2
-	JMP INPT
-INCOL2	INC COLOR2
-	INC COLOR2
-	JMP INPT
-#
-*** list next line ***
-fBLANK	MovlB OLNFG,2
+*#
+DECOL1	DEC PKT
+	DEC PKT
+	JMP DSI
+INCOL1	INC PKT
+	INC PKT
+	JMP DSI
+DECOL2	DEC PKT+1
+	DEC PKT+1
+	JMP DSI
+INCOL2	INC PKT+1
+	INC PKT+1
+	JMP DSI
+LBRACK	LDA COLOR2
+	ADC #16
+	STA PKT+1
+	JMP DSI
+RBRACK	LDA COLOR2
+	SEC
+	SBC #16
+	STA PKT+1
+	JMP DSI
+	
+	
+*#
+*** Trace next lines ***
+fBLANK	INC TF
+	MovAW AD,ADV
+	JMP API1
+*** List next line ***
+fQUEST	MovlB OLNFG,2
 	JMP fESC
 *** List from (last address) - 1
 fLEthan	DecW ADV
@@ -1830,28 +1854,27 @@ WC18	LDA FG3
 	LDA ANF
 	ifPL
 	  CKJLTL
-	  BCS +
+	  BCS skip
 
 endif	LDA FG1
-	BPL +
-
-	BLK
-	PTHW
-*** comment line-begin
-+	LDA FG2
 	ifMI
-	  BLK
+*	  BLK
+	  PTHW
+*** comment line-begin
+endif	LDA FG2
+	ifMI
+*	  BLK
 	  WCM
 endif	JMP PRL
 *
 WHeadCmt	LDA FG2		SGEN412
-	BMI +		SGEN412
+	BMI skip		SGEN412
 	BPL WCD		SGEN412
 	
 WCM	LDA ANF
 	BEQ WCD
 
-+	LDY #3
+skip	LDY #3
 	LDA (ADR1),Y
 	TAX
 	DEX
@@ -2161,6 +2184,14 @@ OPFL	MovlB FLFG,1
 	ComCiov CCLOSE
 *** Open file, 4: read
 OPD1	MovlWX ICAX1,4	OR $C (BYTE CHANGE)
+
+
+*	LDA #FLV		5014
+*	STA ICBADR,X	344
+*	LDA #FLV/$FF	5014
+*	STA ICBADR+1,X	345
+
+
 	ICBadrl FLV
 	ComCiov COPN
 	BMI FERR
@@ -2609,7 +2640,7 @@ TR1	MovaB SP,SPV
 	JMP API1
 *
 PTAS	DecW ADR
-	MovlB TCT,20	ASC string length
+	MovaB TCT,ASCLEN	ASC string length
 	PutTAB
 	PutS \ASC \
 	RTS
@@ -3058,7 +3089,12 @@ PRL1	Cmpl NWAS,$A
 	LDA #$A
 PRL11	PTCH
 
-PRL3	PRLN		X is DFG
+PRL3	LDA PRF
+	BEQ +
+	  MovlB ROWCRS,19
+	  PRINT
+	  DFB DLN,DLN,DLN,DLN,0	del four lines	  
++	PRLN		X is DFG
 	ifMI
 
 	  JMP PRER
@@ -3069,22 +3105,14 @@ endif	LDA DFG		write to disk?
 	LDA PRF		to Atari printer
 	BEQ PRND
 
-PRLA	PUT CRSUP	Atari Printer. Get line from screen
+PRLA	MovlB ROWCRS,19	Atari Printer. Get line from screen
 	LDX #$20		E:
 	MovlBX ICAX1,13
 	ICBadrl LN		set address to LN
 	INPL			get text
-	Cmpl LSPOS,1
-	BEQ skip
 
-	  LDA LN
-	  CMP #EOL
-	  BNE skip
-
-	    PUT CRSUP
-	    JMP PRLA
 *** write line to Atari printer
-skip	MovlBX ICAX1,12	
+	MovlBX ICAX1,12	
 	TYA
 	BMI PRER
 	LDX #$70
@@ -3190,7 +3218,7 @@ IE2	INY
 	AND #%01111111
 	PTCH
 	LDA (A2),Y
-	BPL IE2
+	BPL IE2AC
 
 IE8	PREL
 
