@@ -10,7 +10,7 @@
 
 * Use the CPFL directive to compare the generated code with another file
 
-*	CPFL SGEN411.LOAorig
+*	CPFL SGEN413.LOAorig
 	
 	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
 *	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
@@ -43,6 +43,7 @@
 * CODEGEN will then start your Atari800 emulator and boot the XFD-disk image file.
 * Please check the following path and file; change if necessary:
 
+*	DISASS 123456
 
  	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
 *	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
@@ -854,7 +855,7 @@ STT1	  PTDFB
 	  JMP PHB
 *
 WS	STT1
-	PutS \ [S]\
+*	PutS \ [S]\
 	RTS
 
 WASC	PTAS
@@ -939,9 +940,9 @@ CkScrCtl	LDA BYT
 +	RTS
 *
 *******************************************************  
-TXTB1	DFB $0D,$0A	$84,$94,$81,$8E,$99,$9A,$9E,	
-TXTB2	DFB EOL,0	$0B,$0F,$0A,$7B,$0C,$10,$22,
-TXTty	MovlB TCT,40
+TXTB1	DFB $0D,$0A
+TXTB2	DFB EOL,0
+TXTty	MovlB TCT,40	line of text
 	DecW ADR
 
 loop	LDA BYT
@@ -971,7 +972,7 @@ cont	INCADRw
 TXTD	RTS
 
 *** DFB Character
-DFBty	MovlB TCT,6
+DFBty	MovlB TCT,6	length of DFB-sequence
 DFBT1	DecW ADR
 	PTDFB
 DFBloop	LDA SCTP
@@ -1230,7 +1231,7 @@ FJA	PLA		Have FKey
 	LDA PICTAB+1,X
 	STA JMPAD+1
 	JMP (JMPAD)
-*
+
 INPP	INPT20LS
 	BMI IERR
 
@@ -1450,8 +1451,8 @@ skip	  STA SKA
 	  LDA ';'
 	  STA SCTP
 	  JMP WCM2
-*** '''
-+	CPX #39		'''
+*** '/''
++	CPX #39		'/''
 	BNE skip
 
 	  CkScrCtl
@@ -1467,12 +1468,6 @@ skip	  STA SKA
 
 +	  PutS \#\
 	  LDA BYT
-*	  Cmpl BYT,EOL		?????????
-*	  BNE +			?????????
-
-*	    WEOL			?????????
-*	    JMP PAND		?????????
-*+
 	  PHB
 	  JMP PTAS2
 
@@ -1487,14 +1482,7 @@ PTASC	LDA FG9
 PTAS2	CkScrCtl
 	BMI PA1
 
-*	Cmpl BYT,EOL		?????????
-*	BNE PA4			?????????
-
-*	BLK			?????????
-*	JMP WEOL			?????????
-
-*PA4
-	PutS \ [S]\
+*	PutS \ [S]\
 	JMP PAND
 
 PA1	LDA BYT
@@ -1622,7 +1610,7 @@ X108	CPX #108
 	WCM2
 	JMP SKL
 
-X76	CPX #76
+X76	CPX #76		jmp
 	BNE B3D
 	ADNM2
 	WCM2
@@ -1803,7 +1791,7 @@ WCM1	MovaW ADR1,ADR1V
 	    BEQ skip
 
 	INC LBFG
-*	STS TLB
+
 	MovlW $20,TLB
 	ILSR
 	DEC LBFG
@@ -2003,8 +1991,7 @@ WAORL	DETZ
 	  ADC #4
 	  STA LSPOS
 
-WRAD	PutS \$\
-	PTHW
+WRAD	PHW
 	LDA ZF
 	BEQ AN3D
 
@@ -2478,11 +2465,11 @@ LH5	PutTAB
 	LDA SKA+1
 	BEQ +
 
-	PutS \EQU $\
+	PutS \EQU \
 	JMP LH2
 
-+	PutS \EPZ $\
-LH2	PTHW
++	PutS \EPZ \
+LH2	PHW
 	WHeadCmt		SGEN412
 	PRL
 skip	AddlB ADR,2
@@ -2513,11 +2500,6 @@ CCODE	MovlB SWTP,0
 
 J1	INC JF1
 JND	JMP API
-*
-*EOLFG	DFB 0		?????????
-*WEOL	PutS \EOL\	?????????
-*	MovlB EOLFG,1	?????????
-*	RTS		?????????
 *
 LPV	DFB 0
 
@@ -2627,7 +2609,7 @@ TR1	MovaB SP,SPV
 	JMP API1
 *
 PTAS	DecW ADR
-	MovlB TCT,20
+	MovlB TCT,20	ASC string length
 	PutTAB
 	PutS \ASC \
 	RTS
@@ -3084,7 +3066,7 @@ PRL3	PRLN		X is DFG
 endif	LDA DFG		write to disk?
 	BNE PRL5
 
-	LDA PRF		to Atari printer?
+	LDA PRF		to Atari printer
 	BEQ PRND
 
 PRLA	PUT CRSUP	Atari Printer. Get line from screen
@@ -3124,7 +3106,7 @@ PRER	LDA #30
 PRLN	ICBadrl LN
 	MovaBX ICBLEN,LSPOS
 	MovlBX ICBLEN+1,0
-	ComCiov CPBINR	11
+	ComCiov CPBINR
 	RTS
 *
 BLK	LDA ' '
@@ -3218,7 +3200,7 @@ IE8	PREL
 	PREL
 	fPL
 JINP	JMP DSI
-*** Put Hex Byte
+*** Put Hex Byte (A)
 PHB	PHA
 	CMP #10
 	BCC skip
@@ -3311,7 +3293,12 @@ skip	PutS \/\
 	PRL
 	MovaW SKA,A3
 	RTS
-
+*** Put Hex Word (SKA)
+PHW	LDA SKA+1
+	BNE +
+	  LDA SKA
+	  JMP PHB
++	PutS \$\
 *** Put Hex Word (SKA)
 PTHW	LDA #0
 	CMP SKA
@@ -3356,6 +3343,7 @@ PHX2	DEX
 	STA SKA
 
 	RTS
+	
 *** if no TOA, TOA=FFFF, else ADR>TOA?
 CHKTOA	LDA TOA
 	BNE ADGTTO
@@ -3704,7 +3692,7 @@ CKDX	MovlB BT1,156	(156 seems to be arbitary)
 	BNE D3
 
 	INC BT1		BT1 = 157: '<' found
-D3	TXA		last char in A
+D3	TXA		last char is in A
 	RTS
 	
 
@@ -4105,7 +4093,7 @@ skip	RTS
 *** Get char from keyboard. MI = error
 GETR	MovlBX ICBLEN,0
 	STA ICBLEN+1,X
-	ComCiov CGBINR	7
+	ComCiov CGBINR
 	RTS
 **************************************
 *** Print string ending in 0 to screen
@@ -4870,30 +4858,11 @@ MenTab	ASC \ADDRESS/symbol-search\
 *	OUT
 
 
-
-
-*RD1
-
-
-*ICC	EPZ $22
-*ICAXZ	EPZ $2A
-
 TEMP	EPZ $4A
-
 
 HATABS	EQU $31A
 
 
-
-
-
-
-*NMIEN	EQU $D40E
-
-
-
-
-*
 *SG ROUTINES
 
 
