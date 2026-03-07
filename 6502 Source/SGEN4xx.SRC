@@ -45,7 +45,6 @@
 
 
  	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
-*	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
 
 * Use the OUT directive to create a text output file with the extension ".LIS"
 *            L: Listing will be creatied. Assembly and CPFL mismatches will be shown.
@@ -156,8 +155,8 @@ LFG	EPZ $C1
 JF1	EPZ $C2
 JF2	EPZ $C3
 HIF	EPZ $C4	HI flag
-JKF	EPZ $C5	Flag JUNK FROM TO
-JKF1	EPZ $C6	Flag JUNK FROM TO 1
+JKF	EPZ $C5
+JKF1	EPZ $C6
 HILOFG	EPZ $C7	HI-LO-flag
 ZZF	EPZ $C8	second head flag
 SKF	EPZ $C9
@@ -287,7 +286,7 @@ PORTB	EQU $D301
 	DFW BEGIN	INITAD
 
 
-	ORG $5740	
+	ORG $5740
 
 
 *** If found, could be D:,F:,P:,S:etc ***
@@ -329,7 +328,7 @@ adjND	RTS
 
 SK	EQU $100
 
-*segment 2200 4c1F -- now 4c07
+*segment 2200 4c1F -- now 4bcf
 
 SCREEN	EQU $4C20
 CRAMTOP	EQU $50
@@ -343,12 +342,11 @@ OSV	EQU $50E0
 FTV	EQU $50F0
 *segment 5100 56FF -- now 561F
 
-***************************************************************
 X	EQU $57	increase by 1 --> extra page for segment 5100--
-***************************************************************
+
 *segment 5640 567f -- now 5668
 
-SEGTAB	EQU X*256+$80		$5780
+SEGTAB	EQU $5780
 
 OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
@@ -358,7 +356,8 @@ OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
 GENBEG	JMP BEG
 
-PKT	DFB 9,192,226,20,3   cursor, colours etc.					
+PKT	DFB 9,192,226,20,3   cursor, colours etc.
+
 DLB	DFB X		57
 DLE	DFW 0
 *** Head Label table begin Hi byte
@@ -373,10 +372,8 @@ JLE	DFW 0
 TLB	DFB X+$11	68
 TLE	DFW 0
 SYMTAB	DFB X+$17	6f
-*** symbol table length
 SYTL	DFW 0
 RAMTOPSV	DFB $BC		Don't change this!
-
 
 *** DDDZZZHHHJJJTTT
 LBTB	ASC "DDDZZZHHHJJJTTT"
@@ -385,6 +382,7 @@ SGFG	DFB 0
 ADRV	DFW 0
 FLFG	DFB 0
 DFG	DFB 0
+*ZF	DFB 0
 MNLB	DFW $80
 ADV	DFW 0
 *** table of sec type characters
@@ -968,42 +966,42 @@ TXTD	RTS
 DFBty	MovlB TCT,6
 DFBT1	DecW ADR
 	PTDFB
-DFBloop	LDA SCTP
+-	LDA SCTP
 	CMP '#'
-	BEQ DFBphb
+	BEQ DFBc1
 	
 	  LDA BYT
 	  CkScrCtl
-	  BEQ DFBsym
+	  BEQ skip
 
 	  LDA BYT
-	  BMI DFBphb
+	  BMI DFBc1
 
 	    AND #%01100000
-	    BEQ DFBphb
+	    BEQ DFBc1
 	
-	      PutS \'\	put character
+	      PutS \'\
 	      LDA BYT
 	      PTCH
 	      PutS \'\
-	      JMP NXTbyt
+	      JMP +
 
-DFBphb	LDA BYT
+DFBc1	LDA BYT
 	PHB
-	JMP NXTbyt
+	JMP +
 	
-DFBsym	STA SKA
+skip	STA SKA
 	MovlB SKA+1,0
 	FADR1
 	Wadnm
 	
-NXTbyt	DEC TCT
++	DEC TCT
 	  BEQ +
 
 	    CKNA
 	    BCS DFBchD
 	    PutS \,\
-	    JMP DFBloop
+	    JMP -
 
 +	INCADRw
 DFBchD	RTS
@@ -1032,8 +1030,8 @@ FTY	MovaW SKA,ADR
 	LDA (ADR1),Y
 	SWTYP
 	STA SCTP
-YY	RTS		YY is in PICTAB
-********************************************
+YY	RTS
+
 *** Address-table for Menu
 PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW	
 	DFW fBLANK,INPT,INPT,INPT,INPT
@@ -1892,9 +1890,9 @@ ADNM1	LDA ANF
 	BEQ AN1ND
 	BNE ADN15
 
-ADN12	  MovaW PVA,PVAV
-	  ANO
-	  BNE ADN13
+ADN12	MovaW PVA,PVAV
+	ANO
+	BNE ADN13
 
 ADN15	WJLTL
 	BCS AN1ND
@@ -1926,7 +1924,7 @@ ADN16	LDA JKF1
 
 AN1ND	RTS
 
-AN1D	DEC JKF1		Print junk1 address
+AN1D	DEC JKF1
 	PRL
 	INC JKF1
 	RTS
@@ -2185,7 +2183,7 @@ FFILE	MovlB FLFG,0
 	adjstDX
 
 	  LDY #$FF
-***  Save file name (LS to FLV)	  
+***  Save LS to FLV	  
 loop	    INY
 	    LDA LS,Y
 	    STA FLV,Y
@@ -2462,15 +2460,13 @@ skip	AddlB ADR,2
 	JMP LHLOOP
 
 LHD	JMP PRL
-
-*** Error if no to-address
+*
 ERTOA0	CmplW TOA,0
 	BNE ETD
 
 	  LDY #$B
 	  JMP IOERR
 ETD	RTS
-
 * C.CODE
 CCODE	MovlB SWTP,0
 	MovlB FG3,128
@@ -2686,7 +2682,6 @@ skip	LDX #0
 	    INX
 	    BNE -
 MMD	RTS
-
 *** Find SKA in symtab
 FLA	MovlB ANF,0
 	STA PVA+1
@@ -2795,11 +2790,11 @@ FADR1	MovlB CONSTFG,1
 	CMP '?'
 	BEQ skip
 	CMP ']'		SGEN408
-	BEQ skip		SGEN408
+	BEQ skip		SGEN408	
 	CMP '['
 	BNE +
 
-skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab
+skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab		adr1 = symtab
 	  MovlB ADR1,0
 	  BEQ FADR1A	forced branch
 	
@@ -2835,9 +2830,7 @@ FADR1A	LDA SKA			push ska
 	STA SKA+1
 	PLA
 	STA SKA
-	
 	FLA
-	
 	RTS
 *
 FLAERR	LDY #$D
@@ -3220,10 +3213,11 @@ LSTADNM	MovaW SKA,AD
 fSEMICOL	CHKTOA
 	  MovaB ADR1+1,SYMTAB	SGEN408	adr1 = symtab
 	  MovlB ADR1,0		SGEN408
-	FADR1A			SGEN408
+	FADR1A
 	PRINT
 	DFB DBS,0
 loop	LADNM
+
 	  CLC
 	  LDA ADR1OF
 	  ADC ADR1
@@ -3245,41 +3239,41 @@ LADNM1	CA1MX
 
 	MovPZ SKA,ADR1
 	LDA LFG
-	BEQ +
+	BEQ LAD1
 
-	  CmpaW TOA,SKA
-	  BCC LADND
+	CmpaW TOA,SKA
+	BCC LADND
 
-+ 	MovaW A3,SKA
+LAD1 	MovaW A3,SKA
 
 	PTHW
 	BLK
 	LDY #2
 	LDA (ADR1),Y
-	BEQ skip
+	BEQ LAN2
 	BPL +
 
 	  DEC SKA+1
 +	CLC
 	ADC SKA
 	STA SKA
-	BCC +
-	  INC SKA+1
+	BCC LAN1
+	INC SKA+1
 
-+	PTHW
+LAN1	PTHW
 	BLK
-skip	PutS \/\
+LAN2	PutS \/\
 
 	LDY #3
 	LDA (ADR1),Y
 	STA ADR1OF
 
 	INY
--	LDA (ADR1),Y
-	  PTCH
-	  INY
-	  CPY ADR1OF
-	  BNE -
+LOF	LDA (ADR1),Y
+	PTCH
+	INY
+	CPY ADR1OF
+	BNE LOF
 
 	PRL
 	MovaW SKA,A3
@@ -3347,13 +3341,13 @@ ADGTTO	LDA FFG
 	JMP IOERR
 AGTND	RTS
 
-*** Parsing input line LS after '/' (Y)
+*** (Y)
 INA	LDX #$FF
 	STX FG
 	MovaW ADR,AD
 loop	INY
 	  INX		X starts at 0
-	  LDA LS,Y	Y starts at pos after '/'
+	  LDA LS,Y
 	  STA LS,X
 	  CMP ' '
 	  BNE IA1
@@ -3366,7 +3360,7 @@ loop	INY
 IA1	CMP ';'
 	BNE +
 
-	  INC FG		FG = 0
+	  INC FG
 +	STA HF
 	CMP '`'		diamond
 	BEQ +
@@ -3382,14 +3376,12 @@ LTAB	ASC "BCDGHJKMPRT
 	DFB 0
 *** Please enter address
 ADRERR	LDY #$11
-	JMP IOERR
-	
-*** Parsing input line LS
+	JMP IOERR	
+*
 INO	MovaB LSsav,LS
 	CMP #EOL
 	BNE +
 	LDX #$FF
-*** Error: no-input
 -	INX
 	  LDA LTAB,X
 	  BEQ +
@@ -3426,15 +3418,15 @@ loop	LDA LS,Y
 NNB	INC NMC
 NXN	LDA LS,Y
 	CMP ' '
-	BNE skip
+	BNE INP2
 
--	INY
+NNB2	INY
 	LDA LS,Y
 	CMP ' '
-	BEQ -
+	BEQ NNB2
 	BNE NNB	J
 
-skip	STA HF
+INP2	STA HF
 	CMP '`'
 	BEQ INPND
 	CMP #EOL
@@ -3449,9 +3441,8 @@ skip	STA HF
 +	CMP '/'
 	BNE FHX
 	  JMP INA
-	  
+
 FHX	LDX #$F
-*** Find Hex
 FNDHEX	CMP HXTB,X
 	BEQ +
 	DEX
@@ -3505,7 +3496,6 @@ SNE1	LDA NMC
 *** INVALID SYNTAX
 SNTXERR	LDY #1
 	JMP IOERR
-	
 *** main EDIT routine
 ED1	LDA AD
 	BNE +
@@ -3525,24 +3515,24 @@ ED1	LDA AD
 +	CKDX
 	BMI EDT1
 
--	LDA LS,X		move contents of LS 4 to the right
+-	LDA LS,X
 	  STA LS+4,X
 	  DEX
 	  BPL -
 
-	MovaW LS,AD	write address
-	MovlB LS+2,0	offset = 0
+	MovaW LS,AD
+	MovlB LS+2,0
 
 	LDA TOA
 	BNE +
 	  LDA TOA+1
 	  BEQ EDT1
 
-+	EquDif LS+2,TOA,AD	write offset
++	EquDif LS+2,TOA,AD
 
 EDT1	CLC
-	LDA NML		name length
-	BEQ +		add 4 if NML = 0
+	LDA NML
+	BEQ +
 	  ADC #4
 +	STA SVL
 	MovlB SVL+1,0
@@ -3618,7 +3608,7 @@ ADJTBLN	SubaW SYTL,OLL
 BRERR	LDY #9
 	JMP IOERR
 *
-DetLEN	MovaB LEN,SYTL	LEN = SYTL+SYMTAB 
+DetLEN	MovaB LEN,SYTL
 	CLC
 	LDA SYTL+1
 	ADC SYMTAB
@@ -3626,31 +3616,31 @@ DetLEN	MovaB LEN,SYTL	LEN = SYTL+SYMTAB
 
 	CmpaW LEN,ADR1
 	BCC DLERR
-	SubaW LEN,ADR1	LEN -= ADR1
+	SubaW LEN,ADR1
 	RTS
 
 DLERR	LDY #$32
 	JMP IOERR
-	
 *** Determine ADR1 and ADR2
 DTADR12	ADGTTO
-	MovaW SKA,AD	SKA=AD
+	MovaW SKA,AD
 
 	FADR1
-	
-	MovaW ADR2,ADR1	ADR2=ADR1
-	MovaW SKA,TOA	SKA=TOA
+	MovaW ADR2,ADR1
+	MovaW SKA,TOA
 
 	FADR1
 	BEQ D12
 
 	LDY #3
-	LDA (ADR1),Y	entry length
+	LDA (ADR1),Y
 	CLC
 	ADC ADR1
 	STA ADR1
+*	LDA ADR1+1	sgen32
+
 	BCC D12
-	  INC ADR1+1	ADR1 += entry length
+	  INC ADR1+1
 D12	RTS
 *** D. DELETE
 DDELETE	ClearW SVL
@@ -3661,16 +3651,15 @@ CKDX	MovlB BT1,156
 	LDX NML
 	DEX
 	LDA LS,X
-	STA SCTP		SGEN408	need for ']'
+	STA SCTP		SGEN408	need for ']'			    
 	CMP '<'
 	BNE D3
 
 	INC BT1
 D3	TXA
 	RTS
-	
-
 *
+
 OL	DFB 0
 
 *** S. SAVE
@@ -5405,7 +5394,7 @@ NDADSV	DFW 0
 DSECSV	DFW 0
 DBYTSV	DFB 0
 
-*** Create segment table for H.HEAD
+***needed for H.HEAD
 SETSGTAB	LDA FFG
 	BEQ END		RTS
 	
@@ -5484,14 +5473,8 @@ loop	CKCONSTY
 	  JMP loop
 
 WHCND	PRL
-	RTS
-
+	RTS	
 	
-***	
-
-
-
-
 
 *** Display menu
 MENU	ASC %1.address 2.comment %
@@ -5503,7 +5486,6 @@ MENU	ASC %1.address 2.comment %
 	ASC % 8.binary  9.ASC     %
 	ASC $<A><1>..<9><RETURN>
 	ASC "NNNNNNNNNNNNNNNNNNNNF"
-
 **********************************************************	
 #	'#' causes the following lines to be ignored up until the next '#'.	
 	ORG $600
