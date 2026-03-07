@@ -10,10 +10,10 @@
 
 * Use the CPFL directive to compare the generated code with another file
 
-	CPFL SGEN414.LOAorig
+*	CPFL SGEN415.LOAorig
 	
-*	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
-	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
+	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+*	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 	SMTFILE TEMP.SMB
@@ -24,7 +24,7 @@
 
 
 *	DSKIMAGE W1_DD_test.ATR	TURBO DOS double density image -- empty
-*	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
+	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
 *	DSKIMAGE FormatedED.XFD	just Turbo DOS, 
 *	DSKIMAGE DISK_10_Turbo_DOS_21_test.xfd	no TURBODOS
 *	DSKIMAGE NoDOS_ED.XFD
@@ -46,9 +46,9 @@
 *	DISASS 123456
 
 
-*	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
 *	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
-	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
+*	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
 *	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
 
 * Use the OUT directive to create a text output file with the extension ".LIS"
@@ -269,8 +269,8 @@ TXTADR	DFW OKTXT	or errtxt
 
 TTEXT	ASC %RE-ASSEMBLER for the%
 	ASC % ATMAS-II assembler %
-	ASC %   SOURCGEN V.3.2   %
-	ASC % Copyright 1988-2003%
+	ASC %   SOURCGEN V.4.2   %
+	ASC % Copyright 1988-2024%
 	ASC % by Richard Jackman %
 
 OKTXT	ASC %    www.richard-jack%
@@ -859,6 +859,8 @@ INVTZ	ASC "$"
 StrTy	AOI
 	BPL WSCTL	screen cntrl char found
 
+	  CMP '"'
+	  BEQ STT1
 	  AND #%01100000	is ASCII
 	  BNE WASC
 
@@ -1862,27 +1864,28 @@ WC18	LDA FG3
 	LDA ANF
 	ifPL
 	  CKJLTL
-	  BCS skip
+	  BCS +
 
 endif	LDA FG1
-	ifMI
-*	  BLK
-	  PTHW
+	BPL +
+
+*	BLK
+	PTHW
 *** comment line-begin
-endif	LDA FG2
++	LDA FG2
 	ifMI
 *	  BLK
 	  WCM
 endif	JMP PRL
 *
 WHeadCmt	LDA FG2		SGEN412
-	BMI skip		SGEN412
+	BMI +		SGEN412
 	BPL WCD		SGEN412
 	
 WCM	LDA ANF
 	BEQ WCD
 
-skip	LDY #3
++	LDY #3
 	LDA (ADR1),Y
 	TAX
 	DEX
@@ -2261,7 +2264,7 @@ FIN	  MovaW BTC,NDAD	loop begin
 	  RD6B1		RD6B sets STAD,NDAD,DSEC,DBYT
 	  MovlB LSPOS,0
 	  PTSEG
-
+	  CONSOLR
 	  INC CNT
 	  LDA AD
 	  BEQ F6
@@ -2605,7 +2608,7 @@ DA1	RTS
 WDBS	PRINT
 	DFB DBS,0	
 	RTS
-*
+*** flag4 COMMAND off
 PTFG4	PutTAB
 	MovaB BYTSV,BYT
 	CMP #$10
@@ -4705,8 +4708,10 @@ loop	LDA DLB-1,Y
 PRMEN	PRINT
 	DFB CLS
 	ASC "/ . RET BRK  + - = *  <  > ?"
-	ASC " ; , (0..9)"
-	DFB EOL,0
+	ASC " ; , (0..9) "! "
+*	DFB '"'
+	ASC /!" $% ()/
+	DFB 0
 	RTS
 *** Device placeholder
 DV	ASC "X:"
@@ -4905,8 +4910,9 @@ HATABS	EQU $31A
 
 	ORG $5100
 
-FSEC	DFW 0
-FBYT	DFB 0
+
+FSEC	EQU $34C		ICAX3,X
+FBYT	EQU $34E		ICAX5,X
 
 
 SECSZ	DFB 125
