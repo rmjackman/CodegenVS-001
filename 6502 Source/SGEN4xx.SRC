@@ -5531,7 +5531,7 @@ MESSAGE	PHP
 
 	PutS \ STAD=\
 	PutW STAD
-	PutS \ NDAD=\
+	PutS \ NDAD=\AV
 	PutW NDAD
 	
 	PRL
