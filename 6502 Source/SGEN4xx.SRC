@@ -13,7 +13,7 @@
 	CPFL SGEN410.LOAorig
 	
 *	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
-*	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
+	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 	SMTFILE TEMP.SMB
@@ -45,6 +45,7 @@
 
 
  	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+*	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
 
 * Use the OUT directive to create a text output file with the extension ".LIS"
 *            L: Listing will be creatied. Assembly and CPFL mismatches will be shown.
@@ -56,7 +57,10 @@
 
 	INCLUDE if_while_macros.src
 	INCLUDE Macros.SRC
-
+***************************************************************
+X	EQU $57	*increase by 1 for extra page in the segment at ORG 5100
+*		*The size of the symbol table will be decreased by one page.
+***************************************************************
 COPN	EQU 3	Disk open
 CGTXTR	EQU 5	command get text
 CGBINR	EQU 7
@@ -155,8 +159,8 @@ LFG	EPZ $C1
 JF1	EPZ $C2
 JF2	EPZ $C3
 HIF	EPZ $C4	HI flag
-JKF	EPZ $C5
-JKF1	EPZ $C6
+JKF	EPZ $C5	Flag JUNK FROM TO
+JKF1	EPZ $C6	Flag JUNK FROM TO 1
 HILOFG	EPZ $C7	HI-LO-flag
 ZZF	EPZ $C8	second head flag
 SKF	EPZ $C9
@@ -286,7 +290,7 @@ PORTB	EQU $D301
 	DFW BEGIN	INITAD
 
 
-	ORG $5740
+	ORG X*256+$40	$5740	
 
 
 *** If found, could be D:,F:,P:,S:etc ***
@@ -328,7 +332,7 @@ adjND	RTS
 
 SK	EQU $100
 
-*segment 2200 4c1F -- now 4bcf
+*segment 2200 4c1F -- now 4c07
 
 SCREEN	EQU $4C20
 CRAMTOP	EQU $50
@@ -338,15 +342,14 @@ FLV	EQU $5000+20	File-Save (15 bytes)
 LS	EQU $5000+35	Input line
 LSmin4	EQU $5000+35-4
 LN	EQU $5090
-OSV	EQU $50E0
+OSV	EQU $50E0	Obtained File-save
 FTV	EQU $50F0
 *segment 5100 56FF -- now 561F
 
-X	EQU $57	increase by 1 --> extra page for segment 5100--
 
 *segment 5640 567f -- now 5668
 
-SEGTAB	EQU $5780
+SEGTAB	EQU X*256+$80		$5780
 
 OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
@@ -356,8 +359,12 @@ OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
 GENBEG	JMP BEG
 
-PKT	DFB 9,192,226,20,3   cursor, colours etc.
-
+PKT	DFB 9	COLOR1	
+	DFB 192	COLOR2
+	DFB 226	COLOR4
+	DFB 20	KRPDEL
+	DFB 3	KEYREP	
+	
 DLB	DFB X		57
 DLE	DFW 0
 *** Head Label table begin Hi byte
@@ -372,8 +379,10 @@ JLE	DFW 0
 TLB	DFB X+$11	68
 TLE	DFW 0
 SYMTAB	DFB X+$17	6f
+*** symbol table length
 SYTL	DFW 0
 RAMTOPSV	DFB $BC		Don't change this!
+
 
 *** DDDZZZHHHJJJTTT
 LBTB	ASC "DDDZZZHHHJJJTTT"
@@ -382,7 +391,6 @@ SGFG	DFB 0
 ADRV	DFW 0
 FLFG	DFB 0
 DFG	DFB 0
-*ZF	DFB 0
 MNLB	DFW $80
 ADV	DFW 0
 *** table of sec type characters
@@ -966,42 +974,42 @@ TXTD	RTS
 DFBty	MovlB TCT,6
 DFBT1	DecW ADR
 	PTDFB
--	LDA SCTP
+DFBloop	LDA SCTP
 	CMP '#'
-	BEQ DFBc1
+	BEQ DFBphb
 	
 	  LDA BYT
 	  CkScrCtl
-	  BEQ skip
+	  BEQ DFBsym
 
 	  LDA BYT
-	  BMI DFBc1
+	  BMI DFBphb
 
 	    AND #%01100000
-	    BEQ DFBc1
+	    BEQ DFBphb
 	
-	      PutS \'\
+	      PutS \'\	put character
 	      LDA BYT
 	      PTCH
 	      PutS \'\
-	      JMP +
+	      JMP NXTbyt
 
-DFBc1	LDA BYT
+DFBphb	LDA BYT
 	PHB
-	JMP +
+	JMP NXTbyt
 	
-skip	STA SKA
+DFBsym	STA SKA
 	MovlB SKA+1,0
 	FADR1
 	Wadnm
 	
-+	DEC TCT
+NXTbyt	DEC TCT
 	  BEQ +
 
 	    CKNA
 	    BCS DFBchD
 	    PutS \,\
-	    JMP -
+	    JMP DFBloop
 
 +	INCADRw
 DFBchD	RTS
@@ -1030,12 +1038,13 @@ FTY	MovaW SKA,ADR
 	LDA (ADR1),Y
 	SWTYP
 	STA SCTP
-YY	RTS
-
+YY	RTS		YY is in PICTAB
+********************************************
 *** Address-table for Menu
 PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW	
-	DFW fBLANK,INPT,INPT,INPT,INPT
-	DFW INPT,INPT,INPT,INPT,INPT
+*	DFW fBLANK,DECOL1,INCOL1,INPT,DECOL2,INCOL2
+	DFW fBLANK,INPT,INPT,INPT,INPT,INPT	
+	DFW INPT,INPT,INPT,INPT
 	DFW fSTAR,fPL,fCOMMA,fMI,fPERIOD,fSLASH
 	DFW f6to0,f1to5,f1to5,f1to5,f1to5,f1to5
 	DFW f6to0,f6to0,f6to0,f6to0,YY
@@ -1045,6 +1054,20 @@ PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW
 	DFW MMINLAB,NNEW,OOBTAIN,PPREPARE,QQUIT
 	DFW RReADR,SSAVE,TTRACE,UUTILITY,0
 OLNFG	DFB 0
+#
+DECOL1	DEC COLOR1
+	DEC COLOR1
+	JMP INPT
+INCOL1	INC COLOR1
+	INC COLOR1
+	JMP INPT
+DECOL2	DEC COLOR2
+	DEC COLOR2
+	JMP INPT
+INCOL2	INC COLOR2
+	INC COLOR2
+	JMP INPT
+#
 *** list next line ***
 fBLANK	MovlB OLNFG,2
 	JMP fESC
@@ -1890,9 +1913,9 @@ ADNM1	LDA ANF
 	BEQ AN1ND
 	BNE ADN15
 
-ADN12	MovaW PVA,PVAV
-	ANO
-	BNE ADN13
+ADN12	  MovaW PVA,PVAV
+	  ANO
+	  BNE ADN13
 
 ADN15	WJLTL
 	BCS AN1ND
@@ -1924,7 +1947,7 @@ ADN16	LDA JKF1
 
 AN1ND	RTS
 
-AN1D	DEC JKF1
+AN1D	DEC JKF1		Print junk1 address
 	PRL
 	INC JKF1
 	RTS
@@ -2183,7 +2206,7 @@ FFILE	MovlB FLFG,0
 	adjstDX
 
 	  LDY #$FF
-***  Save LS to FLV	  
+***  Save file name (LS to FLV)	  
 loop	    INY
 	    LDA LS,Y
 	    STA FLV,Y
@@ -2406,14 +2429,14 @@ LHEAD	WHDCONST
 	ITLB
 	INC LBFG
 	MovlB ADR,0
-	STA BT1
+	STA BT1		= 0
 	MovaB ADR+1,ZLB
 	MovaW LEN,ZLE
 	LH
 	MovlB ADR,0
 	MovaB ADR+1,DLB
 	MovaW LEN,DLE
-	MovlB BT1,140
+	MovlB BT1,140	(CTRL-L  STY aaaa?)
 	LH
 	RTS
 *
@@ -2460,13 +2483,15 @@ skip	AddlB ADR,2
 	JMP LHLOOP
 
 LHD	JMP PRL
-*
+
+*** Error if no to-address
 ERTOA0	CmplW TOA,0
 	BNE ETD
 
 	  LDY #$B
 	  JMP IOERR
 ETD	RTS
+
 * C.CODE
 CCODE	MovlB SWTP,0
 	MovlB FG3,128
@@ -2682,12 +2707,12 @@ skip	LDX #0
 	    INX
 	    BNE -
 MMD	RTS
+
 *** Find SKA in symtab
 FLA	MovlB ANF,0
 	STA PVA+1
 	STA SEF
 *** long loop
-
 loop	LDA SCTP		SGEN408
 	CMP ']'		SGEN408
 	BNE +		SGEN408
@@ -2750,6 +2775,7 @@ NOTF	LDA ANF
 	
 NOTF1	INC SEF
 	BNE NOTF	(A is 0)
+******************************************
 	
 * $D000 to $D7FF, write-only table
 WTAB	DFB 140,141,142,153,157
@@ -2790,11 +2816,11 @@ FADR1	MovlB CONSTFG,1
 	CMP '?'
 	BEQ skip
 	CMP ']'		SGEN408
-	BEQ skip		SGEN408	
+	BEQ skip		SGEN408
 	CMP '['
 	BNE +
 
-skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab		adr1 = symtab
+skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab
 	  MovlB ADR1,0
 	  BEQ FADR1A	forced branch
 	
@@ -2813,9 +2839,9 @@ FADR1A	LDA SKA			push ska
 	CKD000
 	BCC +
 
-	  MovlW SKA,$D40F
+	  MovlW SKA,NMIST		$D40F
 	  FLA
-	  BEQ FLAERR
+	  BEQ FLAERR		not found in symbol table
 
 	  LDY #3
 	  CLC
@@ -2830,7 +2856,9 @@ FADR1A	LDA SKA			push ska
 	STA SKA+1
 	PLA
 	STA SKA
+	
 	FLA
+	
 	RTS
 *
 FLAERR	LDY #$D
@@ -3213,11 +3241,10 @@ LSTADNM	MovaW SKA,AD
 fSEMICOL	CHKTOA
 	  MovaB ADR1+1,SYMTAB	SGEN408	adr1 = symtab
 	  MovlB ADR1,0		SGEN408
-	FADR1A
+	FADR1A			SGEN408
 	PRINT
 	DFB DBS,0
 loop	LADNM
-
 	  CLC
 	  LDA ADR1OF
 	  ADC ADR1
@@ -3239,41 +3266,41 @@ LADNM1	CA1MX
 
 	MovPZ SKA,ADR1
 	LDA LFG
-	BEQ LAD1
+	BEQ +
 
-	CmpaW TOA,SKA
-	BCC LADND
+	  CmpaW TOA,SKA
+	  BCC LADND
 
-LAD1 	MovaW A3,SKA
++ 	MovaW A3,SKA
 
 	PTHW
 	BLK
 	LDY #2
 	LDA (ADR1),Y
-	BEQ LAN2
+	BEQ skip
 	BPL +
 
 	  DEC SKA+1
 +	CLC
 	ADC SKA
 	STA SKA
-	BCC LAN1
-	INC SKA+1
+	BCC +
+	  INC SKA+1
 
-LAN1	PTHW
++	PTHW
 	BLK
-LAN2	PutS \/\
+skip	PutS \/\
 
 	LDY #3
 	LDA (ADR1),Y
 	STA ADR1OF
 
 	INY
-LOF	LDA (ADR1),Y
-	PTCH
-	INY
-	CPY ADR1OF
-	BNE LOF
+-	LDA (ADR1),Y
+	  PTCH
+	  INY
+	  CPY ADR1OF
+	  BNE -
 
 	PRL
 	MovaW SKA,A3
@@ -3341,13 +3368,13 @@ ADGTTO	LDA FFG
 	JMP IOERR
 AGTND	RTS
 
-*** (Y)
+*** Parsing input line LS after '/' (Y)
 INA	LDX #$FF
 	STX FG
 	MovaW ADR,AD
 loop	INY
 	  INX		X starts at 0
-	  LDA LS,Y
+	  LDA LS,Y	Y starts at pos after '/'
 	  STA LS,X
 	  CMP ' '
 	  BNE IA1
@@ -3360,7 +3387,7 @@ loop	INY
 IA1	CMP ';'
 	BNE +
 
-	  INC FG
+	  INC FG		FG = 0
 +	STA HF
 	CMP '`'		diamond
 	BEQ +
@@ -3376,12 +3403,14 @@ LTAB	ASC "BCDGHJKMPRT
 	DFB 0
 *** Please enter address
 ADRERR	LDY #$11
-	JMP IOERR	
-*
+	JMP IOERR
+	
+*** Parsing input line LS
 INO	MovaB LSsav,LS
 	CMP #EOL
 	BNE +
 	LDX #$FF
+*** Error: no-input
 -	INX
 	  LDA LTAB,X
 	  BEQ +
@@ -3418,15 +3447,15 @@ loop	LDA LS,Y
 NNB	INC NMC
 NXN	LDA LS,Y
 	CMP ' '
-	BNE INP2
+	BNE skip
 
-NNB2	INY
+-	INY
 	LDA LS,Y
 	CMP ' '
-	BEQ NNB2
+	BEQ -
 	BNE NNB	J
 
-INP2	STA HF
+skip	STA HF
 	CMP '`'
 	BEQ INPND
 	CMP #EOL
@@ -3441,8 +3470,9 @@ INP2	STA HF
 +	CMP '/'
 	BNE FHX
 	  JMP INA
-
+	  
 FHX	LDX #$F
+*** Find Hex
 FNDHEX	CMP HXTB,X
 	BEQ +
 	DEX
@@ -3496,6 +3526,7 @@ SNE1	LDA NMC
 *** INVALID SYNTAX
 SNTXERR	LDY #1
 	JMP IOERR
+	
 *** main EDIT routine
 ED1	LDA AD
 	BNE +
@@ -3513,28 +3544,28 @@ ED1	LDA AD
 	  RTS
 
 +	CKDX
-	BMI EDT1
+	BMI skip		Why BMI ????
 
--	LDA LS,X
-	  STA LS+4,X
+-	LDA LS,X		move contents of LS 4 to the right
+	  STA LS+4,X	to make room for AD and offset
 	  DEX
 	  BPL -
 
-	MovaW LS,AD
-	MovlB LS+2,0
+	MovaW LS,AD	write address
+	MovlB LS+2,0	offset = 0
 
 	LDA TOA
 	BNE +
 	  LDA TOA+1
-	  BEQ EDT1
+	  BEQ skip
 
-+	EquDif LS+2,TOA,AD
++	EquDif LS+2,TOA,AD	write offset
 
-EDT1	CLC
-	LDA NML
-	BEQ +
+skip	CLC
+	LDA NML		name length
+	ifNE +		add 4 if NML != 0
 	  ADC #4
-+	STA SVL
+endif	STA SVL
 	MovlB SVL+1,0
 	MovaW TOA,AD
 
@@ -3573,7 +3604,7 @@ IP	INPT20LS
 DER	JMP IOERR
 *
 TSTFLL	EPZ BT2
-*
+*** Place or delete symbol in symbol table
 BLOKR	DTADR12
 
 	EquDif OLL,ADR1,ADR2
@@ -3608,7 +3639,7 @@ ADJTBLN	SubaW SYTL,OLL
 BRERR	LDY #9
 	JMP IOERR
 *
-DetLEN	MovaB LEN,SYTL
+DetLEN	MovaB LEN,SYTL	LEN = SYTL+SYMTAB 
 	CLC
 	LDA SYTL+1
 	ADC SYMTAB
@@ -3616,50 +3647,62 @@ DetLEN	MovaB LEN,SYTL
 
 	CmpaW LEN,ADR1
 	BCC DLERR
-	SubaW LEN,ADR1
+	SubaW LEN,ADR1	LEN -= ADR1
 	RTS
 
 DLERR	LDY #$32
 	JMP IOERR
+	
 *** Determine ADR1 and ADR2
 DTADR12	ADGTTO
-	MovaW SKA,AD
+	MovaW SKA,AD	SKA=AD
 
 	FADR1
-	MovaW ADR2,ADR1
-	MovaW SKA,TOA
+	
+	MovaW ADR2,ADR1	ADR2=ADR1
+	MovaW SKA,TOA	SKA=TOA
 
 	FADR1
-	BEQ D12
+	BEQ DA12ND
 
 	LDY #3
-	LDA (ADR1),Y
+	LDA (ADR1),Y	entry length
 	CLC
 	ADC ADR1
 	STA ADR1
-*	LDA ADR1+1	sgen32
+	BCC DA12ND
+	  INC ADR1+1	ADR1 += entry length
+DA12ND	RTS
 
-	BCC D12
-	  INC ADR1+1
-D12	RTS
 *** D. DELETE
 DDELETE	ClearW SVL
 	BLOKR
 	RTS
-*
-CKDX	MovlB BT1,156
-	LDX NML
+	
+***A=SCTP, if '<' found, BT1=157, flag: EQ
+CKDX	MovlB BT1,156	(156 seems to be arbitary)
+	LDX NML		name length
 	DEX
-	LDA LS,X
-	STA SCTP		SGEN408	need for ']'			    
-	CMP '<'
+	LDA LS,X		last char of name
+	STA SCTP		needed for ']' (SGEN408)
+	CPX #0		(SGEN411)
+	BNE +		(SGEN411)
+	  CMP ']'	(SGEN411)
+	  BNE +		(SGEN411)
+	    MovAW TOA,AD	(SGEN411)
+	    PLA		(SGEN411)
+	    PLA		(SGEN411)
+	    JMP DDELETE	(SGEN411)
+
++	CMP '<'
 	BNE D3
 
-	INC BT1
-D3	TXA
+	INC BT1		BT1 = 157: '<' found
+D3	TXA		last char in A
 	RTS
-*
+	
 
+*
 OL	DFB 0
 
 *** S. SAVE
@@ -4378,7 +4421,7 @@ JUNK1	DEC LBFG
 
 	MovlB LSPOS,0
 	LDX BT1
-	CPX #162
+	CPX #162		(ldx #nn ?)
 	BEQ J6
 
 	LDA JJ
@@ -5394,7 +5437,7 @@ NDADSV	DFW 0
 DSECSV	DFW 0
 DBYTSV	DFB 0
 
-***needed for H.HEAD
+*** Create segment table for H.HEAD
 SETSGTAB	LDA FFG
 	BEQ END		RTS
 	
@@ -5473,8 +5516,14 @@ loop	CKCONSTY
 	  JMP loop
 
 WHCND	PRL
-	RTS	
+	RTS
+
 	
+***	
+
+
+
+
 
 *** Display menu
 MENU	ASC %1.address 2.comment %
@@ -5486,6 +5535,7 @@ MENU	ASC %1.address 2.comment %
 	ASC % 8.binary  9.ASC     %
 	ASC $<A><1>..<9><RETURN>
 	ASC "NNNNNNNNNNNNNNNNNNNNF"
+
 **********************************************************	
 #	'#' causes the following lines to be ignored up until the next '#'.	
 	ORG $600
