@@ -1,0 +1,49 @@
+*                            ATMAS-INSTRUCTIONS
+
+* Begin a comment line with '*'
+; or ';'
+; Labels can have up to 8 alphanumerical characters.
+
+DELETE	MACRO ADDRESS,LENGTH	Macro definition
+	LDY #LENGTH
+	LDX #0
+	TXA
+NEXT@	STA ADDRESS,X		Local labels in macros are terminated with '@' 
+	INX			and can have no more than 5 characters
+	DEY
+	BNE NEXT@
+	MEND			end of macro
+
+	OUT LNM			Listing without macro expansion, symbol table
+*				L : Listing will be creaed
+*				N : Symboltable will be listed
+*				M : Macros will not be expanded
+*				P0: RS232 interface
+*				P1: Atari printer, centonics (850) 
+*				P2: Joystick interface port 3 & 4 )(400/800 only)
+
+	ORG $2200		object code will be assembled to $2200
+	
+	ORG $2200,$A800		object code at $A800 will be assembled to run at $2200 
+	
+	ORG *+16			Skip 16 bytes
+	
+ZEP1	EPZ $90			ZEP1 is zero-page address $90
+LABEL1	EQU $600			LABEL1 is address $600
+COLOR	EQU 9			COLOR is the constant 9
+
+	DFB 9,'a,$90,%101010	define byte
+	DFW 879,$340		define word
+	
+	ASC "normal text"		ATASCII code
+	ASC /inverted text/	ATASCII code, bit 7 = 1
+	ASC \last char inverted\	ATASCII code, last character bit 7 = 1 
+	ASC %screen code%		screen code
+	ASC $screen code inv$	screen code inverted
+	ASC !String "test" here!	ATASCII code -- enclose using any other non alphanumerical character
+	
+	OUT 			discontinue listing
+
+LABEL2	LDA #34		Labels can have up to 8 alphanumerical characters.
+	STA LABEL1
+	BEQ *+$8		'*' represents the present address
