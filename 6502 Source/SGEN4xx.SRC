@@ -10,9 +10,9 @@
 
 * Use the CPFL directive to compare the generated code with another file
 
-*	CPFL SGEN415.LOAorig
+*	CPFL SGEN416.LOAorig
 	
-	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
 *	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
@@ -171,16 +171,16 @@ SKF	EPZ $C9
 HIF1	EPZ $CA
 SP	EPZ $CB
 TF	EPZ $CC	Trace flag
-CBF	EPZ $CD
+CBF	EPZ $CD	Change-byte flag
 C3F	EPZ $CE
 EOFG	EPZ $CF	#EOFG-BTC
 SAV	EPZ $D0	save ADRV
 A1S	EPZ $D2	save ADR1V
 SYA	EPZ $D4
-NWAS	EPZ $D6	third value e.g. for P:
+NWASV	EPZ $D6	third value e.g. for P:
 ADR1SV	EPZ $D8	ADR1-save
 
-TCT	EPZ $DE
+TCT	EPZ $DE	counter
 BT1	EPZ $E0
 BT2	EPZ $E1	(or TSTFLL)
 BT3	EPZ $E2  (or TSTFLL+1)
@@ -294,8 +294,9 @@ PORTB	EQU $D301
 	DFW GENBEG	RUNAD
 	DFW BEGIN	INITAD
 
+*** BLAB	X*256 hardware write-only -- max $56 bytes
 
-	ORG X*256+$40	$5740	
+	ORG X*256+$56	$5756	
 
 
 *** If found, could be D:,F:,P:,S:etc ***
@@ -303,21 +304,21 @@ PORTB	EQU $D301
 adjstDX	LDA ':'
 	CMP LS+1
 	BEQ adjND
-	  CMP LS+2
+	  CMP LS+2	e.g. "D2:"
 	  BEQ adjND
 
-	LDY NML
+	LDY NML		length without "D:"
 	INC NML
-	INC NML
-	LDX NML
+	INC NML		+2
+	LDX NML		length with "D:"
 
-adjLP	LDA LS,Y		'X'
+adjLP	LDA LS,Y		Make space for "D:"
 	  STA LS,X	
 	  DEX
 	  DEY
 	  BPL adjLP
 
-	LDA 'D'
+	LDA 'D'		Insert "D:"
 	STA LS
 	LDA ':'
 	STA LS+1
@@ -349,11 +350,11 @@ LSmin4	EQU $5000+35-4
 LN	EQU $5090
 OSV	EQU $50E0	Obtained File-save
 FTV	EQU $50F0
-*segment 5100 56FF -- now 561F
 
+*segment 5100 56FF -- now 56E2
+*segment 5756 577E
 
-*segment 5640 567f -- now 5668
-
+* Room for 32 segments (4 bytes per segment)
 SEGTAB	EQU X*256+$80		$5780
 
 OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
@@ -371,7 +372,7 @@ PKT	DFB 9	COLOR1
 	DFB 226	COLOR4
 	DFB 20	KRPDEL
 	DFB 3	KEYREP	
-	
+*** 'write-only' registers between $D000 and $D4FF.
 DLB	DFB X		57
 DLE	DFW 0
 *** Head Label table begin Hi byte
@@ -510,7 +511,7 @@ skip	LDA DFG
 	BEQ DSI1
 
 	TAX
-	Cmpl NWAS,$A
+	Cmpl NWASV,$A
 	BEQ skip
 	Cmpl LS,'D'
 	BNE skip
@@ -1252,7 +1253,7 @@ FGT3	INY
 
 	INPP
 
-	MovaW NWAS,NWA
+	MovaW NWASV,NWA
 *** Find jump address
 FJA	PLA		Have FKey
 
@@ -1539,7 +1540,7 @@ PAND	LDA JF2
 	BEQ PA9
 
 	LDA BYT
-	CMP NWAS
+	CMP NWASV
 	BNE PA9
 
 	WC28
@@ -1792,7 +1793,7 @@ WC2ND	LDA JF1
 	LDA HIF
 	BNE WC29
 
-	CmpaW NWAS,SKA
+	CmpaW NWASV,SKA
 	BNE WC29
 
 WC28	WRL
@@ -1985,7 +1986,7 @@ ADNM2	LDA JF2
 	BNE CP5
 	LDA JF1
 	BEQ skip
-CP5	CmpaW SKA,NWAS
+CP5	CmpaW SKA,NWASV
 	BNE AN1ND
 *** Hide JSR?
 skip	Cmpl BT1,32	jsr?
@@ -2377,6 +2378,7 @@ skip	LDX #127		sg31
 	STX DFG
 	MovlBX ICAX1,8
 	MovlW OPF1+1,SRC
+	adjstDX		?????
 	OPF
 	MovaB A1,SECSZ
 	JMP API
@@ -3079,7 +3081,7 @@ PRL9	LDA JF1
 *** char to top right corner. J. H. P.
 PRL5	  LDA ADR+1
 	  LDY #39
-	  STA (SAVMSK),Y	of screen
+	  STA (SAVMSK),Y	Top RH corner of screen
 
 	  JMP PRND
 
@@ -3089,11 +3091,11 @@ skip	LDX DFG
 	PutC #EOL
 	JMP PRL3
 *** A$, Line Feed: Atari800Win P:
-PRL1	Cmpl NWAS,$A
+PRL1	Cmpl NWASV,$A
 	BEQ PRL11
 		
 	PutC #$D		Default, Car. Return: AtmasII editor
-	Cmpl NWAS,$DA	$DA, CR + LF: old printers
+	Cmpl NWASV,$DA	$DA, CR + LF: old printers
 	BNE PRL3
 	
 	LDA #$A
@@ -4305,8 +4307,9 @@ IINDEX	CLC
 
 I1	ILN
 	DEC ROWCRS
-	MovlB COLCRS,19
+	MovlB COLCRS,19	2nd column
 	ILN
+	CONSOLR
 	JMP I1
 
 IER	JMP IOERR
@@ -4848,7 +4851,7 @@ FLerrTb	ASC \ \
          ASC \I/O\
 	ASC "INVALID SECTOR"
 	DFB 127,127
- ASC \TRY COPYING FILE TO NEW DISK.\
+ ASC \<U><RET>, or COPY FILE TO NEW DISK!\
          ASC \NAME\
          ASC \PNT\
          ASC \LOCKED\
@@ -5008,21 +5011,23 @@ C21	PTSTR
 	WRL
 
 	LDA LS
-	BEQ C4
+	BEQ +		no input
+	  adjstDX
+	  LDA LS
+	  CMP 'D'	filename was entered
+	  BEQ C6
+	  RTS
+
+
++	LDA FLV		no input
 	CMP 'D'
-	BEQ C6
-	RTS
+	BEQ +
+
+	  LDY #$A5
+	  JMP IOERR
 
 
-C4	LDA FLV
-	CMP 'D'
-	BEQ C3
-
-	LDY #$A5
-	JMP IOERR
-
-
-C3	LDY #14
++	LDY #14
 C5	LDA FLV,Y
 	STA LS,Y
 	DEY
@@ -5087,7 +5092,9 @@ loop	LDX #$60
 TRND	CPY #$88
 	BNE ERR1
 
-	  RTS
+	  MovlB LS,'F'
+	  MovlB LS+1,':'
+	  JMP FFILE
 
 ERR1	JMP IOERR
 *** Point
@@ -5152,8 +5159,7 @@ QI	LDX #$60
 
 *FFG	DFB 0
 
-*********** FINS: F insert new in V.3 ************
-
+*** FINS: F insert new in V.3
 FINS	INC FFG
 	LDY TOA
 	BNE NOFF
