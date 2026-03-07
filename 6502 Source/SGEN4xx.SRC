@@ -12,12 +12,12 @@
 
 *	CPFL SGEN32.LOAorig
 	
-*SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
-	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
+*	SAVEAS SGEN32.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+*	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
-*	SMTFILE TEMP.SMB
-*	SMTTOIMG 		add SMT-file to disk image.  (optional)
+	SMTFILE TEMP.SMB
+	SMTTOIMG 		add SMT-file to disk image.  (optional)
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -87,6 +87,7 @@ BEGAD	EQU $6FA
 * OS variables
 WARMST	EPZ 8
 BOOT 	EPZ 9
+DOSVEC	EPZ $0A
 DOSINI	EPZ $0C
 LMARGN	EPZ $52
 ROWCRS	EPZ $54
@@ -106,7 +107,7 @@ ERNO	EPZ $86
 FFG	EPZ $87	File-flag V3
 NDAD	EPZ $88	segment end address
 SFC	EPZ $8B	b3 ???
-*** (maintain order of these three variables)
+*** (maintain order of AD, TOA and NWA)
 AD	EPZ $8C	A-U first input value
 TOA	EPZ $8E	A-U 2nd value "to-address"
 NWA	EPZ $90	A-U 3rd value (or SVL)
@@ -200,7 +201,7 @@ COLOR3	EQU $2C7
 COLOR4	EQU $2C8
 KRPDEL	EQU $2D9
 KEYREP	EQU $2DA
-
+DBYTLO	EQU $308	 Sector size	
 CONSOL	EQU $D01F
 VCOUNT	EQU $D40B
 **
@@ -533,24 +534,6 @@ loop	LDY #3
 +	  JMP loop
 
 EPZFND	RTS
-
-*** HEAD list constants
-HEQUCON	MovaB ADR1+1,SYMTAB		adr1 = symtab
-	MovlB ADR1,0
-	
-loop	LDY #3
-	LDA (ADR1),Y	offset
-	STA ADR1OF
-	TAY		offset in Y
-	DEY
-	LDA (ADR1),Y	ch type
-	CMP '['
-	BNE HEQCOND
-
-	  AddaB ADR1,ADR1OF
-+	  JMP loop
-
-HEQCOND	RTS
 
 *** Check segment
 CKSG	CmpaW AD,STAD
@@ -1408,13 +1391,15 @@ J9S5	LDA BT2
 	BEQ skip		[
 	CPX '('		(
 	BNE +		(
-	
+*** [ and (	
 skip	  STA SKA
 	  MovlB SKA+1,0
-	  PutS \#\		(
-	  ADNM2		(
-	  JMP WCM2		(
-	
+	  PutS \#\
+	  ADNM2
+	  LDA ';'
+	  STA SCTP
+	  JMP WCM2
+*** '''	
 +	CPX #39		'''
 	BNE skip
 
@@ -1624,11 +1609,11 @@ PBND	RTS
 *
 WADNM	MovlB FG,0
 	LDY #3
-	LDA (ADR1),Y
-	TAY
+	LDA (ADR1),Y	length of entry in symbol table
+	TAY		in Y
 	CLC
-	SBC #3
-	TAX
+	SBC #3		visible length
+	TAX		in X
 
 	DEY
 	LDA (ADR1),Y
@@ -1748,18 +1733,17 @@ WCM1	MovaW ADR1,ADR1V
 	MovaW ADR1V,ADR1
 
 	LDA ANF
-	BEQ WC19
+	BEQ skip
 
-	LDA ADR
-	AND #1
-	STA ODF
+	  LDA ADR
+	  AND #1
+	  STA ODF
+	  LDA PFG
+	  BEQ skip
 
-	LDA PFG
-	BEQ WC19
-
-	LDY #2
-	LDA (ADR1),Y
-	BEQ WC19
+	    LDY #2
+	    LDA (ADR1),Y
+	    BEQ skip
 
 	INC LBFG
 *	STS TLB
@@ -1768,7 +1752,7 @@ WCM1	MovaW ADR1,ADR1V
 	DEC LBFG
 	MovaW ADR1,ADR1V
 
-WC19	LDA ANF
+skip	LDA ANF
 	BNE WC16
 
 	LDA FG3
@@ -2294,7 +2278,7 @@ loop	INY
 	  JMP API
 
 skip	LDX #127		sg31
-	STX FG3		sg31
+*	STX FG3		sg31
 	INX		sg31
 	STX FG4		sg31
 
@@ -2405,11 +2389,11 @@ LHEAD	ITLB
 LH	MovlB LSPOS,0
 	Dsta A2
 
-LHloop	Cmpl CONSOL,7
+LH0	Cmpl CONSOL,7
 	BCS +
 	
 	  JMP DSI
-*** if LEN=0 exit
+
 +	LDA LEN
 	BNE +
 	  LDA LEN+1
@@ -2442,7 +2426,7 @@ LH2	PTHW
 	PRL
 skip	AddlB ADR,2
 	SublB LEN,2
-	JMP LHloop
+	JMP LH0
 
 LHD	JMP PRL
 *
@@ -4012,18 +3996,18 @@ RO	CLC
 	BCC RLP
 	INC ADR1+1
 	BCS RLP
-*
+*** Get char from keyboard. MI = error
 GETC	LDX #$30
 	GETR
 	BMI skip
 	AND #%01111111
 skip	RTS
-*
+*** Get char from keyboard. MI = error
 GETR	MovlBX ICBLEN,0
 	STA ICBLEN+1,X
 	ComCiov CGBINR	7
 	RTS
-*
+*** Print a string ending in 0
 PRINT	PLA
 	STA A2
 	PLA
@@ -4568,16 +4552,16 @@ KKEYS	Cmpl TOA,10
 	TAX
 	MovaWX FKTB,AD
 KD	RTS
-*
+*** Initialize lable tables
 ITLB	LDY #13 
-ITL1	LDA DLB-1,Y
+loop	LDA DLB-1,Y
 	STA LBTB,Y
 	DEY
 	LDA #0
 	STA LBTB,Y
 	DEY
 	DEY
-	BPL ITL1
+	BPL loop
 	RTS
 *** Print Menu
 PRMEN	PRINT
@@ -4586,7 +4570,7 @@ PRMEN	PRINT
 	ASC " ; , (0..9)"
 	DFB EOL,0
 	RTS
-*
+*** Device placeholder
 DV	ASC "X:"
 	DFB EOL
 
@@ -4811,11 +4795,9 @@ HATABS	EQU $31A
 
 	ORG $5100
 
-*FSEC	EQU $34C
-*FBYT	EQU $34E
-
 FSEC	DFW 0
 FBYT	DFB 0
+
 
 SECSZ	DFB 125
 *** output menu item offsets
@@ -4992,14 +4974,14 @@ TRND	CPY #$88
 	  RTS
 
 ERR1	JMP IOERR
-*
+*** Point
 POIN	LDA #CPOINT
 CIOVR	STA ICCOM,X
 	CIOV
 	BMI ERR1
 	RTS
+	
 ***********************************************************
-
 BADLEN	LDA SECSZ
 	STA ICBLEN,X
 	LDA #0
@@ -5009,7 +4991,7 @@ BADLEN	LDA SECSZ
 	STA ICBADR+1,X
 	RTS
 
-**********************************************************
+*** Print inverted '-' or '='
 WADNMI	CMP #$AD	'-'inverted
 	BEQ WA11
 	CMP #$BD	'='inverted
@@ -5048,7 +5030,7 @@ PII3	CIOV
 QI	LDX #$60
 	LDA #CCLOSE
 	CIOVR
-	JMP ($A)
+	JMP (DOSVEC)
 
 *
 
@@ -5178,7 +5160,7 @@ OPFLI	LDA FLV
 
 	LDY #0		F: double density
 	BEQ OL2
-OLI	LDY $308		DBYTLO (SECTOR SIZE)
+OLI	LDY DBYTLO 	(SECTOR SIZE)
 OL2	DEY
 	DEY
 	DEY
@@ -5289,7 +5271,7 @@ SH1	LDA (EDADV),Y
 	CPY #8
 	BNE SH1
 
-	MovlB NEWED+$4,EGTBYT-1
+	MovlB NEWED+4,EGTBYT-1
 	STA NEWKB+4
 	
 	MovlB NEWED+5,EGTBYT-1:H

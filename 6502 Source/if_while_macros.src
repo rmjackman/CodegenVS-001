@@ -1,0 +1,52 @@
+***************** M A C R O S *****************
+
+***************** B R A N C H *********************
+ifEQ	MACRO
+	BNE endif
+	MEND
+ifNE	MACRO
+	BEQ endif
+	MEND
+ifPL	MACRO
+	BMI endif
+	MEND
+ifMI	MACRO
+	BPL endif
+	MEND
+ifCS	MACRO
+	BCC endif
+	MEND
+ifCC	MACRO
+	BCS endif
+	MEND
+ifVS	MACRO
+	BVC endif
+	MEND
+ifVC	MACRO
+	BVS endif
+	MEND
+	
+whileEQ	MACRO
+	BEQ do
+	MEND
+whileNE	MACRO
+	BNE do
+	MEND
+whilePL	MACRO
+	BPL do
+	MEND
+whileMI	MACRO
+	BMI do
+	MEND
+whileCS	MACRO
+	BCS do
+	MEND
+whileCC	MACRO
+	BCC do
+	MEND
+whileVS	MACRO
+	BVS do
+	MEND
+whileVC	MACRO
+	BVC do
+	MEND	
