@@ -12,8 +12,8 @@
 
 *	CPFL SGEN416.LOAorig
 	
-	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
-*	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
+*	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 	SMTFILE TEMP.SMB
@@ -24,7 +24,7 @@
 
 
 *	DSKIMAGE W1_DD_test.ATR	TURBO DOS double density image -- empty
-	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
+*	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
 *	DSKIMAGE FormatedED.XFD	just Turbo DOS, 
 *	DSKIMAGE DISK_10_Turbo_DOS_21_test.xfd	no TURBODOS
 *	DSKIMAGE NoDOS_ED.XFD
