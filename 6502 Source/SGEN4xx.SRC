@@ -301,13 +301,24 @@ PORTB	EQU $D301
 
 *** If found, could be D:,F:,P:,S:etc ***
 *** If ":" not found, "D:" is assumed ***
-adjstDX	LDA ':'
-	CMP LS+1
+adjstDX	LDX #1
+loop	LDA LS,X
+	CMP #$9B
+	BEQ skip
+	CMP ':'
 	BEQ adjND
-	  CMP LS+2	e.g. "D2:"
-	  BEQ adjND
+	INX
+	CPX #3
+	BNE loop
 
-	LDY NML		length without "D:"
+
+*adjstDX	LDA ':'
+*	CMP LS+1
+*	BEQ adjND
+*	  CMP LS+2	e.g. "D2:"
+*	  BEQ adjND
+
+skip	LDY NML		length without "D:"
 	INC NML
 	INC NML		+2
 	LDX NML		length with "D:"
@@ -354,8 +365,8 @@ FTV	EQU $50F0
 *segment 5100 56FF -- now 56E2
 *segment 5756 577E
 
-* Room for 32 segments (4 bytes per segment)
-SEGTAB	EQU X*256+$80		$5780
+* Room for 30 segments (4 bytes per segment)
+SEGTAB	EQU X*256+$88		$5788
 
 OUTMENSV	EQU $BC00	Buffer for 1st 4 lines on screen
 
