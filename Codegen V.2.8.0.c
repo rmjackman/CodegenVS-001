@@ -306,19 +306,21 @@ int main(int argc, char* argv[])
 	puts("*                                                                     *");
 	puts("***********************************************************************\n");
 	
+	// 1. Command-line argument takes highest priority
 	if (argc > 1) strcpy_s(src_filename, sizeof(src_filename), argv[1]);
 	else {
 
 #if IMBED_SRC_FILENAME
-
+		// 2. Embedded filename if compiled that way
 		strcpy_s(src_filename, sizeof(src_filename), SRC_FILENAME);
 #else
+		// 3. Ask user interactively
 		printf("Please enter name of file to be assembled>");
 
 		if (fgets(src_filename, sizeof(src_filename), stdin) != NULL) {
 			// Remove the newline character if present
 			size_t length = strlen(src_filename);
-			if (length > 0 && Debug.Start[length - 1] == '\n') {
+			if (length > 0 && src_filename[length - 1] == '\n') {
 				src_filename[length - 1] = '\0';
 			}
 
@@ -327,11 +329,13 @@ int main(int argc, char* argv[])
 		}
 		else {
 			printf("Error reading input.\n");
+			return 1;
 		}
 #endif
-
-		if (strchr(src_filename, '.') == 0) strcat_s(src_filename, sizeof(src_filename), ".src");
 	}
+	// Add .src extension if none is present
+	if (strchr(src_filename, '.') == 0) strcat_s(src_filename, sizeof(src_filename), ".src");
+	
 	printf ("\n%s\n",src_filename);
 	ptr = src_filename + strlen(src_filename) - 4;
 	if ((*ptr != '.') || (toupper(*(ptr + 1)) != 'S')
