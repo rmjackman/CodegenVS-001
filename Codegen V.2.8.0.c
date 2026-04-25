@@ -649,12 +649,22 @@ int main(int argc, char* argv[])
 				continue;
 			case ' ':					// white space
 			case '\t':	break;
-			case '#':				//Skip block from '#' to the next line beginning with '#',
+			case '#':
+				// Skip block from this '#' to the next line that begins with '#',
+				// or to the end of the text if no second '#' exists.
 				do {
 					txtptr = strchr(txtptr, '\n');
 					linnum++;
-					txtptr++;
+
+					if (txtptr == NULL) {
+						// Reached end of string/file without finding another '#'
+						txtptr = "";          // or set to the end of your buffer
+						break;
+					}
+
+					txtptr++;                 // move past the '\n'
 				} while (*txtptr != '#');
+
 				linbegptr = txtptr;
 				linlen = 1;
 				continue;

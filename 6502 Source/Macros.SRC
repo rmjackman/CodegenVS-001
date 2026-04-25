@@ -153,6 +153,16 @@ SubaW	MACRO A,B
 	SBC B+1
 	STA A+1
 	MEND
+	
+SublW	MACRO A,D
+	SEC
+	LDA A
+	SBC #D
+	STA A
+	LDA A+1
+	SBC #D:H
+	STA A+1
+	MEND	
 
 EquSum	MACRO C,A,B
 	CLC

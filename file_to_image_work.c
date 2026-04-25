@@ -16,7 +16,7 @@
 
 #define SAVE_DISK_IMAGE		1	// updates the XFD or ATR image file.
 #define SHOW_DIR			1	// Show directory. ( Subroutine )
-#define REBUILD_VTOC		1	// rebuilds VTOC and compares with old VTOC. Corrects file length in directory.  ( Subroutine )
+#define REBUILD_VTOC		0	// rebuilds VTOC and compares with old VTOC. Corrects file length in directory.  ( Subroutine )
 #define CREATE_EMPTY_ED_IMAGE 0 // Creates an empty enhanced density disk image
 #define CREATE_ATR_FROM_XFD 0	// Creates an ATR disk image from an XFD disk image
 
