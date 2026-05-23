@@ -2899,7 +2899,7 @@ static void print_visible(const char* s) {
 			putchar('\t');              // preserve layout
 		}
 		else if (c == 0x0A) {
-			// LF: ignore completely
+			putchar('\n');              // preserve layout
 		}
 		else if (c < 32) {
 			printf("<%02X>", c);        // show hidden control chars
