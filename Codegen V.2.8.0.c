@@ -66,6 +66,7 @@ char fptsmb(int i);
 int prec(char symbol);
 uint16_t parseNumber(char* txtptr);
 int isSpecialCharacter(char ch);
+static void print_visible(const char* s);
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -1415,7 +1416,7 @@ int main(int argc, char* argv[])
 
 					if ((pass == 1) && (strstr(assdirecs, opcode)))
 						continue;
-					error("A subroutine can't have an operand");
+					error("Undefined macro or opcode. NBA subroutine can't have an operand");
 				}
 
 			}
@@ -2475,7 +2476,7 @@ void error(char* errstr)
 	printf("\n\nERROR --\n%s\nat ", errstr);
 	if (pc) printf("address $%X, ", pc);
 	printf("line %d\n\n\a", linnum);
-	printf("%s", linbuf[0]);
+	print_visible(linbuf[0]);
 
 	if (maclevel == 0)
 	{
@@ -2888,4 +2889,25 @@ int isSpecialCharacter(char ch) {
 		return 1; // Character is a special character
 	}
 	return 0; // Character is not a special character
+}
+
+static void print_visible(const char* s) {
+	while (*s) {
+		unsigned char c = (unsigned char)*s;
+
+		if (c == '\t') {
+			putchar('\t');              // preserve layout
+		}
+		else if (c == 0x0A) {
+			// LF: ignore completely
+		}
+		else if (c < 32) {
+			printf("<%02X>", c);        // show hidden control chars
+		}
+		else {
+			putchar(c);
+		}
+
+		s++;
+	}
 }

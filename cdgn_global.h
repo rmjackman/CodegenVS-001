@@ -3,7 +3,7 @@
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\AUTORUN_1.SRC"
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\FINDBUGS.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN33.SRC"
-#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN420.SRC"
+//#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN420.SRC"
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\SecType.SRC" 
 //#define SRC_FILENAME "h:\\My Drive\\CODEGEN-2\\OPCTEST.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32_no_macros.SRC"
@@ -11,7 +11,7 @@
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC"
 //#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC"
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC"
-
+#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\T27.SRC"
 
 #include <stdint.h>
 
