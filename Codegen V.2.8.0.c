@@ -665,9 +665,14 @@ int main(int argc, char* argv[])
 
 					txtptr++;                 // move past the '\n'
 				} while (*txtptr != '#');
-
-				linbegptr = txtptr;
 				linlen = 1;
+
+				if (*(txtptr+1)  == '#') {	// ## indicates section omitted from assembly
+					txtptr++; 
+					linlen = 2;
+				}// else # indicates section omitted from assembly
+				linbegptr = txtptr;
+				
 				continue;
 
 			case  '-':
