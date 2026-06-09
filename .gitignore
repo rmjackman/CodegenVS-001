@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/6502 Source/AUTORUN.SMT
+/6502 Source/AUTORUN.SRC
+/6502 Source/AUTORUN.SYS
+/6502 Source/T31.LIS
+/6502 Source/temp.atr
