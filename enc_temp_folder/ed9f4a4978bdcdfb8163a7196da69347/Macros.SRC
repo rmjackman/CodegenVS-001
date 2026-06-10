@@ -1,0 +1,266 @@
+
+***************** M O V E *********************
+
+MovlB	MACRO A,N
+	LDA #N
+	STA A
+	MEND
+
+MovaB	MACRO A,N
+	LDA N
+	STA A
+	MEND
+	
+MovlW	MACRO A,V
+	MovlB A,V
+	MovlB A+1,V:H
+	MEND
+	
+MovaW	MACRO A,N
+	MovaB A,N
+	MovaB A+1,N+1
+	MEND
+
+MovlBX	MACRO A,N
+	LDA #N
+	STA A,X
+	MEND
+	
+MovlWX	MACRO A,N
+	MovlBX A,N
+	MovlBX A+1,N:H
+	MEND
+	
+MovaBX	MACRO AD,A
+	LDA A
+	STA AD,X
+	MEND
+
+MovaWX	MACRO AD,A		AD,H
+	MovaBX AD,A		AD,AA
+	MovaBX AD+1,A+1
+	MEND
+
+MovPZ	MACRO A,Z
+	LDY #0
+	LDA (Z),Y
+	STA A
+	INY
+	LDA (Z),Y
+	STA A+1
+	MEND
+	
+ClearW	MACRO A
+	MovlB A,0
+	STA A+1
+	MEND
+
+Dsta	MACRO A
+	STA A
+	STA A+1
+	MEND
+
+********************* C M P ***************
+
+Cmpl	MACRO A,B
+	LDA A
+	CMP #B
+	MEND
+		
+CmpaW	MACRO A,B
+	LDA A+1
+	CMP B+1
+	BNE E@
+	LDA A
+	CMP B
+E@	MEND
+
+CmplW	MACRO A,B
+	Cmpl A+1,B:H
+	BNE E@
+	Cmpl A,B
+E@	MEND
+
+************* A R I T H M E T I C *********
+
+IncW	MACRO A
+	INC A
+	BNE E@
+	INC A+1
+E@	MEND
+
+DecW	MACRO A
+	DEC A
+	Cmpl A,$FF
+	BNE E@
+	DEC A+1
+E@	MEND
+
+AddlB	MACRO A,I
+	LDA #I
+	CLC
+	ADC A
+	STA A
+	BCC E@
+	INC A+1
+E@	MEND
+
+SublB	MACRO A,D
+	LDA A
+	SEC
+	SBC #D
+	STA A
+	BCS E@
+	DEC A+1
+E@	MEND
+
+SubaB	MACRO A,D
+	LDA A
+	SEC
+	SBC D
+	STA A
+	BCS E@
+	DEC A+1
+E@	MEND
+
+AddaB	MACRO A,I
+	LDA I
+	CLC
+	ADC A
+	STA A
+	BCC E@
+	INC A+1
+E@	MEND
+
+AddaW	MACRO A,I
+	LDA I
+	CLC
+	ADC A
+	STA A
+	LDA I+1
+	ADC A+1
+	STA A+1
+	MEND
+
+AddlW	MACRO A,I
+	LDA #I:L
+	CLC
+	ADC A
+	STA A
+	LDA #I:H
+	ADC A+1
+	STA A+1
+	MEND
+
+SublW  MACRO A,I
+	LDA A
+	SEC
+	SBC #I:L
+	STA A
+	LDA A+1
+	SBC #I:H
+	STA A+1
+	MEND
+
+SubaW	MACRO A,B
+	SEC
+	LDA A
+	SBC B
+	STA A
+	LDA A+1
+	SBC B+1
+	STA A+1
+	MEND
+
+EquSum	MACRO C,A,B
+	CLC
+	LDA A
+	ADC B
+	STA C
+	LDA A+1
+	ADC B+1
+	STA C+1
+	MEND
+
+EquDif	MACRO C,A,B
+	SEC
+	LDA A
+	SBC B
+	STA C
+	LDA A+1
+	SBC B+1
+	STA C+1
+	MEND
+
+************** Content of LS ***************
+
+PutW	MACRO A
+	MovaW SKA,A
+	PTHW
+	MEND
+
+PutS	MACRO S
+	PTSTR
+	ASC S
+	MEND
+
+PutC	MACRO A
+	LDA A
+	PTCH
+	MEND
+	
+PUT	MACRO C
+	LDA #C
+	PUTR
+	MEND
+
+************** I / O ***********************
+
+ComCiov	MACRO C
+	MovlBX ICCOM,C
+	CIOV
+	MEND
+	
+ICBadrl	MACRO A
+	MovlWX ICBADR,A
+	MEND
+	
+ICBlenl	MACRO A
+	MovlWX ICBLEN,A
+	MEND
+	
+OpenX	MACRO K,X,F
+	LDX #K
+	MovlBX ICAX1,X
+	LDA #F
+	OPENR
+	MEND
+	
+ICBadra	MACRO A
+	MovaWX ICBADR,A
+	MEND
+
+ICBlena	MACRO A
+	MovaWX ICBLEN,A
+	MEND
+
+		
+************** M I S C E L . *************
+
+
+MESS	MACRO A
+	LDA #A
+	TAY
+	STA (88),Y
+	MEND
+
+STS	MACRO A
+	MovlW $20,A
+	ILSR
+	MEND
+
+WIS	MACRO A
+	MovlW $20,A
+	WISR
+	MEND
+

@@ -222,9 +222,11 @@ void disassemble(const char* filename) {
 			pc = disassln(pc);
 
 
-				
-				print_line();
-			
+			if (pc == 0x94a9)
+				pc=pc;	//breakpoint
+
+			print_line();
+
 
 			if (pc == end_address[segment] + 1)
 				break;
@@ -984,8 +986,8 @@ void pt_ska_comment(uint16_t ska) {
 
 void print_line() {
 	if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
-		if (diss_linnum == 6791)
-		//	getch();
+		if (diss_linnum == 2607)
+			pc=pc;	//breakpoint
 		diss_linnum++;
 
 		if (flag[0]) // PRINT_DISS_LINNUM
@@ -1001,6 +1003,8 @@ void print_line() {
 
 
 		fprintf(outputfile, "%s\n", line_buffer);
+
+	//	printf("%s\n", line_buffer); // Print the line to the console-- TEMPORARY debug
 
 		if (line_skip) {
 

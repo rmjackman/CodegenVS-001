@@ -1,0 +1,5819 @@
+**********************************************************************************
+************************ S O U R C G E N Reasembler for Atari 8-Bit **************
+**********************************************************************************
+
+* ( Set the TAB of your text editor to 9 for correct display. )
+*
+* ATMAS-II compatible Source code
+* Assemble using the CODEGEN Macro ASSEMBLER for PC
+*
+
+* Use the CPFL directive to compare the generated code with another file
+
+*	CPFL SGEN416.LOAorig
+	
+*	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
+
+	ADDTOIMG MEM.SAV
+	ADDTOIMG OS.SMB
+	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
+	SMTFILE TEMP.SMB
+	SMTTOIMG 		add SMT-file to disk image.  (optional)
+
+* CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
+* Change the name of the following disk image file ( W1_DD.XFD ) as required:
+
+
+*	DSKIMAGE W1_DD_test.ATR	TURBO DOS double density image -- empty
+*	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads, 126 free sectors
+*	DSKIMAGE FormatedED.XFD	just Turbo DOS, 
+*	DSKIMAGE DISK_10_Turbo_DOS_21_test.xfd	no TURBODOS
+*	DSKIMAGE NoDOS_ED.XFD
+* 	DSKIMAGE DOS25_ED_test.XFD	lots of files		ok
+*	DSKIMAGE DOS25.ATR	DOS25 only			ok
+*	DSKIMAGE temp.atr		SD DOS25 and DUP
+*	DSKIMAGE unknown.xfd	SD DOS25 and DUP		ok
+*	DSKIMAGE unknown3.xfd	
+*	DSKIMAGE CHACHA_A-temp.XFD		disk full
+*	DSKIMAGE AT3_A_ED_test.XFD 	file number mismatch
+*	DSKIMAGE AT3_B.XFD
+*	DSKIMAGE formatted_empty_ed_test.xfd crashes-First 3 sectors are empty
+*	DSKIMAGE T.XFD
+*	DSKIMAGE DIRDEFEC.XFD
+*	DSKIMAGE TestFF.atr
+* CODEGEN will then start your Atari800 emulator and boot the XFD-disk image file.
+* Please check the following path and file; change if necessary:
+
+*	DISASS 123456
+
+
+	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+*	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
+*	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
+*	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
+
+* Use the OUT directive to create a text output file with the extension ".LIS"
+*            L: Listing will be creatied. Assembly and CPFL mismatches will be shown.
+*            LM: Macros will not be expanded, and assembly and CPFL mismatches will not be shown.
+*            N: Symbol table will be listed.
+*            T: SOURCGEN symbol table will be listed.
+* OUT can be placed anywhere in the source code. OUT with no parameters terminates the listing.
+	OUT T
+
+	INCLUDE if_while_macros.src
+	INCLUDE Macros.SRC
+***************************************************************
+X	EQU $57	*increase by 1 for extra page in the segment at ORG 5100
+*		*The size of the symbol table will be decreased by one page.
+***************************************************************
+COPN	EQU 3	Disk open
+CGTXTR	EQU 5	command get text
+CGBINR	EQU 7
+CPTXTR	EQU 9
+CPBINR	EQU $B
+CCLOSE	EQU $C
+CPOINT	EQU $25
+CNOTE	EQU $26
+
+ESC	EQU $1B
+CRSUP	EQU $1C
+CLS	EQU $7D
+DBS	EQU $7E
+TAB	EQU $7F		
+EOL	EQU $9b
+DLN	EQU $9c
+INSLN	EQU $9D
+BELL	EQU $FD
+
+CRSINH	EQU $2F0
+DSPFLG	EQU $2FE
+ICCOM	EQU $342
+ICBADR	EQU $344
+ICBLEN	EQU $348
+ICAX1	EQU $34A
+CIOV	EQU $E456
+
+
+INIT	EQU $600
+BEGAD	EQU $6FA
+
+* OS variables
+WARMST	EPZ 8
+BOOT 	EPZ 9
+DOSVEC	EPZ $0A
+DOSINI	EPZ $0C
+LMARGN	EPZ $52
+ROWCRS	EPZ $54
+COLCRS	EPZ $55
+SAVMSK	EPZ $58	Address of top left character
+RAMTOP	EPZ $6A
+
+* Temporary variables
+LOCALW1	EPZ $24
+LOCALW2	EPZ $26
+
+* SGEN variables
+ADR1	EPZ $80	present address in symbol table
+ADR2	EPZ $82
+LEN	EPZ $84
+ERNO	EPZ $86
+FFG	EPZ $87	File-flag V3
+NDAD	EPZ $88	segment end address
+SFC	EPZ $8B	b3 ???
+*** (maintain order of AD, TOA and NWA)
+AD	EPZ $8C	A-U first input value
+TOA	EPZ $8E	A-U 2nd value "to-address"
+NWA	EPZ $90	A-U 3rd value (or SVL)
+***
+SKAV	EPZ $92	SKA save
+PVAV	EPZ $94
+ADR1V	EPZ $96	ADR1 save
+CHC	EPZ $98
+NML	EPZ $99	name length
+STAD	EPZ $9A	segment begin-address
+A1MX	EPZ $9C	A1 max
+TV	EPZ $9E
+GTC	EPZ $A0	Main menu get char(A-U, f.keys)
+HF	EPZ $A1
+LSsav	EPZ $A2
+STABEPZ	EPZ $A3
+
+ZF	EPZ $A7	head flag
+CONSTFG	EPZ $A8	constants flag eg. COPN EQU 3
+TXPT	EPZ $A9
+EDADV	EPZ $AA	editor address save
+KBADV	EPZ $AC	keyboard address save
+OLL	EPZ $AE
+SCTP	EPZ $B0	section type
+
+SWTP	EPZ $B2	Swap-type
+TPNO	EPZ $B3	type no.
+LBFG	EPZ $B4	Label flag
+STKV	EPZ $B5	Stack-save
+ANF	EPZ $B6	Address not found
+ADR1OF	EPZ $B7	ADR1 offset flag
+XSAV	EPZ $B8	Save X register
+PRF	EPZ $B9	printer flag
+PREPFG	EPZ $BA	Prepare-flag
+AOF	EPZ $BB
+SEF	EPZ $BC
+BYTSV	EPZ $BD	BYT save
+SPV	EPZ $BE
+BTC	EPZ $BF	#EOFG-BTC
+LFG	EPZ $C1
+JF1	EPZ $C2
+JF2	EPZ $C3
+HIF	EPZ $C4	HI flag
+JKF	EPZ $C5	Flag JUNK FROM TO
+JKF1	EPZ $C6	Flag JUNK FROM TO 1
+HILOFG	EPZ $C7	HI-LO-flag
+ZZF	EPZ $C8	second head flag
+SKF	EPZ $C9
+HIF1	EPZ $CA
+SP	EPZ $CB
+TF	EPZ $CC	Trace flag
+CBF	EPZ $CD	Change-byte flag
+C3F	EPZ $CE
+EOFG	EPZ $CF	#EOFG-BTC
+SAV	EPZ $D0	save ADRV
+A1S	EPZ $D2	save ADR1V
+SYA	EPZ $D4
+NWASV	EPZ $D6	third value e.g. for P:
+ADR1SV	EPZ $D8	ADR1-save
+
+TCT	EPZ $DE	counter
+BT1	EPZ $E0
+BT2	EPZ $E1	(or TSTFLL)
+BT3	EPZ $E2  (or TSTFLL+1)
+
+A1	EPZ $E4
+A2	EPZ $E6  (or PNT)
+A3	EPZ $E8
+SKA	EPZ $EA	Seek-Address
+ADR	EPZ $EC  Address in RAM 
+JJ	EPZ $EE
+
+LSPOS	EPZ $F0	Position in LS
+*A4	EPZ $F1
+
+FG	EPZ $F5
+BYT	EPZ $F6	value read from RAM or disk
+CNT	EPZ $F7  (or CNT)
+TMP	EPZ $F9
+PVA	EPZ $FB
+JMPAD	EPZ $FD
+
+
+SDLSTL	EQU $230
+COLDST	EQU $244
+TABMAP	EQU $2A3
+INVFLG	EQU $2B6
+SHFLOK	EQU $2BE
+COLOR0	EQU $2C4
+COLOR1	EQU $2C5
+COLOR2	EQU $2C6
+COLOR3	EQU $2C7
+COLOR4	EQU $2C8
+KRPDEL	EQU $2D9
+KEYREP	EQU $2DA
+DBYTLO	EQU $308	 Sector size
+CONSOL	EQU $D01F
+VCOUNT	EQU $D40B
+
+
+
+
+	ORG $4D00
+
+BEGIN	LDA #$C0
+	CMP RAMTOP
+	BEQ YL0
+
+	BCS YL1
+
+	STA RAMTOP
+*
+YL0	LDX #OKTXT:HI
+	LDA #OKTXT
+
+	JSR TITLE
+	RTS
+
+YL1	LDA #ERRTXT
+	LDX #ERRTXT:HI
+	JSR TITLE
+ERROR	JMP ERROR
+
+TITLE	STA TXTADR
+	STX TXTADR+1
+	LDY VCOUNT
+	CPY #$7A
+	BNE TITLE
+
+	LDY #0
+	STY COLOR2
+	LDY #$C
+	STY COLOR1
+?
+	LDA #NEWDLST
+	LDX #NEWDLST:HI
+	STA SDLSTL
+	STX SDLSTL+1
+	RTS
+
+NEWDLST	DFB $70,$70
+	DFB $70,$70,$70,$70,$70,$42
+	DFW TTEXT
+	DFB $70,7,$70,2,$70,$70,$42
+TXTADR	DFW OKTXT	or errtxt
+	DFB $41
+	DFW NEWDLST
+
+TTEXT	ASC %RE-ASSEMBLER for the%
+	ASC % ATMAS-II assembler %
+	ASC %   SOURCGEN V.4.2   %
+	ASC % Copyright 1988-2024%
+	ASC % by Richard Jackman %
+
+OKTXT	ASC %    www.richard-jack%
+
+	ASC %man.de/atari_xl     %
+
+ERRTXT	ASC $requires 48K- Press $
+	ASC $OPTION when booting.$
+
+	DFB 0
+
+*
+
+
+
+SVL	EPZ NWA
+
+PORTB	EQU $D301
+
+	ORG $2E0
+	DFW GENBEG	RUNAD
+	DFW BEGIN	INITAD
+
+*** BLAB	X*256 hardware write-only -- max $56 bytes
+
+	ORG X*256+$56	$5756	
+
+
+*** If found, could be D:,F:,P:,S:etc ***
+*** If ":" not found, "D:" is assumed ***
+adjstDX	LDX #1
+loop	LDA LS,X		LS+1 and LS+2
+	CMP #EOL
+	BEQ skip
+	CMP ':'
+	BEQ adjND
+	INX
+	CPX #3
+	BNE loop
+
+skip	LDY NML		length without "D:"
+	INC NML
+	INC NML		+2
+	LDX NML		length with "D:"
+	
+adjLP	LDA LS,Y		Make space for "D:"
+	  STA LS,X	
+	  DEX
+	  DEY
+	  BPL adjLP
+
+	LDA 'D'		Insert "D:"
+	STA LS
+	LDA ':'
+	STA LS+1
+
+adjND	RTS	
+
+*adjND	LDX #$20		screen
+*	MovlBX ICBLEN,$20
+*	ICBadrl LS
+*	ComCiov CPTXTR		wr filename
+
+*adjND	LDY #0		write filename
+*adj1	LDA LS,Y
+*	PTCH
+*	INY
+*	CPY NML
+*	BNE adj1
+	
+*	GETC
+*
+	RTS
+*********************************************************
+
+SK	EQU $100
+
+*segment 2200 4c1F -- now 4c18
+
+*Display list $4C20
+*SAVMSK $4C40 to $4FFF (screen RAM)
+
+CRAMTOP	EQU $50
+FKTB	EQU $5000	20 bytes
+FLV	EQU $5000+20	File-Save (15 bytes)
+
+LS	EQU $5000+$23	Input line
+LSmin4	EQU $5000+35-4
+LN	EQU $5090
+OSV	EQU $50E0	Obtained File-save
+FTV	EQU $50F0
+
+*segment 5100 56DA -- Inrease X by 1 to add a page of room for this segment
+*X=57  
+*  5700: DLB ------  segment 5756 -------------------- 57FF
+
+SEGTAB0	EQU $1C00	4 pages (enough for 256 segments)
+SEGTAB1	EQU $1D00	This is DOS scratch RAM
+SEGTAB2	EQU $1E00
+SEGTAB3	EQU $1F00
+* Utility TEXT $BE00, NEWED $BE70, NEWKB $BE78 to $BE7F
+OUTMENSV	EQU $BF00	to $BCA0 - Buffer for 1st 4 lines on screen
+* $BC00 to $C000 remain untouched by FRAMDISK, since at this location,
+*many programs use the Display List and the screen RAM.
+*******************************************************************
+
+	ORG $2200
+
+GENBEG	JMP BEG
+
+* Values that could be changed according to need.
+DFBLEN	DFB 6	DFB sequence length
+ASCLEN	DFB 21	ASC string length
+PKT	DFB 9	COLOR1	
+	DFB 192	COLOR2
+	DFB 226	COLOR4
+	DFB 20	KRPDEL
+	DFB 3	KEYREP	
+*** 'write-only' registers between $D000 and $D4FF. set by H.HEAD
+DLB	DFB X		57
+DLE	DFW 0
+*** Head Label table begin Hi byte
+ZLB	DFB X+1		58
+ZLE	DFW 0
+BLB	DFB X+4		5b
+BLE	DFW 0
+*** J-label table begin Hi bytef
+JLB	DFB X+$C		63	
+*** J-label # bytes in use
+JLE	DFW 0
+TLB	DFB X+$11	68
+TLE	DFW 0
+SYMTAB	DFB X+$17	6f
+*** symbol table length
+SYTL	DFW 0
+RAMTOPSV	DFB $BC		Don't change this!
+
+******************************************************
+*** DDDZZZHHHJJJTTT
+LBTB	ASC "DDDZZZHHHJJJTTT"
+LOFST	DFW 0
+SGFG	DFB 0
+ADRV	DFW 0
+FLFG	DFB 0
+DFG	DFB 0
+MNLB	DFW $80
+ADV	DFW 0
+*** table of sec type characters
+TypTab	ASC ".(;!'\#,"		'?' changed to ','
+	DFB '"'
+	ASC "=-%$*&<_|@[]"
+	ASC /=-/
+*	DFB 0,0	SG32
+	DFB 0	SG40
+*** Table of sec type pointers
+TyPtrTb	DFW TXTty,NormTy,NormTy,NormTy,NormTy,ASCty,DFBty,DFBty
+	DFW StrTy
+	DFW DFWeqTy,DFWmiTy,BinTy,StrTy,ORGty
+	DFW NormTy,NormTy,DFWmiTy,DFWeqTy,NormTy,NormTy,NormTy
+	DFW DFWeqTy,DFWmiTy,0
+
+ANFV	DFB 0
+J9FG	DFB 0
+ODF	DFB 0
+*** Tab map
+TBMP	DFB 0,$40,$20,$10,$08
+BGFG	DFB 1
+LODAUTFG DFB 0
+**************************************
+BEG	CLD
+
+	MovaW JDOS+1,DOSINI
+	MovlW DOSINI,JDOS
+	LDX #$FF
+	STX WARMST
+	INX
+	STX COLDST
+	INX
+	STX BOOT
+	LDA BGFG
+	BEQ BG1
+
+	MovlB FLV,0
+	STA CBF
+	STA A1MX		a1mx = SYMTAB
+	MovaB A1MX+1,SYMTAB
+	
+
+BG1	TSX
+	STX STKV
+
+	MovlB RAMTOP,CRAMTOP	#$50
+*** $C: update mode
+	OpenX $20,12,'E'
+*** 4: read only
+	OpenX $30,4,'K'
+*	INITMOUS		mouse driver
+	LDX #4
+-	LDA TBMP,X
+	  STA TABMAP,X
+	  DEX
+	  BPL -
+
+	MovlB COLOR1,5
+	MovlB LMARGN,0
+	STA BGFG
+	STA SWTP
+	STA ZF
+	fSLASH
+
+*Loop begin
+DSI	LDX STKV
+	TXS
+
+	LDA LODAUTFG
+	BNE +
+	  INC LODAUTFG
+	  NNEW
+*** Colors and cursor
++	MovaB COLOR1,PKT
+	MovaB COLOR2,PKT+1
+	MovaB COLOR4,PKT+2
+	MovaB KRPDEL,PKT+3
+	MovaB KEYREP,PKT+4
+
+	J600
+
+	LDA CBF
+	BEQ +
+	LDA FLFG
+	BEQ +
+
+	  MovlB OPD1+1,4
+	  OPFL
+*** initialize zero page variables
++	LDX #EOFG-BTC
+	LDA #0			
+-	STA BTC,X
+	DEX
+	BPL -
+
+	AJA1MX
+
+	LDA ZF
+	BEQ skip
+
+	  DEC ZF
+	  INC ZZF
+	  LHEAD
+	  LDA FFG
+	  BEQ +
+	    RESTSEG
++	  JMP API
+
+skip	LDA DFG
+	BEQ DSI1
+
+	TAX
+	Cmpl NWASV,$A
+	BEQ skip
+	Cmpl LS,'D'
+	BNE skip
+	  LDA #0	
+	  STA ICBLEN,X	
+	  STA ICBLEN+1,X
+loop	    DEC A1		fill with $FF
+	    BEQ skip
+	    LDA #$FF
+	    CIOV
+	    BPL loop
+	  JMP IOERR
+
+skip	ComCiov CCLOSE
+DSI1	MovlB PRF,0
+	STA CRSINH
+	STA DSPFLG
+	STA PREPFG
+	STA DFG
+	Dsta TOA
+	STA INVFLG
+	STA COLCRS
+	STA SCTP
+	
+	MovlB ICAX1+$20,12
+	MovlB SHFLOK,64
+	MovlB ROWCRS,23
+	LDX #$70
+	ComCiov CCLOSE	close printer
+	PRINT
+	DFB DLN,'?',0	print prompt: ?
+		
+	INPT
+
+	JMP DSI		loop end
+**********************************************************
+
+*** Check segment
+CKSG	CmpaW AD,STAD
+	BCC CKSD
+	CmpaW NDAD,AD
+CKSD	RTS
+*
+API1	PRINT
+	DFB EOL,0
+API2	ClearW TOA
+
+API	LDA FFG
+	BEQ +
+
+	  F1STSEG
+	
++	LDA AD
+         STA ADR
+         STA ADV
+         
+         LDA AD+1
+         STA ADR+1
+         STA ADV+1
+	
+	LDA ZZF
+	BEQ +
+
+	  PTORG
+	  PutW ADR
+	  PRL
+	  PRL
++	MovlB LSPOS,0
+	FTY
+	CHKTOA
+	ITLB
+
+APLOOP	LDX STKV
+	TXS
+	LDA EOFG
+	BNE APD
+
+	LDA SGFG
+	BEQ +
+
+	  PRL
+	  PRL
+	  PTORG
+	  PutW STAD
+	  PRL
+	  PRL
+	  FTY
+	  ITLB
+
++	MovlB HILOFG,0
+	STA LBFG
+	STA J9FG
+	LDA FLFG
+	BEQ +
+
+	  TOAINSEG
+
+	  BCC skip		NDAD < TOA  ie. TOA not in segment
+
++	  CmpaW TOA,ADR
+	  BCS skip			ADR <= TOA
+
+	    LDA ZZF		ADR > TOA
+	    BEQ APD
+	    
+	      PutW BTC
+	      PutS \ bytes\
+	      WRL
+APD	      JMP DSI
+
+skip	MovaB SKA,ADR
+         STA ADRV 	
+	MovaB SKA+1,ADR+1
+         STA ADRV+1  
+	
+	
+	CONSOLR
+
+	LDA OLNFG
+	BEQ +
+
+	  DEC OLNFG
+	  LDA OLNFG
+	  BEQ APD
+	
++	APINS
+
+	BCC +
+	  JMP APLOOP
+
++	MovlB BT1,156
+	WCM1
+	ADNM1
+	MovlB SKF,0
+	LDA CBF
+	BNE +
+	  LDA FG4
+	  BMI AP1
++	PTFG4
+	LDA CBF
+	BNE +
+	  JMP WI3
+
++	DEC CRSINH
+	PRINT
+	DFB CRSUP,TAB,0
+	MovaW LEN,ADR
+	INPP
+	LDA #$FF
+	Dsta TOA
+	MovaW ADR,LEN
+	BC
+	RDBYT
+	PRINT
+	DFB CRSUP,0
+	PTFG4
+WI3	INCADRw
+	JMP APLOOP
+
+AP1	INCADRw
+	LDA SCTP
+	SWTYP
+	CKTY
+	BCC NormTy
+
+	  LDA TPNO
+	  ASL
+	  TAX
+	  LDA TyPtrTb,X
+	  STA XX+1
+	  LDA TyPtrTb+1,X
+	  STA XX+2
+XX	  XX
+	  JMP AP2
+
+NormTy	INC LBFG
+
+	PutTAB
+	PTOPCD
+
+	LDA BYT
+	TAX
+	AND #$1F
+	STA JJ
+	TAY
+
+	BBB
+
+	PRL
+	LDX TF
+	BEQ +
+	Cmpl BT1,32	jsr no
+	  BEQ DOTRACE
+	  Cmpl JJ,16
+	  BEQ DOTRACE
+	  LDA SKF
++	BNE DOTRACE
+	  JMP APLOOP
+
+******************************
+DOTRACE	PRINT
+	  ASC /<R><T><*><SPACE><RET>/
+	  DFB 0
+	  GETC
+	  BPL +
+	  JMP ALERR
+	  
++	  PHA
+	  PRINT
+	  DFB DLN,0
+	  PLA
+	  CMP #ESC
+	  BNE +
+	    DEC TF
+	    JMP DSI1
++	  CMP ' '
+	  BEQ AP3
+	  CMP 'R'
+	  BEQ RT1
+	  CMP '*'
+	  BNE +
+	    JMP TR1
+
++	  CMP 'T'		trace
+	  BNE DOTRACE
+
+	Cmpl BT1,32	jsr no
+	BNE +
+
+	LDY SP
+	LDA ADR
+	STA SK,Y
+	INY
+	LDA ADR+1
+	STA SK,Y
+	INY
+	JMP APF
+
++	CMP #108
+	BEQ APERR
+	CMP #64
+	BEQ APERR
+	CMP #96
+	BNE +
+
+RT1	  LDY SP
+	  BEQ APERR
+	  
+	  DEY
+	  LDA SK,Y
+	  STA SKA+1
+	  DEY
+	  LDA SK,Y
+	  STA SKA
+APF	  STY SP
+	  STY SPV
++	MovaB AD,SKA
+	STA TV
+	MovaB AD+1,SKA+1
+	STA TV+1
+	PutS \*****\
+	LDA SP
+	LSR
+	PHB
+	PRL
+	JMP API
+AP2	PRL
+AP3	JMP APLOOP
+*** TRACE NOT POSSIBLE
+APERR	LDY #$F
+ALERR	JMP IOERR
+*
+PTORG	PRL
+	PutTAB
+	PutS \ORG $\
+	RTS
+*
+ORGty	DecW ADR
+	PutTAB
+	PutS \ORG *+$\
+	ClearW TCT
+-	IncW TCT
+	CKNA
+	BCC -
+	
+	PutW TCT
+	JMP PRL
+*
+DFWTY	LDA BYT
+	PHA
+	CKNA1
+	BCS +
+
+	  LDA ADR
+	  AND #1
+	  CMP ODF
+	  BNE skip
+
++	    PLA
+	    STA BYT
+	    PLA
+	    PLA
+	    MovlB TCT,1
+	    JMP DFBT1
+
+skip	LDA SCTP
+	BMI +
+
+	MovaB SKA+1,BYT
+	PLA
+	STA SKA
+	JMP skip
+
++	MovaB SKA,BYT
+	PLA
+	STA SKA+1
+
+skip	INCADRw
+	PutTAB
+	PutS \DFW \
+	MovlB CHC,0
+	INC LBFG
+	RTS
+*
+DFWmiTy	DFWTY
+	IncW SKA
+	ADNM2
+	PutS \-1\
+	JMP WCM2
+*
+DFWeqTy	DFWTY
+	LDA SKA
+	BNE DWD
+	LDA SKA+1
+	BNE DWD
+
+	PutS \0\
+	RTS
+
+DWD	JMP B3D
+
+*
+NORTZ	ASC "%"
+INVTZ	ASC "$"
+*
+StrTy	AOI
+	BPL WSCTL	screen cntrl char found
+
+	  CMP '"'
+	  BEQ STT1
+	  AND #%01100000	is ASCII
+	  BNE WASC
+
+STT1	PTDFB
+-	LDA BYTSV
+	JMP PHB
+* Write DFB and screen control char
+WSCTL	PTDFB
+* Write screen control char	
+WSCTL1	STA SKA
+	MovlB SKA+1,0
+	FADR1
+	BPL -
+	CKCONSTY
+	BNE -
+	Wadnm
+	RTS
+
+WASC	PTAS
+	LDA BYT
+	BMI ASCINV
+
+	LDA NORTZ
+	PTCH
+
+loop	LDA BYT
+	  BMI ASCD
+
+	  PTCH
+	  CKNA
+	  BCS ASCD
+
+	  AOI
+	  BPL ASCD
+
+	  AND #%01100000
+	  BEQ ASCD
+
+	  DEC TCT
+	  BNE loop
+
+ASCD	LDA NORTZ
+	AND #%01111111
+	JMP PTCH
+*
+ASCINV	LDA INVTZ
+	AND #%01111111
+	PTCH
+
+AV6	LDA BYT
+	BPL AVND
+	AND #%01111111
+	PTCH
+
+	CKNA
+	BCS AVND
+
+	AOI
+	BPL AVND
+
+	AND #%01100000
+	BEQ AVND
+
+	DEC TCT
+	BNE AV6
+
+AVND	LDA INVTZ
+	JMP PTCH
+*
+AOI	MovaB BYTSV,BYT
+	MovlB NORTZ,'"'
+	MovlB INVTZ,'/'
+	Cmpl SCTP,'"'
+	BEQ CkScrCtl
+
+	MovlB NORTZ,'%'
+	MovlB INVTZ,'$'
+	
+	LDA BYT
+	LDX #0
+-	CMP #32
+	  BCC +
+	  INX
+	  SBC #32
+	  JMP -
+
++	ADC ASTB,X
+	STA BYT
+*** Is BYT a screen control char? MI:not found
+CkScrCtl	LDA BYT
+	LDX #FLerrTb-ESCchTB	=16
+
+-	DEX
+	BMI +
+	  CMP ESCchTB,X
+	  BNE -
+
++	RTS
+*
+*******************************************************  
+TXTB1	DFB $0D,$0A
+TXTB2	DFB EOL,0
+TXTty	MovlB TCT,40	line of text
+	DecW ADR
+
+loop	LDA BYT
+
+	  LDY #TXTB2-TXTB1
+-	  DEY
+	    BMI +
+	    CMP TXTB1,Y
+	    BNE -
+	
+	  LDA TXTB2,Y
+	  BEQ skip		skip cha
+
++	    CMP #EOL
+	    BEQ cont
+
+	    PTCH
+	    DEC TCT
+	    BEQ cont
+
+skip	  CKNA
+	  BCS TXTD
+	  BCC loop
+
+cont	INCADRw
+
+TXTD	RTS
+
+*** DFB Character
+DFBty	MovaB TCT,DFBLEN	length of DFB-sequence
+DFBT1	DecW ADR
+	PTDFB
+DFBloop	LDA SCTP
+	CMP '#'
+	BEQ DFBphb
+	
+	  LDA BYT
+	  CkScrCtl
+	  BEQ DFBsym
+
+	  LDA BYT
+	  BMI DFBphb
+
+	    AND #%01100000
+	    BEQ DFBphb
+	
+	      PutS \'\	put character
+	      LDA BYT
+	      PTCH
+	      PutS \'\
+	      JMP NXTbyt
+
+DFBphb	LDA BYT
+	PHB
+	JMP NXTbyt
+	
+DFBsym	WSCTL1
+	
+NXTbyt	DEC TCT
+	  BEQ +
+
+	    CKNA
+	    BCS DFBchD
+	    PutS \,\
+	    JMP DFBloop
+
++	INCADRw
+DFBchD	RTS
+	
+* Check next ADR
+CKNA	INCADRw
+	JMP CKNA1
+	
+
+	
+*** Find type (SCTP)
+FTY	MovaW SKA,ADR
+	FADR1
+	PHP
+	MovaW ADR1V,ADR1
+	MovaW PVAV,PVA
+	PLP
+	BNE YY
+
+	LDY #0
+	LDA (PVA),Y
+	AND #%00000001
+	STA ODF
+
+	DecW ADR1
+	LDA (ADR1),Y
+	SWTYP
+	STA SCTP
+YY	RTS		YY is in PICTAB
+********************************************
+*** Address-table for Menu
+PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW
+	DFW fBLANK,DECOL1,INCOL1,INPT,DECOL2,INCOL2	
+*	DFW fBLANK,INPT,INPT,INPT,INPT,INPT
+	DFW INPT,INPT,LBRACK,RBRACK
+	DFW fSTAR,fPL,fCOMMA,fMI,fPERIOD,fSLASH
+	DFW f6to0,f1to5,f1to5,f1to5,f1to5,f1to5
+	DFW f6to0,f6to0,f6to0,f6to0,YY
+	DFW fSEMICOL,fLEthan,fEQUAL,fGRthan,fQUEST,SHIFT8	fQUEST: next line
+	DFW AAdrSym,BBYTE,CCODE,DDELETE,EEDIT,FFILE
+	DFW GGO,HHEAD,IINDEX,JJUNK,KKEYS,LLIST
+	DFW MMINLAB,NNEW,OOBTAIN,PPREPARE,QQUIT
+	DFW RReADR,SSAVE,TTRACE,UUTILITY,0
+* one-line-flag
+OLNFG	DFB 0
+*#
+DECOL1	DEC PKT
+	DEC PKT
+	JMP DSI
+INCOL1	INC PKT
+	INC PKT
+	JMP DSI
+DECOL2	DEC PKT+1
+	DEC PKT+1
+	JMP DSI
+INCOL2	INC PKT+1
+	INC PKT+1
+	JMP DSI
+LBRACK	LDA COLOR2
+	ADC #16
+	STA PKT+1
+	JMP DSI
+RBRACK	LDA COLOR2
+	SEC
+	SBC #16
+	STA PKT+1
+	JMP DSI
+	
+	
+*#
+*** Trace next lines ***
+fBLANK	INC TF
+	MovAW AD,ADV
+	JMP API1
+*** List next line ***
+fQUEST	MovlB OLNFG,2
+	JMP fESC
+*** List from (last address) - 1
+fLEthan	DecW ADV
+	JMP +
+*** List from (last address) + 1
+fGRthan	IncW ADV
+
++	PRINT
+	DFB EOL,EOL,0
+*** List from last entered address
+fEQUAL	MovaW AD,ADV
+	PRINT
+	DFB EOL,0
+	JMP API1
+*** Set minimum label
+MMINLAB	MovaW MNLB,ADR
+	RTS
+*** Go to Main Menu
+fSLASH	PRMEN
+	LDX #0
+	STX XSAV
+	MovlB CNT,'A'
+	BNE +
+
+WGLP	STX XSAV
+	  LDA MenTab-1,X
+	  BEQ WGD
+	  BPL skip
+
+	    AND #127
+	    PUTR
++	    PRINT
+	    DFB EOL,TAB,0
+	    Cmpl CNT,'V'
+	    BEQ WGD
+
+	    PUTR
+	    INC CNT
+	    PRINT
+	    ASC ". "
+	    DFB 0
+	    JMP WG2
+
+skip	  PUTR
+WG2	  LDX XSAV
+	  INX
+	  BNE WGLP
+
+WGD	RTS
+*
+QQUIT	Cmpl AD,1
+	BNE WGD
+
+	MovlB LS,0
+	STA CRSINH
+	PRINT
+	ASC "SAVE? Y/N"
+	DFB EOL,0
+	GETC
+	CMP 'N'
+	BEQ Q1
+	LDA 'S'
+	NP
+	JMP DSI
+
+Q1	MovaW $C,JDOS+1
+	MovlB RAMTOP,$C0
+	JMP QI
+
+JDOS	JSR 0
+	MovaB RAMTOP,RAMTOPSV
+	JMP BG1
+*** Escape key
+fESC	MovaW AD,ADRV	EOL
+	WDBS
+	JMP API
+*** Cursor keys
+fARROW	LDA 'E'
+	BNE CMPQ		(forced branch)
+	
+* Main Menu Input
+INPT	MovlB LS,0
+	STA CRSINH
+	GETC
+	AND #%01111111	include inverted
+NP	INC CRSINH
+	STA GTC
+
+
+CMPQ	CMP 'v'		Letter after u
+	BCS INPT
+	CMP #ESC		ESC - first FKey
+	BCC INPT
+	PHA
+
+	CMP 'A'
+	BCC FJA
+*			have A - U
+	AND #%11011111	include lower case
+	CMP 'V'		Letter after U
+	BCS INPT
+	
+	PHA
+	WDBS
+	PLA
+
+	SEC
+
+	SBC 'A'
+	TAX
+
+	LDY #$FF
+
+-	INY
+	DEX
+	BMI FGT2
+
+loop	LDA MenTab,Y
+	BMI -
+	INY
+	BNE loop		J
+
+FGT2	LDA MenTab,Y
+	BMI FJA
+
+	DEY
+
+FGT3	INY
+	TYA
+	PHA
+	LDA MenTab,Y
+
+	AND #%01111111
+
+	PUTR
+
+	PLA
+	TAY
+	LDA MenTab,Y
+	BPL FGT3
+
+	DEC CRSINH
+	PRINT
+	DFB '>',EOL,0
+
+	INPP
+
+	MovaW NWASV,NWA
+*** Find jump address
+FJA	PLA		Have FKey
+
+	SEC
+	SBC #ESC		ESC- First Fkey
+	ASL
+	TAX
+	LDA PICTAB,X
+	STA JMPAD
+	LDA PICTAB+1,X
+	STA JMPAD+1
+	JMP (JMPAD)
+
+INPP	INPT20LS
+	BMI IERR
+
+	INC CRSINH
+	JMP INO
+
+IERR	JMP IOERR
+
+
+
+OPFG	DFB 0
+*** Print opcode
+PTOPCD	LDY BYT		better 	LDX BYT
+	LDA OPOF,Y		LDY OPOF,X
+	TAY			don't need TAY
+	STY OPFG
+	LDX #3
+
+-	LDA OPCtab,Y	put three characters
+	  PTCH
+	  INY
+	  DEX
+	BNE -
+	RTS
+*******************************************
+BBB	MovaB BT1,BYT
+	LDA OPFG
+	BNE skip
+
+	  LDA ZF
+	  BEQ B1P	rts
+
+	  PTHW		?????????
+	  MovaW ADV,SKA	?????????
+	  WRL		?????????
+*** NEED D4OF/<SYMBOL>	  
+	  LDY #$C	?????????
+	  JMP IOERR	?????????
+*** Opcodes without operands
+skip	CPY #8		"PHP,PLP,...
+	BEQ B1P
+	CPY #24		"CLC,.....
+	BEQ B1P
+	CPY #26		".....
+	BEQ B1P
+	CPY #10		"ASL,......
+	BEQ B1P
+
+	CPX #0		"BRK
+	BEQ B1P
+	CPX #96		"RTS
+	BEQ +
+	CPX #64		"RTI
+	BNE skip
+
++	JMP SKL
+
+B1P	RTS
+*** There is an operand
+skip	RDBYT
+	BCS B1P
+
+	JUNK1
+	INCADRw
+	MovaB BT2,BYT
+	STA SKA
+	MovlB SKA+1,0
+
+	BLK
+	MovlB CHC,0
+
+	CPY #1
+	BNE JJ4
+	PutS \(\
+	ADNM2
+	PutS \,X)\
+	JMP WCM2
+
+JJ4	CPY #4
+	BCC OPCNN
+	CPY #7
+	BCS OPCNN
+	JMP B3D
+*** OPC #nn
+OPCNN	CPY #9		"ORA #
+	BEQ +
+	CPX #160		"LDY #
+	BEQ +
+	CPX #162		"LDX #
+	BEQ +
+	CPX #192		"CPY #
+	BEQ +
+	CPX #224		"CPX #
+	BEQ +
+	JMP BR
+
++	LDA HIF1
+	BNE J9SC
+
+	LDA ANFV
+	BEQ skip
+
+	  Cmpl SCTP,'&'
+	  BEQ +
+
+	    CMP '@'
+	    BNE skip
+
++	  MovaB SYA,BT2
+	  INC HIF
+	  MovaW SAV,ADRV
+	  MovaW A1S,ADR1V
+	  RTS
+
+skip	LDA HIF
+	BEQ J9SB
+
+	MovaB SYA+1,BT2
+	DEC HIF
+	INC HIF1
+	MovaW ADR,SAV
+	MovaW ADR1V,A1S
+	MovlB LSPOS,0
+	ITLB
+	JMP APLOOP
+
+J9SC	Cmpl SCTP,'&'
+	BNE +
+
+	  MovaW SKA,SYA
+	  JMP skip
+
++	MovaB SKA,SYA+1
+	MovaB SKA+1,SYA
+
+skip	PutS \#\
+	INC J9FG
+	LDA ANFV
+	BEQ +
+
+	  ADNM2
+	  Cmpl SCTP,'&'
+	  BEQ COMMENT
+
+	  BNE J9SJ
+
++	DEC HIF1
+	ADNM2
+	Cmpl SCTP,'&'
+	BNE COMMENT
+
+	JMP J9SJ
+
+J9SB	MovaW SKA,ADR
+	DecW SKA
+	FADR1A
+	BEQ J9S1
+
+	PutS \#\
+	MovaW ADR1SV,ADR1
+	INC HILOFG
+	WHILO
+	BEQ J9S1
+
+	CMP ':'
+	BNE J9LO
+
+	MovaB SKA+1,BT2
+	MovaB SKA,NWA
+	ADNM2
+J9SJ	PutS \:H\
+	JMP COMMENT
+
+J9LO	MovaB SKA,BT2
+	MovaB SKA+1,NWA
+	ADNM2
+*** comment
+COMMENT	WCM2
+	PRL
+	LDA J9FG
+	BNE J9LN
+	LDA FG3
+	BPL J9LN
+
+	MovaW ADR1,ADR1SV
+	LADNM
+
+J9LN	JMP APLOOP
+
+J9S1	LDX SCTP		type binary
+	CPX '!'
+	BEQ MASK
+	LDX BT1
+	CPX #41		"AND #
+	BEQ MASK
+	CPX #73		"EOR #
+	BEQ MASK
+	CPX #9		"ORA #
+	BNE J9S5
+
+MASK	PutS \#%\
+	LDA BT2
+	PTBI1
+	JMP PTASC
+
+J9S5	LDA BT2
+	LDX SCTP		( [
+	CPX '['		[
+	BEQ skip		[
+	CPX '('		(
+	BNE +		(
+*** [ and (
+skip	  STA SKA
+	  MovlB SKA+1,0
+	  PutS \#\
+	  ADNM2
+	  LDA ';'
+	  STA SCTP
+	  JMP WCM2
+*** '/''
++	CPX #39		'/''
+	BNE skip
+
+	  CkScrCtl
+	  BPL +
+
+	    LDA BYT
+	    BMI +
+	      AND #%01100000
+	      BEQ +
+
+	  LDA BYT
+	  JMP PA3
+
++	  PutS \#\
+	  LDA BYT
+	  PHB
+	  JMP PTAS2
+
+skip	PutS \#\
+	LDA BYT
+	PHB
+	PTBI
+
+PTASC	LDA FG9
+	BPL PAND
+
+PTAS2	CkScrCtl
+	BMI PA1
+
+*	PutS \ [S]\
+	JMP PAND
+
+PA1	LDA BYT
+	LDX FG4
+	BPL PA5
+
+	LDA BYT
+	BMI PAND
+
+PA5	AND #%01100000
+	BEQ PAND
+
+	BLK
+PA3	PutS \'\
+	LDA BYT
+	PTCH
+	PutS \'\
+
+PAND	LDA JF2
+	BEQ PA9
+
+	LDA BYT
+	CMP NWASV
+	BNE PA9
+
+	WC28
+PA9	RTS
+
+BR	CPY #16
+	BEQ BR3
+	JMP J17
+
+BR3	MovaW SKA,ADRV
+	CALCBRA
+	DETZ
+	LDA PREPFG
+	BEQ BR2
+*	STS BLB
+	MovlW $20,BLB
+	ILSR
+J22D	RTS
+
+BR2	LDA JF1
+	BEQ BR8
+
+	JMP WC2ND
+BR8	LDA JF2
+	BNE J22D
+
+	FADR1
+	BPL BR1
+
+	WADNM
+	WCM2
+	JMP PRL
+
+BR1	ANO
+	BCS BR4
+
+	WJLTL
+	BCS BR5
+
+BR4	WBL
+	BCC BR6
+
+BR5	JMP PRL
+
+BR6	WRAD
+	JMP PRL
+
+J17	CPY #17
+	BNE J20
+	PutS \(\
+	ADNM2
+	PutS \),Y\
+	JMP WCM2
+
+J20	CPY #20
+	BEQ J29S
+	CPY #21
+	BEQ J29S
+
+	CPY #22
+	BNE B3
+	CPX #150
+	BEQ J25
+	CPX #182
+	BEQ J25
+	BNE J29S
+*
+B3	RDBYT
+	BCS J22D
+
+	JUNK1
+	INCADRw
+	MovaB BT3,BYT
+	STA SKA+1
+	MovaB SKA,BT2
+
+	CPY #25
+	BEQ J25
+	CPX #190
+	BNE J29
+
+J25	ADNM2
+	PutS \,Y\
+	JMP WCM2
+
+J29	CPY #29
+	BEQ J29S
+	CPY #30
+	BEQ J29S
+	CPX #188
+	BNE X108
+
+J29S	ADNM2
+	PutS \,X\
+	JMP WCM2
+
+X108	CPX #108
+	BNE X76
+	PutS \(\
+	ADNM2
+	PutS \)\
+	WCM2
+	JMP SKL
+
+X76	CPX #76		jmp
+	BNE B3D
+	ADNM2
+	WCM2
+SKL	INC SKF
+	JMP PRL
+
+B3D	ADNM2
+	JMP WCM2
+*
+PTBI3	MovlB NULL,'.'
+	MovlB EINS,'*'
+	BNE PB3
+
+NULL	ASC "0
+EINS	ASC "1
+
+PTBI	LDA FG8
+	BPL PBND
+
+	PutTAB
+PTBI1	MovlB NULL,'0'
+	MovlB EINS,'1'
+PB3	LDX #8
+	LDA BYT
+PB1	ASL
+	PHA
+	LDA NULL
+	BCC PB2
+	LDA EINS
+PB2	PTCH
+	PLA
+	DEX
+	BNE PB1
+PBND	RTS
+*** Write address name (ADR1)
+WADNM	MovlB FG,0
+	LDY #3
+	LDA (ADR1),Y	length of entry in symbol table
+	TAY		in Y
+	CLC
+	SBC #3		visible length
+	TAX		in X
+
+	DEY
+	LDA (ADR1),Y
+	BPL +
+	WADNMI
+
++	LDY #3		
+loop	INY
+	  CPY #12
+	  BEQ skip
+	  
+	    LDA (ADR1),Y
+	    CKTY
+	    BCS skip
+
+	      PTCH
+	      INC FG	set if symbol
+	      DEX
+	      BNE loop
+
+skip	LDA FG
+	BNE +
+
+	WJLTL
+	BCC WAND
+
++	SEC
+WAND	RTS
+*
+WCM2	LDA PREPFG
+	BEQ CPND
+
+	CmpaW SKA,MNLB
+	BCC CPND
+
+	LDA CONSTFG	v403 This works
+	BNE CPND		v403 This works
+
+	LDA HILOFG
+	BNE CPHL
+
+	Cmpl BT1,32	jsr no
+	BEQ CP3
+	CMP #76		jmp
+	BEQ CP3
+
+	LDA SCTP
+	AND #%01111111
+	CMP '='
+	BEQ CP3
+	CMP '-'
+	BEQ CP3
+
+CPHL	STS TLB		MovlW $20,TLB  ILSR
+	RTS		
+
+CP3	STS JLB		MovlW $20,JLB  ILSR
+	RTS
+
+CPND	LDA ANF
+	BEQ WC2ND
+	LDA ZF		SGEN412
+	BNE WC2ND	SGEN412
+
+	LDA FG5
+	BPL WC22
+
+	LDA FG6
+	BPL WC23
+	BLK
+WC26	PutS \  \
+	JMP WC24
+
+WC23	LDX CHC		*** Adjust tabs ****
+	LDA FG7		jsr selected?  jjjj
+	BMI IN4X		no: to in4x    jjjj
+	Cmpl BT1,32	jsr?
+	BEQ WC2B		yes
+	
+IN4X	  INX		no
+	  INX
+	  INX
+	  INX
+WC2B	CPX #16
+	BCS WC26
+
+	PutTAB
+	CPX #9
+	BCS WC24
+	PutTAB
+
+WC24	LDA ANF
+	BPL WC22
+	PTHW
+
+WC22	LDA FG6
+	BPL WC2ND
+
+	WCM
+WC2ND	LDA JF1
+	BEQ WC29
+
+	LDA HIF
+	BNE WC29
+
+	CmpaW NWASV,SKA
+	BNE WC29
+
+WC28	WRL
+	GETC
+	CMP #ESC
+	BNE WC2A
+
+	PRINT
+	DFB EOL,0
+	JMP DSI
+WC2A	JMP APLOOP
+WC29	RTS
+*** Write comment
+WCM1	MovaW ADR1,ADR1V
+	FADR1A
+	STA ANFV
+	MovaW ADR1V,ADR1
+
+	LDA ANF
+	BEQ skip
+
+	  LDA ADR
+	  AND #1
+	  STA ODF
+	  LDA PREPFG
+	  BEQ skip
+
+	    LDY #2
+	    LDA (ADR1),Y
+	    BEQ skip
+
+	INC LBFG
+
+	MovlW $20,TLB
+	ILSR
+	DEC LBFG
+	MovaW ADR1,ADR1V
+
+skip	LDA ANF
+	BNE WC16
+
+	LDA FG3
+	BPL WC17
+
+	CKJLTL
+	BCC WC17
+
+	PTHW
+	PutS \ /\
+	PRL
+WC17	RTS
+*** SCTP '&' or '@'
+WC16	LDY ADR1OF
+	DEY
+	LDA (ADR1),Y
+	STA SCTP
+	CMP '&'
+	BEQ +
+	  CMP '@'
+	  BNE WC18
++	LDA HIF1
+	BEQ WC17
+
+WC18	LDA FG3
+	BPL +
+	JMP LADNM
+
++	PutS \*\
+	LDA ANF
+	ifPL
+	  CKJLTL
+	  BCS +
+
+endif	LDA FG1
+	BPL +
+
+*	BLK
+	PTHW
+*** comment line-begin
++	LDA FG2
+	ifMI
+*	  BLK
+	  WCM
+endif	JMP PRL
+*
+WHeadCmt	LDA FG2		SGEN412
+	BMI +		SGEN412
+	BPL WCD		SGEN412
+	
+WCM	LDA ANF
+	BEQ WCD
+
++	LDY #3
+	LDA (ADR1),Y
+	TAX
+	DEX
+	DEX
+	DEX
+	DEX
+	STX XSAV
+
+WC5	INY
+	CPY #13
+	BEQ WC1
+	LDA (ADR1),Y
+	CMP ';'
+	BEQ WC4
+	DEX
+	BNE WC5
+	RTS
+
+WC4	CPX #1
+	BEQ WCD
+	BNE WC2
+
+WC1	LDX XSAV
+	INX
+	LDY #3
+WC2	BLK
+	DEX
+
+WC3	INY
+	LDA (ADR1),Y
+
+	PTCH
+	DEX
+	BNE WC3
+
+	LDA (ADR1),Y
+	CKTY
+	BCC WCD
+
+	DEC LSPOS
+
+WCD	RTS
+*
+ADNM1	LDA ANF
+	BEQ ADN12
+
+	MovaW PVAV,ADR1
+	LDA ANF
+	BPL ADN15
+
+	WADNM
+	LDA JKF1
+	BEQ AN1ND
+	BNE ADN15
+
+ADN12	  MovaW PVA,PVAV
+	  ANO
+	  BNE ADN13
+
+ADN15	WJLTL
+	BCS AN1ND
+
+ADN13	LDA CBF
+	BNE skip
+	LDA FG3
+	BPL ADN14
+skip	PTHW
+	MovlB ANF,0
+ADN14	WBL
+	BCS AN1ND
+
+	LDA JKF1
+	BEQ AN1ND
+	LDA SKF
+	BEQ AN1ND
+
+	MovlB LSPOS,0
+	PTHW
+	LDA ANFV
+	BPL ADN16
+
+	BLK
+	WADNM
+ADN16	LDA JKF1
+	BNE AN1D
+	WRL
+
+AN1ND	RTS
+
+AN1D	DEC JKF1		Print junk1 address
+	PRL
+	INC JKF1
+	RTS
+	
+*** Put address or symbol after opcode (SKA)
+ADNM2	LDA JF2
+	BNE CP5
+	LDA JF1
+	BEQ skip
+CP5	CmpaW SKA,NWASV
+	BNE AN1ND
+*** Hide JSR?
+skip	Cmpl BT1,32	jsr?
+	BNE +		no: skip
+	LDA FG7		jsr selected? jjjj
+	BMI +		yes: skip     jjjj
+	
+	  SEC		
+	  LDA LSPOS
+	  SBC #4		go back 4 spaces
+	  BCC +		Avoid negative value. (not needed)
+	  STA LSPOS
+
++	FADR1
+	LDA ANF
+	BEQ AN21
+	BPL WAORL
+
+	DETZ
+	JMP WADNM
+
+AN21	ANO
+	BNE PTOFS
+
+WAORL	DETZ
+	WJLTL
+	BCS AN3D		exit if label
+
+	Cmpl BT1,32	jsr?
+	BNE WRAD		no: go pt '$' now
+	
+	LDA FG7		jsr selected?      jjjj
+	BMI WRAD		no: go pt '$' now  jjjj
+	
+	  CLC		yes: 
+	  LDA LSPOS	first move up 4
+	  ADC #4
+	  STA LSPOS
+
+WRAD	PHW
+	LDA ZF
+	BEQ AN3D
+
+	CmpaW MNLB,SKA
+	BCS AN3D
+
+	WRL
+	LDY #$E
+	JMP IOERR
+*** No Error--Label was prepared
+AN3D	RTS
+
+PTOFS	LDA AOF
+	BNE PTO1
+
+	MovaW ADR1,PVA
+	MovPZ SKA,PVA
+
+	OFSI
+	WADNM
+	BCS PTO2
+
+	WRAD
+PTO2	PutS \+\
+	MovaB SKA,SKAV
+	SEC
+	LDY #0
+	LDA SKA
+	SBC (PVA),Y
+	JMP PHB
+
+PTO1	MovPZ SKA,ADR1
+
+	DETZ
+	WADNM
+	BCS PTO4
+
+	WRAD
+PTO4	PutS \-\
+	MovaB SKA,SKAV
+	SEC
+	LDY #0
+	LDA (ADR1),Y
+	SBC SKA
+	JMP PHB
+*** Output-menu 1.address
+FG1	DFB 128
+*** Output-menu 2.comment
+FG2	DFB 127
+*** Output-menu 3.ADDRESS
+FG3	DFB 128
+*** Output-menu 4.COMMAND
+FG4	DFB 128
+*** Output-menu 5.address
+FG5	DFB 128
+*** Output-menu 6.comment
+FG6	DFB 127
+*** Output-menu 7.JSR
+FG7	DFB 127
+*** Output-menu 8.binary
+FG8	DFB 127
+*** Output-menu 9.ASC
+FG9	DFB 127
+FGD	DFB 0
+*** Output-Menu
+fPERIOD	WDBS
+	LDY #0
+-	LDA (SAVMSK),Y
+	STA OUTMENSV,Y
+	LDA MENU,Y
+	STA (SAVMSK),Y
+	INY
+	CPY #160
+	BNE -
+*** Output-menu loop
+GETLP	MovaW ADR1,SAVMSK
+
+	LDX #0
+*** Invert selected items
+INVLN	LDY #9
+loop	LDA FG1,X
+
+	BMI IL1
+	AND (ADR1),Y
+	BPL IL2
+IL1	ORA (ADR1),Y
+IL2	STA (ADR1),Y
+	DEY
+	CPY #1
+	BNE loop
+
+	CLC
+	LDA MTAB,X
+	BEQ skip		X==8
+
+	ADC ADR1
+	STA ADR1
+	BCC +
+
+	INC ADR1+1
++	INX
+	BNE INVLN
+
+skip	GETC		inverts 9B to 1B
+	BMI +		break key?
+	CMP #ESC
+	BNE skip
+
++	LDY #0
+*** Restore 4 lines and exit
+loop	LDA OUTMENSV,Y
+	  STA (SAVMSK),Y
+	  INY
+	  CPY #160
+	  BNE loop
+
+	JMP DSI
+*** <A> deselects all
+skip	CMP 'A'
+	BNE skip
+	LDX #8
+	LDA #127
+loop	STA FG1,X
+	DEX
+	BPL loop
+	BMI GETLP
+*** <1> to <9> are vadid
+skip	SEC
+	SBC '1'
+	CMP #FGD-FG1
+	BCS GETLP
+
+	TAX
+	LDA #$FF
+	EOR FG1,X
+	STA FG1,X
+	JMP GETLP
+	
+*** P.PREPARE
+PPREPARE	LDA LS
+	BNE +
+
+	  Dsta BLE
+	  Dsta JLE
+	  Dsta TLE
+	  STA SWTP
++	INC PREPFG
+	MovaW LOFST,NWA
+	MovlB FG4,128
+	JMP API
+	
+*** Calculate branch
+CALCBRA	AddlB SKA,2
+	LDA BT2
+	BPL +
+
+	  DEC SKA+1
++	CLC
+	ADC SKA
+	STA SKA
+	BCC CBND
+	  INC SKA+1
+CBND	RTS
+
+*** Open file
+OPFL	MovlB FLFG,1
+	LDX #$60
+	ComCiov CCLOSE
+*** Open file, 4: read
+OPD1	MovlWX ICAX1,4	OR $C (BYTE CHANGE)
+
+
+*	LDA #FLV		5014
+*	STA ICBADR,X	344
+*	LDA #FLV/$FF	5014
+*	STA ICBADR+1,X	345
+
+
+	ICBadrl FLV
+	ComCiov COPN
+	BMI FERR
+
+	OPFLI
+*** Check #$FF, needed for load-file
+CKFF	GETR		err if not ff
+	BMI FERR
+	CMP #$FF
+	BEQ CKFND
+
+	LDY #6
+	BNE FERR
+
+CKFND	RTS
+
+*** Error - no filename saved
+FE1	LDY #$A5
+FERR	JMP IOERR
+
+*** F. FILE
+FFILE	MovlB FLFG,0
+	STA FFG
+	STA CNT
+
+	Cmpl AD,$FF	ff entered
+	BNE +
+
+	  JMP DSI	if ff
+
++	DEC AD
+
+	LDA LS
+	BEQ FA		no entry	at all
+	
+	adjstDX
+
+	  LDY #$FF
+***  Save file name (LS to FLV)
+loop	    INY
+	    LDA LS,Y
+	    STA FLV,Y
+	    CMP #EOL
+	    BNE loop
+
+FA	PRINT
+	DFB DLN,0	del line
+	LDA FLV		get saved file name
+	BEQ FE1		error - no file
+
+	LDX #$20		screen
+	MovlBX ICBLEN,$20
+	ICBadrl FLV
+	ComCiov CPTXTR		wr filename
+	FINS
+FIN	  MovaW BTC,NDAD	loop begin
+	  IncW BTC
+	  RD6B1		RD6B sets STAD,NDAD,DSEC,DBYT
+	  MovlB LSPOS,0
+	  PTSEG
+	  CONSOLR
+	  INC CNT
+	  LDA AD
+	  BEQ F6
+
+	    DEC AD
+	    MovaW ADR,NDAD
+	    INCADRw
+	    POINT
+	    JMP FIN	loop end
+
+
+F6	LDA STAD		MovaW ADR,STAD
+         STA ADR 		MovaW ADRV,ADR
+         STA ADRV
+	LDA STAD+1       
+	STA ADR+1
+	STA ADRV+1
+	JMP DSI
+* Show segments on F.FILE
+PTSEG	PutW STAD
+	PutS \ \
+	PutW NDAD
+	Cmpl LSPOS,9
+	BEQ +
+	PutTAB
+*** diamond
++	PutS \ ` \
+	LDX CNT
+	INX
+	TXA
+	PHB
+	CmpaW STAD,BTC
+	BNE PS1
+	PutS \>\
+PS1	JMP PRL
+
+*** Put TAB DFB
+PTDFB	PutTAB
+	PutS \DFB \
+	RTS
+*
+BinTy	PTDFB
+	PutS \%\
+	LDA BYT
+	JMP PTBI1
+*** Open printer, 8: write 
+OPENPR	OpenX $70,8,'P'
+	BMI PER
+	INC PRF		Set flag for atari printer.
+	RTS
+PER	JMP IOERR
+* J.JUNK?
+JJUNK	Cmpl NWA,1
+	BEQ skip
+	
+	  INC JKF
+	  BNE GGO
+	
+skip	INC JKF1
+	BNE GGO
+* T.TRACE
+TTRACE	MovaW TV,AD
+	INC TF		on
+	BNE GGO
+* H.HEAD
+HHEAD	ERTOA0		Error if no to-address
+	SETSGTAB
+	ClearW ZLE	0
+	Dsta DLE		0
+	INC ZF		on
+	
+	LDX #127
+	STX FG3		off
+	INX
+	STX FG4		on
+* G.GO
+GGO	MovlB ROWCRS,23
+	MovlB SWTP,0
+
+	LDA LS
+	BEQ CDD		nothing
+	
+	CMP 'P'		Atari printer?
+	BNE skip
+	
+	LDA LS+1
+	CMP #EOL
+	BNE skip
+	
+	  OPENPR		PRF = 1
+CDD	  JMP API	
+	
+skip	LDY #$FF		is there a type char?
+loop	INY
+	LDA TypTab,Y
+	BEQ skip		End of table--no char found
+	
+	  CMP LS
+	  BNE loop
+	  
+	  MovaB SWTP,LS	char found
+	  JMP API
+
+skip	LDX #127		sg31
+*	STX FG3		sg31
+	INX		sg31
+	STX FG4		sg31
+
+	LDX #$10		PTDSK
+	STX DFG
+	MovlBX ICAX1,8
+	MovlW OPF1+1,SRC
+	adjstDX		?????
+	OPF
+	MovaB A1,SECSZ
+	JMP API
+
+*** Keys 1 to 5
+f1to5	INC TF
+*** Keys 6 t0 0
+f6to0	SEC
+	LDA GTC
+	SBC '0'
+	ASL
+	TAX
+	LDA FKTB,X
+	STA AD
+	LDA FKTB+1,X
+	STA AD+1
+	JMP API1
+* B.BYTE
+BBYTE	INC CBF
+	PRINT
+	DFB CRSUP,0
+	LDA FLFG
+	BEQ +
+	  MovlB OPD1+1,$C
+	  OPFL
++	  JMP API2
+*
+BC	LDA LS
+	BEQ +
+
+	  STA AD
++	LDA FLFG
+	BNE +
+
+	  LDY #0
+	  LDA AD
+	  STA (ADR),Y
+	  RTS
+
++	POINT
+	MovlBX ICCOM,11
+	MovlBX ICBLEN,0
+	STA ICBLEN+1,X
+	LDA AD
+	CMP BYT
+	BEQ +
+	CIOV
+	BMI BE
++	RTS
+
+BE	JMP IOERR
+
+*** Do if ZF (head flag) is set
+DETZ	LDA ZF
+	BEQ DZD		exit
+
+	LDA FFG
+	BEQ +
+
+	  CKSEGTAB
+	  BCC skip
+	  BCS PLRETADR
+*** not file
++	CmpaW SKA,AD
+	BCC skip		ska < ad
+
+	  CmpaW TOA,SKA	if ska <= toa	
+	  BCS PLRETADR	pull retadress
+*** ska outside, so add to tab
+skip	CKD000
+	BCC skip
+
+	  MovlW $20,DLB
+	  ILSR
+	  JMP PLRETADR
+
+skip	MovlW $20,ZLB
+	ILSR
+PLRETADR	RTS		???????????
+	PLA		???????????
+	PLA		???????????
+DZD	RTS		???????????
+*
+*** List head
+LHEAD	WHDCONST
+	ITLB
+	INC LBFG		on
+	MovlB ADR,0
+	STA BT1		= 0
+	MovaB ADR+1,ZLB
+	MovaW LEN,ZLE
+	LH
+	MovlB ADR,0
+	MovaB ADR+1,DLB
+	MovaW LEN,DLE
+	MovlB BT1,140	(CTRL-L  STY aaaa?)
+	LH
+	RTS
+*
+LH	MovlB LSPOS,0
+	Dsta A2
+
+LHLOOP	CONSOLR
+	LDA LEN
+	BNE +
+	  LDA LEN+1
+	  BNE +
+
+	    JMP LHD
+
++	MovPZ SKA,ADR
+	FADR1
+	BPL +
+
+	  WADNM
+	  JMP LH5
+
++	WJLTL
+	BCS LH5
+
+	  WBL
+	  BCC skip
+
+LH5	PutTAB
+	LDA SKA+1
+	BEQ +
+
+	PutS \EQU \
+	JMP LH2
+
++	PutS \EPZ \
+LH2	PHW
+	WHeadCmt		SGEN412
+	PRL
+skip	AddlB ADR,2
+	SublB LEN,2
+	JMP LHLOOP
+
+LHD	JMP PRL
+
+*** Error if no to-address
+ERTOA0	CmplW TOA,0
+	BNE ETD
+
+	  LDY #$B
+	  JMP IOERR
+ETD	RTS
+
+* C.CODE
+CCODE	MovlB SWTP,0
+	MovlB FG3,128
+	CI
+	BEQ J1
+
+	CMP '#'
+	BNE ETD
+
+	INC JF2
+	BNE JND
+
+J1	INC JF1
+JND	JMP API
+*
+LPV	DFB 0
+*
+ASCty	CkScrCtl
+	BMI AST1
+
+	STA BYTSV
+	JMP WSCTL
+
+AST1	LDA BYT
+	AND #%01100000
+	BNE WAS
+
+	PTDFB
+	LDA BYT
+	JMP PHB
+
+WAS	PTAS
+	MovaB LPV,LSPOS
+	LDA '\'
+	PTCH
+
+ASLP	LDA BYT
+	BMI ASD
+
+	AND #%01100000
+	BEQ ASD1
+
+	LDA BYT
+	PTCH
+
+	CKNA
+	BCS ASD1
+
+	CkScrCtl
+	BPL ASD1
+
+	DEC TCT
+	BNE ASLP
+
+ASD1	LDX LPV
+	LDA '"'
+	STA LN,X
+	JMP PTCH
+
+ASD	INCADRw
+	LDA BYT
+	AND #%01111111
+	PTCH
+	LDA '\'
+	JMP PTCH
+* L.LIST
+LLIST	INC LFG
+	Cmpl LS,'P'
+	BNE LND
+
+	OPENPR
+LND	JMP LSTADNM
+*
+INCADRw	INC ADR
+	BNE DA1
+	INC ADR+1
+	BNE DA1
+	INC EOFG
+DA1	RTS
+*** Write DBS
+WDBS	PRINT
+	DFB DBS,0	
+	RTS
+*** flag4 COMMAND off
+PTFG4	PutTAB
+	MovaB BYTSV,BYT
+	CMP #$10
+	BCS WO
+
+	BLK
+	LDA BYT
+WO	PHB1
+	PutS \ ` \	diamond
+	Cmpl BYT,EOL
+	ifNE
+	  PutC #ESC
+	  PutC BYT
+	  JMP +
+
+endif	PutS \EOL\
+
++	MovlB SCTP,'$'
+	AOI
+	PutS \  \
+	PutC #ESC
+	Cmpl BYT,EOL
+	BNE +
+	  LDA #ESC
++	PTCH
+	PutS \  \
+	MovaB BYT,BYTSV
+
+	PTBI3
+	PutS \  \
+	PTOPCD
+	JMP PRL
+*** List last section displayed using T.TRACE
+fSTAR	INC TF
+TR1	MovaB SP,SPV
+	MovaW AD,TV
+	JMP API1
+*
+PTAS	DecW ADR
+	MovaB TCT,ASCLEN	ASC string length
+	PutTAB
+	PutS \ASC \
+	RTS
+
+
+
+**LIB
+
+
+
+*
+	
+**** "0123456789ABCDEF"
+HXTB	ASC "0123456789ABCDEF"
+LNPTRMX	DFB LN-LS
+NMC	DFB 0
+DBYT	DFB 0
+DSEC	DFW 0
+SGC	DFB 0
+*** "D1:AUTOLOAD"
+AUT	ASC "D1:AUTOLOAD"
+SMB	ASC ".SMB"
+	DFB EOL
+*** Move LEN bytes from ADR1.. to ADR2..
+MovER	MovaW LOCALW1,ADR1
+	MovaW LOCALW2,ADR2
+	LDY #0
+	LDX LEN+1
+	ifNE
+*** LEN:H != 0
+-	  LDA (ADR1),Y
+	  STA (ADR2),Y
+	  INY
+	  BNE -
+
+	  INC ADR1+1
+	  INC ADR2+1
+	  DEX
+	  BNE -
+*** LEN:L == 0?
+endif	LDA LEN
+	BEQ MVND
+*** LEN:L != 0
+do	LDA (ADR1),Y
+	  STA (ADR2),Y
+	  INY
+	  CPY LEN
+	  whileNE
+
+MVND	MovaW ADR1,LOCALW1
+	MovaW ADR2,LOCALW2
+	RTS
+	
+*** Add LEN to ADR1 and ADR2
+MMOVER	AddaW ADR1,LEN
+	AddaW ADR2,LEN
+
+	LDX LEN+1
+	INX
+	LDY #$FF
+
+loop	DEC ADR1+1
+	  DEC ADR2+1
+	  DEX
+	  BEQ skip
+-	    LDA (ADR1),Y
+	    STA (ADR2),Y
+	    DEY
+	    BNE -
+
+	  LDA (ADR1),Y
+	  STA (ADR2),Y
+	  DEY
+	  BMI loop
+
+skip	LDX #0
+-	  CPX LEN
+	  BEQ MMD
+	  
+	    LDA (ADR1),Y
+	    STA (ADR2),Y
+	    DEY
+	    INX
+	    BNE -
+MMD	RTS
+
+*** Find SKA in symtab
+FLA	MovlB ANF,0
+	STA PVA+1
+	STA SEF
+*** long loop
+loop	LDA SCTP		SGEN408
+	CMP ']'		SGEN408
+	BNE +		SGEN408
+*** Check constant is one byte
+	  LDA AD+1
+	  BEQ skip
+	  LDY #$A
+	  BNE CONSTERR
+	  
+skip	  CKCONSTY	SGEN408
+	  BNE NOTF	SGEN408	if next symbol not a constant
+
++	CA1MX		SGEN408 loop replaced with +
+	  BCC +
+	  BEQ NOTF1
+
+	    LDY #$33
+CONSTERR	    JMP IOERR
+*** SKAw == (ADR1)?
++	  LDY #1
+	  LDA (ADR1),Y
+	  CMP SKA+1
+	  BCC FLOF
+	    BEQ LOW
+	    BCS NOTF
+*** Y=0
+LOW	  DEY
+	  LDA (ADR1),Y
+	  CMP SKA
+	  BEQ FLND
+	  BCS NOTF
+
+FLOF	  LDY #3
+	  MovaW PVA,ADR1
+	  LDA (ADR1),Y
+	  CLC
+	  ADC ADR1
+	  STA ADR1
+	  LDA ADR1+1
+	  BCC loop
+	    INC ADR1+1
+	    BCS loop
+*** Address found
+FLND	LDY #4
+	LDX #0
+*** sec type char only?
+-	LDA TypTab,X
+	BEQ NotTyCH
+
+	  INX
+	  CMP (ADR1),Y
+	  BNE -
+
+	   INC ANF
+	   BNE FLND2
+
+NotTyCH	MovlB ANF,128
+
+FLND2	DEY		Y=3
+	LDA (ADR1),Y	
+	TAY
+	STY ADR1OF	Y=ADR1OF
+NOTF	LDA ANF
+	RTS
+	
+NOTF1	INC SEF
+	BNE NOTF	(A is 0)
+******************************************
+	
+* $D000 to $D7FF, write-only table
+WTAB	DFB 140,141,142,153,157
+* $D000 to $D7FF, write only: carry set
+CKD000	Cmpl SKA+1,$D0	
+	BCC CD2		SKA+1 < $D0
+
+	CMP #$D8
+	BCS CD2
+
+	CMP #$D3		are all R/W registers
+	BEQ CD2
+
+	CMP #$D0
+	BNE CD3
+
+	Cmpl SKA,$1F	$D01F is R/W
+	BEQ CD2
+
+CD3	LDX #4
+loop	LDA WTAB,X
+	  CMP BT1
+	  BEQ CD4
+
+	  DEX
+	  BPL loop
+
+CD2	CLC		not D3 to D8
+	RTS
+
+CD4	SEC	Write-only symbol
+	RTS
+
+
+*** search for SKA, ADR1:=SYMTAB
+FADR1	MovlB CONSTFG,1
+	LDA SCTP
+	CMP '"'
+	BEQ skip
+	CMP ','
+	BEQ skip
+	CMP ']'		SGEN408
+	BEQ skip		SGEN408
+	CMP '['
+	BNE +
+
+skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab
+	  MovlB ADR1,0
+	  BEQ FADR1A	forced branch
+	
+	
++	DEC CONSTFG
+	FNDEPZ
+
+
+	
+*** CKD000, search for SKA in symbol table
+FADR1A	LDA SKA			push ska
+	PHA
+	LDA SKA+1
+	PHA
+
+	CKD000
+	BCC +
+
+	  MovlW SKA,NMIST		$D40F
+	  FLA
+	  BEQ FLAERR		not found in symbol table
+
+	  LDY #3
+	  CLC
+	  LDA ADR1
+	  ADC (ADR1),Y		add offset
+	  STA ADR1
+	  BCC +
+	  
+	    INC ADR1+1
+
++	PLA
+	STA SKA+1
+	PLA
+	STA SKA
+	
+	FLA
+	
+	RTS
+*** Need D40F/<SYMBOL>
+FLAERR	LDY #$D
+	JMP IOERR
+*** incorporates MMOVER
+ILSR	WISR
+	BCS IRND
+
+	LDY #1
+	CLC
+	LDA A1
+	ADC #2
+	ADC ($20),Y
+
+	INY
+	LDA A1+1
+	ADC ($20),Y
+
+	INY
+	CMP ($20),Y
+	BNE IR1
+	JMP IOERR
+
+IR1	IncW $20
+	LDA A3
+	ADC #2
+	STA ADR1
+	LDA A3+1
+	ADC #0
+	STA ADR1+1
+
+	CLC
+	LDA A3
+	ADC #4
+	STA ADR2
+	LDA A3+1
+	ADC #0
+	STA ADR2+1
+
+	SubaW A3,A1
+	SEC
+	LDY #0
+	LDA ($20),Y
+	SBC A3
+	STA LEN
+	INY
+	LDA ($20),Y
+	SBC A3+1
+	STA LEN+1
+
+	MovaW TMP,ADR1
+
+	MMOVER
+
+	LDY #1
+	LDA SKA+1
+	STA (TMP),Y
+	DEY
+	LDA SKA
+	STA (TMP),Y
+
+	CLC
+	LDA ($20),Y
+	ADC #2
+	STA ($20),Y
+	INY
+	LDA ($20),Y
+	ADC #0
+	STA ($20),Y
+
+IRND	RTS
+*
+WISR	LDY #0
+	STY A1
+	LDA ($20),Y
+	STA A1+1
+
+	CLC
+	INY
+	LDA ($20),Y	WCM1
+	ADC A1
+	STA A3
+
+	INY
+	LDA ($20),Y
+	ADC A1+1
+	STA A3+1
+
+	LDA LBFG		only place where LBFG is tested
+	BEQ INSTR
+
+WWI1	SublB A3,2
+
+	LDA A3+1
+	CMP A1+1
+	BCC WINF
+
+	LDY #1
+	LDA (A3),Y
+	CMP SKA+1
+	BNE WWI2
+
+	DEY
+	LDA (A3),Y
+	CMP SKA
+	BEQ WIF
+WWI2	BCS WWI1
+
+WINF	CLC
+	RTS
+
+WIF	EquDif CNT,A3,A1
+	SEC
+	RTS
+*
+PNT	EPZ A2
+
+INSTR	LDY #19
+	LDA ($20),Y
+	STA PNT
+
+	INY
+	LDA ($20),Y
+	STA PNT+1
+
+	SublB PNT,2
+
+loop	AddlB PNT,2
+
+	  CmpaW PNT,A3
+	  BCS skip
+
+	    LDY #1
+	    LDA (PNT),Y
+	    CMP SKA+1
+	    BNE +
+
+	  DEY
+	  LDA (PNT),Y
+	  CMP SKA
+	  BEQ cont
+	  
++	  BCC loop
+
+skip	AJPNT
+	CLC
+	RTS
+
+cont	MovaW A3,PNT
+	EquDif CNT,A3,A1
+	AJPNT
+	SEC
+	RTS
+*
+AJPNT	LDY #19
+	LDA PNT
+	STA ($20),Y
+
+	INY
+	LDA PNT+1
+	STA ($20),Y
+	RTS
+*** ZF=0, PRLN, LSPOS=0
+PREL	MovlB ZF,0
+*** Write line, LSPOS:=0
+WRL	PutC #EOL
+	LDX #0
+	PRLN
+	MovlB LSPOS,0
+	RTS
+*
+PRL	LDA HIF
+	BEQ PRL9
+
+	JMP PRL6
+
+PRL9	LDA JF1
+	BNE PRL5
+	LDA JF2
+	BNE PRL5
+	LDA JKF
+	BNE PRL5
+	LDA JKF1
+	BNE PRL5
+	LDA ZF
+	BNE PRL5
+	LDA PREPFG
+	BEQ skip
+*** char to top right corner. J. H. P.
+PRL5	  LDA ADR+1
+	  LDY #39
+	  STA (SAVMSK),Y	Top RH corner of screen
+
+	  JMP PRND
+
+skip	LDX DFG
+	BNE PRL1
+
+	PutC #EOL
+	JMP PRL3
+*** A$, Line Feed: Atari800Win P:
+PRL1	Cmpl NWASV,$A
+	BEQ PRL11
+		
+	PutC #$D		Default, Car. Return: AtmasII editor
+	Cmpl NWASV,$DA	$DA, CR + LF: old printers
+	BNE PRL3
+	
+	LDA #$A
+PRL11	PTCH
+
+PRL3	LDA PRF
+	BEQ +
+	  MovlB ROWCRS,19
+	  PRINT
+	  DFB DLN,DLN,DLN,DLN,0	del four lines	  
++	PRLN		X is DFG
+	ifMI
+
+	  JMP PRER
+
+endif	LDA DFG		write to disk?
+	BNE PRL5
+
+	LDA PRF		to Atari printer
+	BEQ PRND
+
+PRLA	MovlB ROWCRS,19	Atari Printer. Get line from screen
+	LDX #$20		E:
+	MovlBX ICAX1,13
+	ICBadrl LN		set address to LN
+	INPL			get text
+
+*** write line to Atari printer
+	MovlBX ICAX1,12	
+	TYA
+	BMI PRER
+	LDX #$70
+	ICBadrl LN
+	ICBlenl 127
+	ComCiov CPTXTR
+	BMI PRER
+
+PRND	LDA ZZF
+	BEQ PRL6
+
+	AddaB BTC,LSPOS
+PRL6	MovlB LSPOS,0
+	RTS
+
+PRER	LDA #30
+	JMP IOERR
+*** Print LN
+PRLN	ICBadrl LN
+	MovaBX ICBLEN,LSPOS
+	MovlBX ICBLEN+1,0
+	ComCiov CPBINR
+	RTS
+*
+BLK	LDA ' '
+PTCH	STX TMP
+	LDX LSPOS
+	STA LN,X
+	INC LSPOS
+
+	LDA LSPOS
+	CMP LNPTRMX
+	BEQ PCHERR
+
+	INC CHC
+	LDX TMP
+	DEC A1
+	BEQ PTCND
+
+	  MovaB A1,SECSZ
+
+PTCND	RTS
+*
+PCHERR	PREL
+	LDY #$30
+IOERR	STY ERNO
+
+	MovlB DFG,0
+	STA ZF
+
+	CPY #$88
+	BNE IE6
+
+	MovlB LSPOS,0
+	JMP IE5
+
+IE6	MovaW ADR,ADRV
+	CPY #128
+	BEQ JINP
+
+	LDA HILOFG
+	BEQ IE9
+
+	LDA BT2
+	PHB
+	PREL
+
+IE9	MovlB ROWCRS,23
+	MovlB LSPOS,0
+	PRINT
+	DFB BELL,INSLN,0		$FD,$9D
+	PutS \Error- \
+	LDA ERNO
+	PHB
+
+IE5	PutS \   \
+
+	LDA ERNO
+	BPL IE4
+
+	MovlW A2,FLerrTb
+	LDX #128
+	BMI IE3
+
+IE4	CMP #$12
+	BCS IE8
+
+	MovlW A2,ERTAB1
+	LDX #0
+
+IE3	LDY #$FF
+
+IE1	INY
+	LDA (A2),Y
+	BPL IE1
+
+	INX
+	CPX ERNO
+	BNE IE1
+
+IE2	INY
+	LDA (A2),Y
+	AND #%01111111
+	PTCH
+	LDA (A2),Y
+	BPL IE2
+
+IE8	PREL
+
+	LDA HILOFG
+	BEQ JINP
+
+	PREL
+	fPL
+JINP	JMP DSI
+*** Put Hex Byte (A)
+PHB	PHA
+	CMP #10
+	BCC skip
+	  PutS \$\
+	  STX XSAV
+	  PLA
+PHB1	  PHA
+	  LSR
+	  LSR
+	  LSR
+	  LSR
+	  BEQ skip
+	    TAX
+	    LDA HXTB,X
+	    PTCH
+skip	PLA
+	AND #%00001111
+	TAX
+	LDA HXTB,X
+	PTCH
+	LDX XSAV
+	RTS
+********************************************************
+LSTADNM	MovaW SKA,AD
+*** Show more items in the symbol-table
+fSEMICOL	CHKTOA
+	  MovaB ADR1+1,SYMTAB	SGEN408	adr1 = symtab
+	  MovlB ADR1,0		SGEN408
+	FADR1A			SGEN408
+	PRINT
+	DFB DBS,0
+loop	CONSOLR
+	LADNM
+	  CLC
+	  LDA ADR1OF
+	  ADC ADR1
+	  STA ADR1
+	  BCC +
+	    INC ADR1+1
++	  CA1MX
+	  BCC loop
+
+	BNE LAERR
+LADND	JMP DSI
+*
+LAERR	LDY #$31
+	JMP IOERR
+*** List address name
+LADNM	MovlB LSPOS,0
+LADNM1	CA1MX
+	BCS LADND
+
+	MovPZ SKA,ADR1
+	LDA LFG
+	BEQ +
+
+	  CmpaW TOA,SKA
+	  BCC LADND
+
++ 	MovaW A3,SKA
+
+	PTHW
+	BLK
+	LDY #2
+	LDA (ADR1),Y
+	BEQ skip
+	BPL +
+
+	  DEC SKA+1
++	CLC
+	ADC SKA
+	STA SKA
+	BCC +
+	  INC SKA+1
+
++	PTHW
+	BLK
+skip	PutS \/\
+
+	LDY #3
+	LDA (ADR1),Y
+	STA ADR1OF
+
+	INY
+-	LDA (ADR1),Y
+	  PTCH
+	  INY
+	  CPY ADR1OF
+	  BNE -
+
+	PRL
+	MovaW SKA,A3
+	RTS
+*** Put Hex Word (SKA)
+PHW	LDA SKA+1
+	BNE +
+	  LDA SKA
+	  JMP PHB
++	PutS \$\
+*** Put Hex Word (SKA)
+PTHW	LDA #0
+	CMP SKA
+	BNE PH1
+	CMP SKA+1
+	BNE PH1
+
+	JMP PHB
+
+PH1	LDA SKA
+	PHA
+	LDA SKA+1
+	PHA
+
+	LDX #4
+	MovlB FG,0
+
+NXN2	LDY #4
+	LDA #0
+
+SN2	ASL SKA
+	ROL SKA+1
+	ROL
+	DEY
+	BNE SN2
+
+	TAY
+	BNE PHX1
+	LDA FG
+	BEQ PHX2
+
+PHX1	INC FG
+	LDA HXTB,Y
+	PTCH
+
+PHX2	DEX
+	BNE NXN2
+
+	PLA
+	STA SKA+1
+	PLA
+	STA SKA
+
+	RTS
+	
+*** if no TOA, TOA=FFFF, else ADR>TOA?
+CHKTOA	LDA TOA
+	BNE ADGTTO
+	LDA TOA+1
+	BNE ADGTTO
+
+	DEC TOA		set 0 to ff
+	DEC TOA+1
+	RTS
+*** ADR>TOA?
+ADGTTO	LDA FFG
+	BNE AGTND	
+	CmpaW TOA,ADR
+	BCS AGTND
+	LDY #4
+	JMP IOERR
+AGTND	RTS
+
+*** Parsing input line LS after '/' (Y)
+INA	LDX #$FF
+	STX FG
+	MovaW ADR,AD
+loop	INY
+	  INX		X starts at 0
+	  LDA LS,Y	Y starts at pos after '/'
+	  STA LS,X
+	  CMP ' '
+	  BNE IA1
+
+	    LDA FG
+	    BEQ loop
+	    DEX
+	    BNE loop
+
+IA1	CMP ';'
+	BNE +
+
+	  INC FG		FG = 0
++	STA HF
+	CMP '`'		diamond
+	BEQ +
+
+	  CMP #EOL
+	  BNE loop
+
++	STX NML
+	CKDX
+	RTS
+*
+LTAB	ASC "BCDGHJKMPRT
+	DFB 0
+*** Please enter address
+ADRERR	LDY #$11
+	JMP IOERR
+	
+*** Parsing input line LS
+INO	MovaB LSsav,LS
+	CMP #EOL
+	BNE +
+	LDX #$FF
+*** Error: no-input
+-	INX
+	  LDA LTAB,X
+	  BEQ +
+	  
+	  CMP GTC
+	  BEQ ADRERR
+	  
+	  BNE -
+*** Clear AD,TOA,NWA
++	LDX #5
+	LDA #0
+-	STA AD,X
+	DEX
+	BPL -
+
+	MovlB NMC,$FF
+INO1	MovlB BT1,156
+	LDY #0
+
+loop	LDA LS,Y
+	CMP '$'
+	BEQ +
+	CMP '*'
+	BEQ +
+	CMP 'J'
+	BEQ +
+	CMP 'T'
+	BEQ +
+	CMP ' '
+	BNE NNB
++	INY
+	BNE loop
+
+NNB	INC NMC
+NXN	LDA LS,Y
+	CMP ' '
+	BNE skip
+
+-	INY
+	LDA LS,Y
+	CMP ' '
+	BEQ -
+	BNE NNB	J
+
+skip	STA HF
+	CMP '`'
+	BEQ INPND
+	CMP #EOL
+	BEQ INPND
+	
+	LDX HILOFG
+	BEQ +
+
+	  CMP ':'
+	  BEQ INPND
+	  BNE FHX
++	CMP '/'
+	BNE FHX
+	  JMP INA
+	  
+FHX	LDX #$F
+*** Find Hex
+FNDHEX	CMP HXTB,X
+	BEQ +
+	DEX
+	BPL FNDHEX
+	BMI SYNER
+
++	TXA
+	PHA
+	MovlB CNT,%00010000
+	LDA NMC
+	ASL
+	TAX
+
+-	ASL AD,X
+	ROL AD+1,X
+	ASL CNT
+	BCC -
+
+	PLA
+	ORA AD,X
+	STA AD,X
+
+	INY
+	BNE NXN
+
+INPND	LDA HILOFG
+	BNE IPD
+
+	MovaW ADR,AD
+	MovlB LS,0
+	STA NML
+IPD	RTS
+
+SYNER	LDA HILOFG
+	BEQ SNE1
+
+	LDA #0
+	PLA
+	PLA
+	RTS
+
+SNE1	LDA NMC
+	BNE SNTXERR
+
+	STA AD
+	STA AD+1
+	STA ADR
+	STA ADR+1
+	LDY #$FF
+	JMP INA
+*** INVALID SYNTAX
+SNTXERR	LDY #1
+	JMP IOERR
+	
+*** main EDIT routine
+ED1	LDA AD
+	BNE +
+	
+	  LDA AD+1
+	  BNE +
+
+	  LDA LSsav
+	  CMP '0'
+	  BEQ +
+	
+	  CMP #EOL
+	  BNE SNTXERR
+
+	  RTS
+
++	CKDX
+	BMI skip		Why BMI ????
+
+-	LDA LS,X		move contents of LS 4 to the right
+	  STA LS+4,X	to make room for AD and offset
+	  DEX
+	  BPL -
+
+	MovaW LS,AD	write address
+	MovlB LS+2,0	offset = 0
+
+	LDA TOA
+	BNE +
+	  LDA TOA+1
+	  BEQ skip
+
++	EquDif LS+2,TOA,AD	write offset
+
+skip	CLC
+	LDA NML		name length
+	ifNE +		add 4 if NML != 0
+	  ADC #4
+endif	STA SVL
+	MovlB SVL+1,0
+	MovaW TOA,AD
+
+	BLOKR
+
+	LDA SVL
+	BEQ DND
+
+	  STA LS+3
+	  TAY
+	  DEY
+-	  LDA LS,Y
+	    STA (TMP),Y
+	    DEY
+	    BPL -
+
+DND	MovaW ADV,AD
+	RTS
+*** E.Edit
+EEDIT	ED1
+	MovlB CRSINH,0
+	Cmpl HF,'`'	diamond
+	ifEQ
+	  MovlB ROWCRS,23
+	  AJA1MX
+	  JMP fEQUAL
+
+endif	IP
+	JMP EEDIT
+*
+IP	INPT20LS
+	BMI DER
+	  INO
+	  RTS
+*** CIOV returns error number in Y
+DER	JMP IOERR
+*
+TSTFLL	EPZ BT2
+*** Place or delete symbol in symbol table
+BLOKR	DTADR12
+
+	EquDif OLL,ADR1,ADR2
+
+	CLC
+	MovaB TSTFLL,SYTL
+	LDA SYTL+1
+	ADC SYMTAB
+	STA TSTFLL+1
+
+	SubaW TSTFLL,OLL
+	AddaW TSTFLL,SVL
+	LDA TSTFLL+1
+	CMP RAMTOPSV
+	BCS BRERR
+
+	MovaW TMP,ADR2
+	AddaW ADR2,SVL
+	DetLEN
+	CmpaW ADR1,ADR2
+	BCC LONG
+
+	 MovER
+	 JMP ADJTBLN
+
+LONG	MMOVER
+
+ADJTBLN	SubaW SYTL,OLL
+	AddaW SYTL,SVL
+	RTS
+*** NOT ENOUGH ROOM
+BRERR	LDY #9
+	JMP IOERR
+*
+DetLEN	MovaB LEN,SYTL	LEN = SYTL+SYMTAB 
+	CLC
+	LDA SYTL+1
+	ADC SYMTAB
+	STA LEN+1
+
+	CmpaW LEN,ADR1
+	BCC DLERR
+	SubaW LEN,ADR1	LEN -= ADR1
+	RTS
+
+DLERR	LDY #$32
+	JMP IOERR
+	
+*** Determine ADR1 and ADR2
+DTADR12	ADGTTO
+	MovaW SKA,AD	SKA=AD
+
+	FADR1
+	
+	MovaW ADR2,ADR1	ADR2=ADR1
+	MovaW SKA,TOA	SKA=TOA
+
+	FADR1
+	BEQ DA12ND
+
+	LDY #3
+	LDA (ADR1),Y	entry length
+	CLC
+	ADC ADR1
+	STA ADR1
+	BCC DA12ND
+	  INC ADR1+1	ADR1 += entry length
+DA12ND	RTS
+
+*** D. DELETE
+DDELETE	ClearW SVL
+	BLOKR
+	RTS
+	
+***A=SCTP, if '<' found, BT1=157, flag: EQ
+CKDX	MovlB BT1,156	(156 seems to be arbitary)
+	LDX NML		name length
+	DEX
+	LDA LS,X		last char of name
+	STA SCTP		needed for ']' (SGEN408)
+	CPX #0		(SGEN411)
+	BNE +		(SGEN411)
+	  CMP ']'	(SGEN411)
+	  BNE +		(SGEN411)
+	    MovAW TOA,AD	(SGEN411)
+	    PLA		(SGEN411)
+	    PLA		(SGEN411)
+	    JMP DDELETE	(SGEN411)
+
++	CMP '<'
+	BNE D3
+
+	INC BT1		BT1 = 157: '<' found
+D3	TXA		last char is in A
+	RTS
+	
+
+*
+OL	DFB 0
+
+*** S. SAVE
+SSAVE	LDA LS
+	BNE SAVE1
+
+	LDA SGC
+	BEQ SAVE1		
+
+	MovlB JJ,0
+	STA LSPOS
+S3	MovlB A3,2
+
+-	LDY JJ
+	  LDA FTV,Y
+	  STA SKA	
+	  INY
+	  LDA FTV,Y
+	  STA SKA+1
+	  INC JJ
+	  INC JJ
+	  PTHW
+	  BLK
+	  DEC A3
+	  BNE -
+
+	PutS \/\
+
+	LDY #0
+-	LDA OSV,Y
+	  PTCH
+	  INY
+	  CPY OL
+	  BNE -
+
+	LDA JJ
+	CMP #4
+	BEQ +
+
+	  PutS \>\
++	LDA #CRSUP
+	PTCH
+	MovlB CRSINH,0
+	PRL
+	IP
+	SAVE1
+
+	LDA JJ
+	CMP SGC
+	BCS SD
+
+	  JMP S3
+SD	RTS
+
+*
+SAVE1	adjstDX
+	MovlB ICAX1+$10,8
+	LDX NML
+	DEX
+	LDA LS,X
+	CMP '>'
+	BNE +
+
+	  INC ICAX1+$10
+	  DEC NML
+
++	CHKTOA
+	DTADR12
+	EquDif SVL,ADR1,ADR2
+
+	OPENLF
+
+	MovlB SFC,$FB
+	L7SFC
+	ComCiov CPBINR
+	BMI SER
+
+	ICBadra ADR2
+	ICBlena SVL
+	CIOV
+	BMI SER
+	ComCiov CCLOSE
+	RTS
+*
+SER	JMP IOERR
+*
+OPENLF	MovlW OPF1+1,SMB
+OPF	LDX NML
+	LDY #0
+OPF1	LDA SMB,Y	".SMB" or ".SRC"
+	STA LS,X
+	INX
+	INY
+	CPY #4
+	BNE OPF1
+
+	LDX #$10
+	ICBadrl LS
+	OPR
+	BMI SER
+	RTS
+	
+*** Obtain symbols
+OOBTAIN	adjstDX
+	LDY NML
+	STY OL
+	DEY
+O3	LDA LS,Y		save filename in OSV
+	 STA OSV,Y
+	 DEY
+	 BPL O3
+
+	MovlB ICAX1+$10,4
+	MovlB SGC,0
+	OPENLF
+
+O1	L7SFC
+	ComCiov CGBINR	7
+	BPL O5
+	CPY #136		END OF FILE
+	BNE OER
+	RTS
+*** BAD SMB-FILE
+OE1	LDY #$10
+OER	JMP IOERR
+
+O5	Cmpl SFC,$FB
+	BNE OE1
+
+	LDX #0
+O4	LDY SGC
+	LDA AD,X
+	STA FTV,Y
+	INC SGC
+	INX
+	CPX #4
+	BNE O4
+
+	MovlB LSPOS,0
+	STA CRSINH
+	LDA AUFG
+	BNE O2
+
+ PutW AD
+ PutS \ \
+ PutW TOA
+ PutS \ ` \
+ PutW TOA+2
+ PutS \ bytes. <Y> to load\
+ PRL
+
+ GETC
+ CMP 'Y'
+ BEQ O2
+
+	JMP DSI
+
+O2	MovlB AUFG,0
+	BLOKR
+	LDX #$10
+	ICBlena SVL
+	ICBadra TMP
+	CIOV
+	BMI LFERR
+	AJA1MX
+	JMP O1
+
+LFERR	JMP IOERR
+
+*
+LNSTP4	DFB 0
+
+SKSTR	CLC
+	LDA NML
+	ADC #4
+	STA LNSTP4
+
+	MovaB ADR1+1,SYMTAB
+	MovlB ADR1,0
+
+SKSLP1	LDY #3
+	LDA (ADR1),Y
+	CMP LNSTP4
+	BCC NXT
+
+	LDX NML
+	LDY LNSTP4
+
+SKSLP2		DEX
+		BMI STFND
+		DEY
+		LDA (ADR1),Y
+		CMP LS,X
+		BEQ SKSLP2
+
+NXT	CA1MX
+	BCC NXT1
+
+	RTS
+
+NXT1	LDY #3
+	LDA (ADR1),Y
+
+	CLC
+	ADC ADR1
+	STA ADR1
+	LDA ADR1+1
+	BCC SKSLP1
+
+	INC ADR1+1
+	BCS SKSLP1
+
+STFND	WSEC1
+	GETC
+	CMP #ESC
+	BNE NXT
+
+	RTS
+
+*
+WSEC	FADR1
+WSEC1	MovlB ROWCRS,22
+	PUT DLN
+
+	MovlB TOA,$FF
+	STA TOA+1
+	LADNM
+
+	MovaB ADR,SKA
+	STA ADRV
+	STA ADV
+	MovaB ADR+1,SKA+1
+	STA ADRV+1
+	STA ADV+1
+	RTS
+*** A.Address/Symbol search
+AAdrSym	LDA LS
+	BEQ LSTAN
+
+	JMP SKSTR
+LSTAN	MovaW SKA,ADR
+	JMP WSEC
+*** Put Acc char (X==#$20 E:)
+PUTR	LDX #$20
+*** Put Acc char
+PUTR1	PHA
+	MovlBX ICCOM,CPBINR
+	MovlBX ICBLEN,0	one character
+	STA ICBLEN+1,X
+	PLA
+	JMP CIOV
+*** Display next entry in symbol-table
+fPL	IncW ADRV
+	MovaW SKA,ADRV
+
+	FADR1
+	MovPZ SKA,ADR1
+	JMP WSEC
+*** Display last entry in symbol-table
+fMI	MovaW SKA,ADRV
+	FADR1
+	MovPZ SKA,PVA
+	JMP WSEC
+
+*
+PTSTR	PLA
+	STA $29
+	PLA
+	STA $2A
+
+	STX TMP
+	LDX #0
+-	IncW $29
+
+	  LDA ($29,X)
+	  AND #%01111111
+	  PTCH
+	  LDA ($29,X)
+	  BPL -
+
+	LDX TMP
+	LDA $2A
+	PHA
+	LDA $29
+	PHA
+	RTS
+
+*
+DIF	EPZ CNT	???
+*** ADDRESS OVERLAP
+RER	LDY #2
+	JMP IOERR
+*** RE-ADDRESS symbols
+RReADR	ADGTTO
+	MovaW SKA,ADR
+	FADR1
+	MovaW TMP,ADR1
+
+	LDY #1
+	LDA (PVA),Y
+	CMP NWA+1
+	BNE R3
+	DEY
+	LDA (PVA),Y
+	CMP NWA
+R3	BCS RER
+
+	MovlB FG,127
+	CmpaW AD,NWA
+	BCS R4
+
+	EquDif DIF,NWA,AD
+	MovaW SKA,TOA
+	IncW SKA
+	FADR1A
+
+	CA1MX
+	BEQ R9
+
+	LDY #0
+	LDA (PVA),Y
+	ADC DIF
+	STA $20
+	INY
+	LDA (PVA),Y
+	ADC DIF+1
+
+	CMP (ADR1),Y
+	BNE R8
+
+	DEY
+	LDA $20
+	CMP (ADR1),Y
+
+R8	BCC R9
+	JMP RER
+
+R9	JMP R5
+
+R4	INC FG
+	EquDif DIF,AD,NWA
+
+R5	MovaW ADR1,TMP
+
+RLOOP	LDY #1
+	LDA TOA+1
+	CMP (ADR1),Y
+	BNE R2
+	DEY
+	LDA TOA
+	CMP (ADR1),Y
+R2	BCS RA
+	JMP DSI
+
+RA	LDY #0
+	LDA FG
+	BMI RS
+
+	CLC
+	LDA (ADR1),Y
+	ADC DIF
+	STA (ADR1),Y
+	INY
+	LDA (ADR1),Y
+	ADC DIF+1
+	STA (ADR1),Y
+	JMP RO
+
+RS	SEC
+	LDA (ADR1),Y
+	SBC DIF
+	STA (ADR1),Y
+	INY
+	LDA (ADR1),Y
+	SBC DIF+1
+	STA (ADR1),Y
+
+RO	CLC
+	LDY #3
+	LDA ADR1
+	ADC (ADR1),Y
+	STA ADR1
+	BCC RLOOP
+	INC ADR1+1
+	BCS RLOOP
+**************************************	
+*** Get char from keyboard. MI = error
+GETC	LDX #$30
+	GETR
+	BMI skip
+	AND #%01111111
+skip	RTS
+**************************************
+*** Get char from keyboard. MI = error
+GETR	MovlBX ICBLEN,0
+	STA ICBLEN+1,X
+	ComCiov CGBINR
+	RTS
+**************************************
+*** Print string ending in 0 to screen
+PRINT	PLA
+	STA A2
+	PLA
+	STA A2+1
+	STX TMP
+	
+-	LDX #0
+	  IncW A2
+	  LDA (A2,X)
+	  BEQ +
+	  
+	  PUTR
+	  JMP -
+
++	LDX TMP
+	LDA A2+1
+	PHA
+	LDA A2
+	PHA
+	RTS
+**************************************
+
+POINT	LDA FLFG
+	BNE PO1
+	RTS
+
+PO1	EquDif A1,ADR,STAD
+	MovaW AX63,DSEC
+
+PO2	LDA A1+1
+	CMP #0
+	BNE PO2A
+
+	LDA A1
+	CMP SECSZ
+
+PO2A	BCC PO3
+	SubaB A1,SECSZ
+	IncW AX63
+	JMP PO2
+
+PO3	CLC
+	LDA DBYT
+	ADC A1
+
+	BCS PO31	
+	CMP SECSZ	
+	BCC PO4
+
+PO31	SBC SECSZ
+	IncW AX63
+
+PO4	STA AX65
+
+	LDX #$60
+	MovlBX ICCOM,37
+	POINI
+	BPL POND
+	JMP IOERR
+POND	RTS
+**************************************
+*** Read BYT from RAM or file
+RDBYT	TYA
+	PHA
+	TXA
+	PHA
+
+	LDA FLFG
+	BNE RDFILE
+
+	  LDY #0
+	  LDX PORTB
+	  TXA
+	  AND #%11111101
+	  STA PORTB
+
+	  LDA (ADR),Y
+	  STX PORTB
+	  JMP RBTND
+
+RDFILE	MovlB SGFG,0
+	POINT
+
+	CmpaW NDAD,ADR
+	BCS +
+
+	 MovaW TMP,NDAD
+	 IncW TMP
+	 RBTI
+	 BCS skip
+
+	  CmpaW STAD,TMP
+	  BEQ +
+
+	    MovaW ADR,STAD
+	    INC SGFG
+	    SEC
+	    BCS skip
+
++	GETR
+
+RBTND	CLC
+	STA BYT
+skip	PLA
+	TAX
+	PLA
+	TAY
+	LDA BYT
+	RTS
+**************************************
+
+WHILO	LDY #3
+
+	LDA (ADR1),Y
+	TAX
+	DEX
+	DEX
+	DEX
+	DEX
+
+WH1	INY
+	LDA (ADR1),Y
+	STA LSmin4,Y
+	DEX
+	BNE WH1
+
+	LDA #EOL
+	STA LSmin4+1,Y
+	ClearW NWA
+	MovlB NMC,1
+
+	INO1
+
+	LDA LS,Y
+	RTS
+**************************************
+
+ILN	LDX #$10
+	INPTLS
+	BMI IER
+
+	LDX #$20
+	ICBadrl LS
+	ICBlenl 127
+	ComCiov CPTXTR
+
+	LDA LS
+	CMP '0'
+	BCS ID
+
+	RTS
+
+ID	JMP DSI
+**************************************
+
+*** List DIR
+IINDEX	CLC
+	LDA AD		drive #
+	ADC '0'		convert to ascii
+	STA D0+1		insert in file name
+
+	LDX #$10
+	MovlBX ICAX1,6	directory
+	ICBadrl D0
+	OPR
+	BMI IER
+
+I1	ILN
+	DEC ROWCRS
+	MovlB COLCRS,19	2nd column
+	ILN
+	CONSOLR
+	JMP I1
+
+IER	JMP IOERR
+*
+D0	ASC "D0:*.*"
+	DFB EOL
+
+AX63	EQU 844+$60
+AX65	EQU 846+$60
+**************************************
+
+**** RD6B sets STAD,NDAD,DSEC,DBYT
+RD6B	LDX #$60
+	GTBT
+	CMP #$FF
+	STA STAD
+	BNE F2
+
+	GTBT
+	CMP #$FF
+	STA STAD+1
+	BNE F3
+
+	GTBT
+F2	STA STAD
+
+	GTBT
+	STA STAD+1
+
+F3	GTBT
+	STA NDAD
+	GTBT
+	STA NDAD+1
+
+NOTE	ComCiov CNOTE
+	BMI FER
+	MovaW DSEC,AX63
+	MovaB DBYT,AX65
+	CLC
+	RTS
+**************************************
+
+GTBT	MovlB EOFG,0
+	GETR
+	BPL GB1
+
+	CPY #$88
+	BNE FER
+
+	PLA
+	PLA
+	INC EOFG	
+	SEC
+GB1	RTS
+FER	JMP IOERR
+**************************************
+
+RD6B1	RD6B
+	BCC GB1
+	DEC EOFG
+	BCS FER
+RD6B2	RD6B
+	BCC GB1
+	LDY #$A
+	BCS FER
+*
+AUFG	DFB 1
+**************************************
+*** N.New
+NNEW	LDX #11
+	STX NML
+	DEX
+LSY1	LDA AUT,X
+	STA LS,X
+	DEX
+	BPL LSY1
+
+	JMP OOBTAIN
+**************************************	
+*** Show bytes in A,H,J,T,S tables ***
+fCOMMA	PRINT
+	DFB DBS,EOL
+	ASC /table/,"   ",/bytes/
+	ASC "    ",/in use/
+	DFB EOL,0
+
+	LDX #0
+	LDY #0
+	STY LSPOS
+FRE1	STX A2
+	STY A3
+	LDA ZLB+3,X
+	SEC
+	SBC ZLB,X
+	STA SKA+1
+	MovlB SKA,0
+
+	PutS \  \
+	LDY A3
+	LDA LABTB,Y
+	PTCH
+	PutTAB
+	PTHW
+
+	PutTAB
+	LDX A2
+	LDA ZLB+1,X
+	STA SKA
+	LDA ZLB+2,X
+	STA SKA+1
+	PTHW
+
+	PRL
+	LDY A3
+	INY
+	LDX A2
+	INX
+	INX
+	INX
+	LDA ZLB,X
+	CMP RAMTOPSV
+	BNE FRE1
+
+	RTS
+LABTB	ASC "AHJTS"
+
+
+PutTAB	LDA DFG
+	BNE TAB1
+
+	LDA #TAB		tab ascii
+	PTCH
+	RTS
+
+TAB1	LDA #9
+	PTCH		tab atmas
+	RTS
+**************************************	
+*** Junk
+XV	DFB 0	(use EPZ local, save 3
+YV	DFB 0	(use EPZ local, save 3
+
+JUNK1	DEC LBFG
+	LDA JKF
+	BEQ JD
+
+	STX XV
+	STY YV
+
+	DEC JKF
+	MovlB LSPOS,0
+	MovaW SKA,ADR
+	FADR1A
+	BEQ JJ1
+
+	MovlB LSPOS,0
+	LDX BT1
+	CPX #162		(ldx #nn ?)
+	BEQ J6
+
+	LDA JJ
+	BEQ J7
+
+	CMP #9
+	BEQ J6
+	BNE J5
+
+J7	TXA
+	BPL J5
+
+J6	PutS \# \
+J5	LADNM1
+
+JJ1	WJLTL
+	BCC J4
+
+	ANO1
+	BEQ J3
+
+	PutS \ ok\
+	JMP J3
+
+J4	WIS BLB
+	BCC JJ2
+
+	PTHW
+	BLK
+	WBL1
+
+J3	PRL
+JJ2	INC JKF
+
+	LDX XV
+	LDY YV
+
+JD	INC LBFG
+	RTS
+**************************************	
+*** Write J-, T-, Z-label
+WJLTL	CmpaW SKA,MNLB
+	BCC WJND
+
+	WIS JLB
+	BCC WJT5
+
+	PutS \J\
+	JMP WJPHW
+
+WJT5	WIS TLB
+	BCC WJND
+
+	PutS \T\
+WJPHW	LDA SKA+1
+	BNE WJT6
+
+	DEC LSPOS
+	PutS \Z\
+WJT6	PTHW
+	SEC
+WJND	RTS
+*
+SRC	ASC ".SRC"
+	DFB EOL
+*
+**************************************
+*** Write SWTP to SCTP
+SWTYP	LDY SWTP
+	BEQ +
+	TYA
+	STA SCTP
++	RTS
+**************************************
+*** Check next ADR
+CKNA1	TOAINSEG
+	BCC CN33
+
+	CmpaW TOA,ADR
+	BCC CAF
+
+CN33	RDBYT
+	BCS CAF
+
+	MovaW SKA,ADR
+	FADR1A
+	BNE CAF
+
+	ANO1
+	BNE CANF
+
+	WIS BLB
+	BCS CAF
+**************************************	
+*** Check J, T labels
+CKJLTL	WIS JLB
+	BCS CAF
+	WIS TLB
+	BCS CAF
+CANF	CLC
+	RTS
+CAF	SEC
+	RTS
+**************************************
+*** Check Type
+CKTY	STA $21
+	TYA
+	PHA
+	LDY #$FF
+
+CT11	INY
+	STY TPNO
+	LDA TypTab,Y
+	BEQ SKP3
+	CMP $21
+	BNE CT11
+
+	DFB $24	(BIT aa changes no values)
+
+SKP3	CLC
+	PLA
+	TAY
+	LDA $21
+	RTS
+**************************************
+
+ANO1	MovaW PVA,PVAV
+ANO	MovaW SKAV,SKA
+	MovlB ANF,0
+	STA AOF
+	LDA PVA+1
+	BEQ AOD
+
+	LDY #1
+	LDA (PVA),Y
+	TAX
+	INY
+	LDA (PVA),Y
+	BMI MANO
+
+	LDY #0
+	CLC
+	ADC (PVA),Y
+	TAY
+	BCC AO1
+
+	INX
+AO1	CPX SKA+1
+	BNE AO2
+
+	CPY SKA
+AO2	BCC MANO
+
+	LDY #4
+	LDA (PVA),Y
+AOY	CKTY
+	BCC AO3
+
+	MovlB ANF,1
+	BNE AOD
+
+AO3	MovlB ANF,128
+	SEC
+	RTS
+*
+MANO	LDA SEF
+	BNE AOD
+
+	INC AOF
+	LDY #1
+	LDA (ADR1),Y
+	STA TMP+1
+	INY
+	LDA (ADR1),Y
+	BPL AOD
+
+	LDY #0
+	CLC
+	ADC (ADR1),Y
+	STA TMP
+	BCS AO6
+
+	DEC TMP+1
+AO6	CmpaW SKA,TMP
+	BCC AOD
+
+	LDY #4
+	LDA (ADR1),Y
+	JMP AOY
+
+AOD	LDA ANF
+	CLC
+	RTS
+*
+WBL	WIS BLB
+	BCC WD
+
+WBL1	PutS \H\
+	CLC
+	ROR CNT+1
+	ROR CNT
+	MovaW $20,SKA
+	EquSum SKA,CNT,LOFST
+	PTHW
+	MovaW SKA,$20
+	SEC
+WD	RTS
+**************************************
+*** A1MX.w = SYTL.w + SYMTAB.b
+AJA1MX	MovaB A1MX,SYTL	
+	CLC
+	LDA SYTL+1
+	ADC SYMTAB
+	STA A1MX+1
+	RTS
+*** ADR1 > A1MX?
+CA1MX	CmpaW ADR1,A1MX
+	RTS
+**************************************
+*** K.Keys
+KKEYS	Cmpl TOA,10
+	BCS KD
+	ASL
+	TAX
+	MovaWX FKTB,AD
+KD	RTS
+**************************************
+*** Initialize lable tables
+ITLB	LDY #13 
+loop	LDA DLB-1,Y
+	STA LBTB,Y
+	DEY
+	LDA #0
+	STA LBTB,Y
+	DEY
+	DEY
+	BPL loop
+	RTS
+**************************************
+*** Print Menu
+PRMEN	PRINT
+	DFB CLS
+	ASC "/ . RET BRK  + - = *  <  > ?"
+	ASC " ; , (0..9) "! "
+*	DFB '"'
+	ASC /!" $% ()/
+	DFB 0
+	RTS
+*** Device placeholder
+DV	ASC "X:"
+	DFB EOL
+
+OPENR	STA DV
+	ICBadrl DV
+OPR	ComCiov CCLOSE
+	MovlBX ICAX1+1,0
+	ComCiov COPN
+	RTS
+*
+INPT20LS	LDX #$20
+INPTLS	ICBadrl LS
+INPL	ICBlenl 127
+	ComCiov CGTXTR
+	RTS
+*** ICBlen = 7, ICBadr = SFC
+L7SFC	ICBlenl 7
+	ICBadrl SFC
+	RTS
+	
+*** if (STAD<=TOA<=NDAD) CS
+TOAINSEG	  CmpaW TOA,STAD
+	  BCC TID		TOA < STAD
+	  CmpaW NDAD,TOA
+TID	  RTS		NDAD < TOA  ie. TOA not in segment
+
+
+	
+SEGNO	DFB 0	
+
+
+	
+	
+
+*TABS
+
+
+*** Opcode offset table
+OPOF	DFB 30,102,0,0,0,102,6,0
+	DFB 108,102,6,0,0,102,6,0
+	DFB 27,102,0,0,0,102,6,0
+	DFB 39,102,0,0,0,102,6,0
+
+	DFB 84,3,0,0,18,3,117,0
+	DFB 114,3,117,0,18,3,117,0
+	DFB 21,3,0,0,0,3,117,0
+	DFB 132,3,0,0,0,3,117,0
+
+	DFB 123,69,0,0,0,69,96,0
+	DFB 105,69,96,0,81,69,96,0
+	DFB 33,69,0,0,0,69,96,0
+	DFB 45,69,0,0,0,69,96,0
+
+	DFB 126,168,0,0,0,168,120,0
+	DFB 111,168,120,0,81,168,120,0
+	DFB 36,168,0,0,0,168,120,0
+	DFB 138,168,0,0,0,168,120,0
+
+*
+
+	DFB 0,141,0,0,147,141,144,0
+	DFB 66,0,159,0,147,141,144,0
+	DFB 9,141,0,0,147,141,144,0
+	DFB 165,141,162,0,0,141,0,0
+
+	DFB 93,87,90,0,93,87,90,0
+	DFB 153,87,150,0,93,87,90,0
+	DFB 12,87,0,0,93,87,90,0
+	DFB 48,87,156,0,93,87,90,0
+
+	DFB 57,51,0,0,57,51,60,0
+	DFB 78,51,63,0,57,51,60,0
+	DFB 24,51,0,0,0,51,60,0
+	DFB 42,51,0,0,0,51,60,0
+
+	DFB 54,129,0,0,54,129,72,0
+	DFB 75,129,99,0,54,129,72,0
+	DFB 15,129,0,0,0,129,72,0
+	DFB 135,129,0,0,0,129,72,0
+
+*
+ERTAB1	ASC \ \
+	ASC \SYNTAX\		1
+	ASC \ADDRESS OVERLAP\	2
+	ASC \TABLE FULL (PRESS <,>)\  3
+	ASC \FROM > TO\		4
+	ASC \CMD\		5
+	ASC \BAD LOAD-FILE\	6
+	ASC \ADDR. TOO SMALL\	7
+	ASC \ADDR. TOO LARGE\	8
+	ASC \NOT ENOUGH ROOM\	9
+	ASC \INVALID ADDR.\	A
+	ASC \TO ADDRESS?\		B
+	ASC \INVALID CODE\	C
+	ASC \NEED D40F/<SYMBOL>\	D
+	ASC \LABEL NOT PREPARED\	E
+	ASC \TRACE NOT POSSIBLE\	F
+	ASC \BAD SMB-FILE\	10
+	ASC \ADDRESS?\		11
+	DFW 0
+
+ASTB	DFB 32,64,0,96,160,192,128,224
+*** Control character table
+ESCchTB	DFB 27,28,29,30,31
+	DFB 125,126,127
+	DFB 155,156,157,158,159
+	DFB 253,254,255
+
+
+*** File error tab
+FLerrTb	ASC \ \
+         ASC \ \
+         ASC \DEV?\
+         ASC \ \
+         ASC \CMD\
+         ASC \NOP\
+         ASC \#\
+         ASC \RD ONLY\
+         ASC \END OF FILE\
+         ASC \TRUNC\
+         ASC \TIMEOUT\
+         ASC \NAK\
+         ASC \FRAME\
+         ASC \ \
+         ASC \OVERR\
+         ASC \CHCKSM\
+         ASC \DEV\
+	ASC /               /
+	ASC \D?:\
+	ASC \>#FILES\
+         ASC \DISK FULL\
+         ASC \I/O\
+	ASC "INVALID SECTOR"
+	DFB 127,127
+ ASC \<U><RET>, or COPY FILE TO NEW DISK!\
+         ASC \NAME\
+         ASC \PNT\
+         ASC \LOCKED\
+         ASC \DCMD\
+         ASC \DIR FULL\
+         ASC \FILE?\
+         ASC \PNT\
+         ASC \APND\
+         ASC \BAD SECT\
+
+
+
+OPCtab	ASC " ? ANDASLBCCBCSBEQBITBMI
+	ASC "BNEBPLBRKBVCBVSCLCCLDCLI
+	ASC "CLVCMPCPXCPYDECDEXDEYEOR
+	ASC "INCINXINYJMPJSRLDALDXLDY
+	ASC "LSRNOPORAPHAPHPPLAPLPROL
+	ASC "RORRTIRTSSBCSECSEDSEISTA
+	ASC "STXSTYTAXTAYTSXTXATXSTYA
+	ASC "ADC
+*
+
+*** Menu A to U
+MenTab	ASC \ADDRESS/symbol-search\
+	ASC \BYTE-change\
+	ASC \CODE-find\
+	ASC \DELETE symbols\
+	ASC \EDIT symbols\
+	ASC \FILE\
+	ASC \GO\
+	ASC \HEAD\
+	ASC \INDEX\
+	ASC \JUNK?\
+	ASC \KEY <0-9>\
+	ASC \LIST symbols\
+	ASC \MINIMUM-label\
+	ASC \NEW\
+	ASC \OBTAIN symbols\
+	ASC \PREPARE labels\
+	ASC \QUIT (1)\
+	ASC \RE-ADDRESS\
+	ASC \SAVE symbols\
+	ASC \TRACE\
+	ASC \UTILITY\
+	
+*	OUT L
+	DFB 0
+*	OUT
+
+
+TEMP	EPZ $4A
+
+HATABS	EQU $31A
+
+
+*SG ROUTINES
+
+
+
+	ORG $5100
+
+
+FSEC	EQU $34C		ICAX3,X
+FBYT	EQU $34E		ICAX5,X
+
+
+SECSZ	DFB 125
+*** output menu item offsets
+MTAB	DFB 10,30,10,10,10,20,10,10,0
+*** Check for F-disk
+J600	MovlB RDFG,0
+	LDY #3
+	MovaW TEMP,JIN+1	TEMP=600
+	LDA (TEMP),Y	check two bytes
+	CMP #HATABS
+	BNE skip
+	  INY
+	  LDA (TEMP),Y
+	  CMP #HATABS:H
+	  BNE skip
+
+	    INC RDFG
+
+JIN	    JMP INIT		f-disk exists
+
+skip	RTS		does not exist
+
+RDFG	DFB 0
+
+
+
+*** NOT ENOUGH ROOM
+ERR	LDY #9
+	JMP IOERR
+
+***U.Utility
+UUTILITY	LDX #$FF
+-	INX
+	LDA LS,X
+	CMP #EOL
+	BEQ skip
+	  CMP ';'
+	  BNE -
+
+	  LDY #$FF
+loop	  INY
+	  STY MAX
+	  INX
+	  LDA LS,X
+	  STA TEXT,Y
+	  CMP #EOL
+	  BEQ +
+
+	    CMP '^'
+	    BNE loop
+
+	    LDA #EOL
+	    STA TEXT,Y
+	    BNE loop
+
++	      JMP SHIFT8	(RTS)
+
+skip	LDA AD
+	CMP #$39
+	BCC C11
+
+	SBC #$38
+	STA TEMP
+	LDA #$BC
+	SBC TEMP
+
+	CMP A1MX+1
+	BCC ERR
+	BEQ ERR
+	TAY
+	BCS C22
+
+C11	LDA #$C0
+	LDY #$BC
+C22	STY RAMTOPSV
+	STA BEGAD
+	STA SKA+1
+	MovlB SKA,0
+	STA LSPOS
+	LDA RDFG
+	BNE C21
+
+	PRINT
+	DFB BELL
+	ASC "No F-Ramdisk"
+	DFB EOL,0
+	JMP DSI
+
+C21	PTSTR
+	ASC \F-Ramdisk begins at $\
+	PTHW
+	WRL
+
+	LDA LS
+	BEQ +		no input
+	  adjstDX
+	  LDA LS
+	  CMP 'D'	filename was entered
+	  BEQ C6
+	  RTS
+
+
++	LDA FLV		no input
+	CMP 'D'
+	BEQ +
+
+	  LDY #$A5
+	  JMP IOERR
+
+
++	LDY #14
+C5	LDA FLV,Y
+	STA LS,Y
+	DEY
+	BPL C5
+
+C6	LDX #$60
+	LDA #CCLOSE
+	CIOVR
+
+	LDA #4
+	STA ICAX1,X	
+
+	LDA #LS
+	STA ICBADR,X
+	LDA #LS:H
+	STA ICBADR+1,X	
+	LDA #COPN
+	CIOVR
+
+	BADLEN
+
+	LDX #$40
+	LDA #8
+	STA ICAX1,X
+	LDA 'F'
+	OPENR
+
+	BADLEN	
+
+
+
+
+ULOOP	LDX #$60
+	LDA #CNOTE
+	CIOVR
+
+	LDA #7
+	STA ICCOM,X
+	CIOV
+	BMI U8
+
+	LDX #$40
+	LDA #CPBINR
+	CIOVR
+
+	JMP ULOOP
+
+U8	CPY #$88
+	BNE ERR1
+
+	POIN
+
+loop	LDX #$60
+	GETR
+	BMI TRND
+
+	  LDX #$40
+
+	  PUTR1
+	  BPL loop
+
+TRND	CPY #$88
+	BNE ERR1
+
+	  MovlB LS,'F'
+	  MovlB LS+1,':'
+	  JMP FFILE
+
+ERR1	JMP IOERR
+*** Point
+POIN	LDA #CPOINT
+CIOVR	STA ICCOM,X
+	CIOV
+	BMI ERR1
+	RTS
+	
+***********************************************************
+BADLEN	LDA SECSZ
+	STA ICBLEN,X
+	LDA #0
+	STA ICBLEN+1,X
+	STA ICBADR,X
+	LDA #$BD
+	STA ICBADR+1,X
+	RTS
+
+*** Print inverted '-' or '='
+WADNMI	CMP #$AD	'-'inverted
+	BEQ WA11
+	CMP #$BD	'='inverted
+	BNE WA22
+WA11	PTCH
+WA22	RTS
+*
+
+OFSI	DETZ
+	LDA PREPFG
+	BEQ OFD
+
+	JMP CPHL
+OFD	RTS
+*
+POINI	CmpaW NDAD,ADR
+	BCC PII2
+	CIOV
+PIID	RTS
+
+PII2	LDA AX65	
+	BEQ PII1
+
+	DEC AX65
+	JMP PII3
+
+PII1	LDY SECSZ
+	DEY
+	STY AX65	124
+	DecW AX63
+PII3	CIOV
+	BMI PIID
+
+	JMP GETR 
+*
+QI	LDX #$60
+	LDA #CCLOSE
+	CIOVR
+	JMP (DOSVEC)
+
+*
+
+*FFG	DFB 0
+
+*** FINS: F insert new in V.3
+FINS	INC FFG
+	LDY TOA
+	BNE NOFF
+	LDA TOA+1
+	BNE NOFF
+	JMP OPFL		if TOA == 0
+
+NOFF	DEC FFG		not load file  FFG=0
+
+	STY STAD		= TOA
+	STY NDAD		= TOA
+
+	MovaB STAD+1,TOA+1
+	STA NDAD+1
+
+	OPFL
+	NOTE
+	LDY NWA
+	BNE ISNWA
+	LDA NWA+1
+	BEQ NONWA
+
+ISNWA	  STY NDAD
+	  STY ADR
+	  MovaB NDAD+1,NWA+1
+	  STA ADR+1
+
+	  POINT
+	  GETR
+	  BPL +
+*** INVALID ADDRESS
+-	    LDY #$A
+	    JMP IOERR
+
++	  GETR
+	  BPL -
+		
+	  JMP FID2
+
+NONWA	LDA FSEC,X
+	STA ADR
+
+FHILP	  LDY SECSZ
+	  DEY
+	  TYA
+	  STA FBYT,X		
+
+	  LDA #CPOINT
+	  STA ICCOM,X
+	  CIOV
+	  BMI FLOLP
+	    GETR
+	    BMI FLOLP
+
+	      CLC
+	      LDA NDAD
+	      ADC SECSZ
+	      STA NDAD
+	      BCC +
+
+		INC NDAD+1
+
++		GETR
+		BMI FID
+
+		  LDA #CNOTE
+		  STA ICCOM,X
+		  CIOV
+		  LDA FSEC,X
+		  INC ADR
+		  CMP ADR
+		  BEQ FHILP
+
+F2E		    LDY #$A4
+
+FLOLP	CPY #$A4
+	BNE +
+	JMP IOERR
+
++	LDA #0
+	STA FBYT,X
+	POIN
+
+	LDA FSEC,X
+	STA ADR
+
+loop	GETR
+	BMI FID
+	  IncW NDAD
+	  LDA #CNOTE
+	  STA ICCOM,X
+	  CIOV
+	  LDA FSEC,X
+	  CMP ADR
+	  BEQ loop
+	  
+	  BNE F2E
+
+FID	LDA NDAD
+	BNE +
+	  DEC NDAD+1
++	DEC NDAD
+
+FID2	MovlB LSPOS,0
+	MovaW SKA,STAD
+	PTHW
+	PTSTR
+	ASC \ \
+	MovaW SKA,NDAD
+	PTHW
+	PRL
+
+	OPFL
+	JMP F6
+
+***********************************************************
+OPFLI	LDA FLV
+	CMP 'F'
+	BNE OLI
+
+	LDY #0		F: double density
+	BEQ OL2
+OLI	LDY DBYTLO 	(SECTOR SIZE)
+OL2	DEY
+	DEY
+	DEY
+	STY SECSZ
+
+	LDA FFG
+	BEQ OI1
+
+	CKFF
+	RTS
+
+OI1	PLA
+	PLA
+	RTS
+***********************************************************
+
+RBTI	LDA FFG
+	BEQ RI2
+
+	JMP RD6B
+
+RI2	SEC
+	INC EOFG
+	PLA
+	PLA
+	PLA
+	PLA
+	RTS
+***********************************************************
+
+* Subroutine for CCODE
+CI	LDA LS
+	BEQ CID
+	CMP 'W'
+	BNE CID
+
+	INC C3F
+	MovlB CHIF,0
+	MovlB PREPFG,1
+	JMP API
+CID	RTS
+
+***********************************************************
+APINS	RDBYT
+
+	LDY C3F
+	BEQ CID
+
+	LDY CHIF
+	BNE CI1
+
+CI2	CMP NWA
+	BNE CDADR
+
+	INC CHIF
+	BNE CDADR
+
+CI1	DEC CHIF
+	CMP NWA+1
+	BNE CI2	
+
+	DecW SKA
+	MovaW ADV,SKA
+	MovlB LSPOS,0
+	PTHW
+	WRL
+	GETC
+	CMP #ESC		(or EOL)
+	BNE CDADR
+
+	JMP DSI	
+
+CDADR	INCADRw
+	CmpaW ADR,TOA
+	BEQ JDSI
+	LDY #39
+	LDA ADR+1
+	STA (SAVMSK),Y
+
+	JMP APLOOP
+
+JDSI	JMP DSI
+CHIF	DFB 0
+
+**********************************************************
+
+HATED	EQU $321		E: pointer
+HATKB	EQU $327		K: pointer
+TEXT	EQU $BE00
+NEWED	EQU $BE70
+NEWKB	EQU $BE78
+
+
+*** @ (SHIFT-<8>)
+SHIFT8	MovaW EDADV,HATED
+	MovaW KBADV,HATKB
+	MovlW HATED,NEWED	new E: routine
+	MovlW HATKB,NEWKB	new K: routine
+
+	LDY #0		start with 8 not 0
+	STY TXPT
+SH1	LDA (EDADV),Y
+	STA NEWED,Y
+	LDA (KBADV),Y
+	STA NEWKB,Y
+
+	INY
+	CPY #8
+	BNE SH1
+
+	MovlB NEWED+4,EGTBYT-1
+	STA NEWKB+4
+	
+	MovlB NEWED+5,EGTBYT-1:H
+	STA NEWKB+5
+
+	RTS
+***********************************************************
+EGTBYT	LDY TXPT
+	LDA TEXT,Y
+	CPY MAX
+	BNE H2
+
+	LDY EDADV
+	STY HATED		
+	LDY EDADV+1
+	STY HATED+1
+
+	LDY KBADV
+	STY HATKB		
+	LDY KBADV+1
+	STY HATKB+1
+
+H2	INC TXPT
+	LDY #1
+	RTS
+
+
+MAX	DFB 0
+
+
+
+
+***********************************************************
+CKSEGTAB MovlB SEGNO,0
+	
+NEXTSEG	LDA SEGNO
+	TAX
+	INC SEGNO	1 2
+	LDA CNT1
+	CMP SEGNO
+	BCC END		CC = not found
+
+	LDA SKA+1
+	CMP SEGTAB1,X
+	BNE EEE
+	LDA SKA
+	CMP SEGTAB0,X
+	
+EEE	BCC NEXTSEG	BRA if adr < from_adr
+	
+	LDA SEGTAB3,X
+	CMP SKA+1
+	BNE EEE2
+	LDA SEGTAB2,X
+	CMP SKA
+EEE2	BCC NEXTSEG	bra if to_adr < adr
+	
+END	RTS		found:- CS		
+**********************************************************
+F1STSEG	CKSG
+	BCS SST2
+
+	OPFL
+SSTLP	  RD6B1		* RD6B sets STAD,NDAD,DSEC,DBYT
+	  CKSG		stad <= ad <= ndad
+	  BCS SST2		yes
+
+	  MovaW ADR,NDAD		no
+	  INCADRw
+	  POINT
+	  BPL SSTLP	loop always
+
+SST2	RTS
+**********************************************************
+CNT1	DFB 0
+STADSV	DFW 0
+NDADSV	DFW 0
+DSECSV	DFW 0
+DBYTSV	DFB 0
+
+*** Create segment table for H.HEAD if File
+SETSGTAB	LDA FFG
+	BEQ END		RTS
+	
+	F1STSEG
+
+	LDX #0
+	MovaBX SEGTAB0,STAD	 - set first entry
+	STA STADSV
+	MovaBX SEGTAB1,STAD+1
+	STA STADSV+1
+
+	MovaW NDADSV,NDAD
+	MovaW DSECSV,DSEC
+	MovaB DBYTSV,DBYT
+	
+	MovlB CNT1,1
+
+loop	  TOAINSEG	  
+	  BCS skip		exit
+	  
+	  MovaBX SEGTAB2,NDAD
+	  MovaBX SEGTAB3,NDAD+1
+	  MovaW ADR,NDAD
+	  INCADRw
+	  POINT
+	  RD6B2
+
+	  LDA CNT1
+	  TAX
+	  INC CNT1
+	  MovaBX SEGTAB0,STAD
+	  MovaBX SEGTAB1,STAD+1
+	  JMP loop
+
+skip	MovaBX SEGTAB2,TOA
+	MovaBX SEGTAB3,TOA+1
+RESTSEG	  MovaW STAD,STADSV
+	  MovaW NDAD,NDADSV
+	  MovaW DSEC,DSECSV
+	  MovaB DBYT,DBYTSV
+
+	RTS
+	
+
+*** Find first EPZ in symbol table
+FNDEPZ	MovaB ADR1+1,SYMTAB		adr1 = symtab
+	MovlB ADR1,0
+	
+loop	CKCONSTY
+	BNE EPZFND
+
+	  AddaB ADR1,ADR1OF
+	  JMP loop
+
+EPZFND	RTS
+
+*** Find ADR1OF, Check ']' 
+CKCONSTY	LDY #3
+	LDA (ADR1),Y	offset
+	STA ADR1OF
+	TAY		offset in Y
+	DEY
+	LDA (ADR1),Y	ch type
+	CMP ']'
+	RTS
+	
+*** Write head constants
+WHDCONST	MovaB ADR1+1,SYMTAB		adr1 = symtab
+	MovlB ADR1,0
+loop	CKCONSTY
+	BNE WHCND
+	
+	  WADNM
+	  PutTAB
+	  PutS \EQU \
+	  LDY #0
+	  LDA (ADR1),Y
+	  PHB
+	  WHeadCmt	SGEN412
++	  PRL
+	  AddaB ADR1,ADR1OF
+	  JMP loop
+
+WHCND	PRL
+	RTS
+
+	
+***	
+CONSOLR	LDA CONSOL
+	CMP #6	START
+	BNE +
+	BEQ CONSOLR
++	CMP #7	OPTION SELECT
+	BCC +
+	  RTS
++	JMP DSI
+
+
+
+*** Display menu
+MENU	ASC %1.address 2.comment %
+	ASC %                    %
+	ASC %3.ADDRESS 4.COMMAND %
+	ASC %5.address 6.comment   %
+	ASC "MMMMMMM"
+	ASC % 7.JSR    %	
+	ASC % 8.binary  9.ASC     %
+	ASC $<A><1>..<9><RETURN>
+	ASC "NNNNNNNNNNNNNNNNNNNNF"
+
+**********************************************************	
+#	'#' causes the following lines to be ignored up until the next '#'.	
+	ORG $600
+	RTS
+			  
+
+SAVV1	DFW 0
+SAVV2	DFW 0
+SAVV3	DFW 0
+SAVV4	DFW 0
+
+MESSAGE	PHP
+	PHA
+	TXA
+	PHA
+	TYA
+	PHA
+
+	MovaW SAVV1,ZF		ZF is 1 byte!!!!!
+	MovaW SAVV2,SKA
+	MovaW SAVV3,STAD
+	MovaW SAVV4,NDAD
+		
+	PRL
+	PutS \ZF=\
+	PutW ZF
+
+	PutS \ SKA=\
+	PutW SKA
+
+	PutS \ STAD=\
+	PutW STAD
+	PutS \ NDAD=\
+	PutW NDAD
+	
+	PRL
+
+	MovaW ZF,SAVV1
+	MovaW SKA,SAVV2
+	MovaW STAD,SAVV3
+	MovaW NDAD,SAVV4
+	
+
+	PLA
+	TAY
+	PLA
+	TAX
+	PLA
+	PLP
+	RTS
+
+
+#
+
+* --------------------------------------------------
+* Mouse Cursor Module (PC Mouse / Altirra ST Mouse)
+* Single JSR INITmous
+* Strict Atmas II compliant
+* --------------------------------------------------
+#
+
+SSFLAG	EQU $02FF
+SETVBV	EQU $E45C
+POT0	EQU $0270
+POT1	EQU $0271
+PTRIG0	EQU $027C
+
+SCRL	EPZ $B1
+
+	ORG $BE80
+
+MSON	DFB 0
+OLDTRG	DFB 0
+CURX	DFB 0
+CURY	DFB 0
+ACCX	DFB 0
+ACCY	DFB 0
+DELX	DFB 0
+DELY	DFB 0
+
+* --------------------------------------------------
+INITmous	LDA #0
+	STA MSON
+	STA OLDTRG
+	STA CURX
+	STA CURY
+	STA ACCX
+	STA ACCY
+	STA DELX
+	STA DELY
+
+	LDA #MYVBI:L
+	LDX #MYVBI:H
+	LDY #7
+	JSR SETVBV
+
+	RTS
+
+* --------------------------------------------------
+MYVBI	LDA PTRIG0
+	CMP OLDTRG
+	BEQ SKPCLK
+	STA OLDTRG
+	CMP #0
+	BNE SKPCLK
+
+	LDA MSON
+	EOR #1
+	STA MSON
+
+	BEQ KEYON
+KEYOFF	LDA #0
+	STA SSFLAG
+	JMP SKPCLK
+KEYON	LDA #$FF
+	STA SSFLAG
+
+SKPCLK	LDA MSON
+	BNE +
+	RTS
+* --------------------------------------------------
+
+* READ PC MOUSE DELTAS
++	LDA POT0
+	SBC CURX
+	STA DELX
+	LDA POT1
+	SBC CURY
+	STA DELY
+
+* APPLY X DELTA
+	LDA DELX
+	BEQ XDONE
+	BPL INCX
+	DEC COLCRS
+	LDA DELX
+	CLC
+	ADC #1
+	STA DELX
+	JMP XDONE
+INCX	INC COLCRS
+	LDA DELX
+	SEC
+	SBC #1
+	STA DELX
+
+
+* APPLY Y DELTA
+XDONE	LDA DELY
+	BEQ YDONE
+	BPL INCY
+	DEC ROWCRS
+	LDA DELY
+	CLC
+	ADC #1
+	STA DELY
+	JMP YDONE
+INCY	INC ROWCRS
+	LDA DELY
+	SEC
+	SBC #1
+	STA DELY
+
+
+YDONE	STX COLCRS
+	STY ROWCRS
+
+* --------------------------------------------------
+* DRAW CURSOR (minimal)
+	LDY ROWCRS
+	LDX COLCRS
+
+	LDA SAVMSK
+	STA SCRL
+	LDA SAVMSK+1
+	STA SCRL+1
+
+* compute address = SAVMSK + row*40 + col
+	LDY ROWCRS
+	LSR
+	LSR
+	ASL
+	ASL
+	ASL
+	ASL
+	ASL
+	CLC
+	ADC SCRL
+	STA SCRL
+	LDA SCRL+1
+	ADC #0
+	STA SCRL+1
+
+	TXA
+	CLC
+	ADC SCRL
+	STA SCRL
+	LDA SCRL+1
+	ADC #0
+	STA SCRL+1
+
+	LDA 'X'
+	LDY #0
+	STA (SCRL),Y
+
+EXIT	RTS
