@@ -366,3 +366,5 @@ FodyWeavers.xsd
 /6502 Source/AUTORUN.SYS
 /6502 Source/T31.LIS
 /6502 Source/temp.atr
+/6502 Source/T31.lab
+*.lis
