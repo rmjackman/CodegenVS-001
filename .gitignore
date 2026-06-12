@@ -368,3 +368,5 @@ FodyWeavers.xsd
 /6502 Source/temp.atr
 /6502 Source/T31.lab
 *.lis
+*.LST
+*.dbg
