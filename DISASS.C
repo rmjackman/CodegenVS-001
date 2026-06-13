@@ -23,11 +23,11 @@ int getch(void);
 #define SHOW_LO 0 // Show ':L'
 
 #define PRINT_DISS_LINNUM 0		// 0.
-#define ADDR_LEFT_COMMENT 1		// 1.
-#define SHOW_LEFT_COMMENT 1		// 2.
-#define PRINT_PC_ADDRESS  0		// 3. Turns on edit mode in SOURCGEN
+#define ADDR_LEFT_COMMENT 0		// 1.
+#define SHOW_LEFT_COMMENT 0		// 2.
+#define PRINT_PC_ADDRESS  1		// 3. Turns on edit mode in SOURCGEN
 		// COMMAND				// 4. 
-#define SKA_AS_COMMENT    1		// 5.
+#define SKA_AS_COMMENT    0		// 5.
 #define SHOW_RH_COMMENT   0		// 6.
 #define SHOW_JSR          0		// 7.
 
@@ -987,7 +987,7 @@ void pt_ska_comment(uint16_t ska) {
 void print_line() {
 	if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
 		if (diss_linnum == 2607)
-			pc=pc;	//breakpoint
+			pc = pc;	//breakpoint
 		diss_linnum++;
 
 		if (flag[0]) // PRINT_DISS_LINNUM
@@ -995,11 +995,12 @@ void print_line() {
 
 
 		if (flag[3]) { // PRINT_PC_ADDRESS
-			if (pcsav != 0)
-				fprintf(outputfile, "$%04X", pcsav);
-			fprintf(outputfile, "\t");
+			if (sss[sno].symadr != pc) { // if not left comment
+				if (pcsav != 0)
+					fprintf(outputfile, "%04X", pcsav);
+				fprintf(outputfile, "\t");
+			}
 		}
-
 
 
 		fprintf(outputfile, "%s\n", line_buffer);
