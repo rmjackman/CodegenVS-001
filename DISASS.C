@@ -243,9 +243,10 @@ void disassemble(const char* filename) {
 	puts("Done.\n");
 	return;
 }
+
 /****************** disassln  ********************/
 
-uint16_t disassln(uint16_t ska) {
+uint16_t disassln(uint16_t ska) // ska = start address -- taken from pc
 	uint8_t offset;
 	char* ptr;
 	uint8_t* codeptr;
@@ -259,11 +260,7 @@ uint16_t disassln(uint16_t ska) {
 	char ch;
 	uint8_t apparent_line_length = 0;
 
-
-	/*	if (sss[sno].comment[0]) {
-			pts_p("*** %s ***\n", sss[sno].comment);
-			printf("*** %s ***\n", sss[sno].comment);
-		}*/
+/***********      Init line_buffer  **************/
 
 	line_buffer[0] = '\0';
 	linebeg_lablen = 0;
@@ -281,9 +278,9 @@ uint16_t disassln(uint16_t ska) {
 		sno++;
 		linebeg_lablen = 0;
 		lnbfptr = linbuf;
-		if (sss[sno].symbol)
+		if (sss[sno].symbol)									// Label at line beginning?
 			while (sss[sno].symbol[linebeg_lablen])
-				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
+				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];// Label at line beginning
 	}
 
 	*lnbfptr++ = '\t';
