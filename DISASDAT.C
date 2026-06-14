@@ -1,15 +1,25 @@
 #include "cdgn_global.h"
 
 
-char abtab[] = " ? ANDASLBCCBCSBEQBITBMI"
+/*char abtab[] = " ? ANDASLBCCBCSBEQBITBMI"
 					"BNEBPLBRKBVCBVSCLCCLDCLI"
 					"CLVCMPCPXCPYDECDEXDEYEOR"
 					"INCINXINYJMPJSRLDALDXLDY"
 					"LSRNOPORAPHAPHPPLAPLPROL"
 					"RORRTIRTSSBCSECSEDSEISTA"
 					"STXSTYTAXTAYTSXTXATXSTYA"
-					"ADC";
+					"ADC";							*/
 
+
+char abtab[] =
+" ? "                                              /* 000 */
+"AND" "ASL" "BCC" "BCS" "BEQ" "BIT" "BMI" "BNE"   /* 003–024 */
+"BPL" "BRK" "BVC" "BVS" "CLC" "CLD" "CLI" "CLV"   /* 027–048 */
+"CMP" "CPX" "CPY" "DEC" "DEX" "DEY" "EOR" "INC"   /* 051–072 */
+"INX" "INY" "JMP" "JSR" "LDA" "LDX" "LDY" "LSR"   /* 075–096 */
+"NOP" "ORA" "PHA" "PHP" "PLA" "PLP" "ROL" "ROR"   /* 099–120 */
+"RTI" "RTS" "SBC" "SEC" "SED" "SEI" "STA" "STX"   /* 123–144 */
+"STY" "TAX" "TAY" "TSX" "TXA" "TXS" "TYA" "ADC";  /* 147–168 */
 
 char abofst[] =   { 30,102,0,0,0,102,6,0    , 108,102,6,0,0,102,6,0
          , 27,102,0,0,0,102,6,0      , 39,102,0,0,0,102,6,0

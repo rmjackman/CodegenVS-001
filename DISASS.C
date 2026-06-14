@@ -30,6 +30,7 @@ int getch(void);
 #define SKA_AS_COMMENT    0		// 5.
 #define SHOW_RH_COMMENT   0		// 6.
 #define SHOW_JSR          0		// 7.
+#define PRINT_OPC_BYTES   1		// 8.
 
 #define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
@@ -50,7 +51,7 @@ void pt_ska_comment(uint16_t adr);
 void print_line();
 
 bool offset_added = false; // offset_added
-bool flag[8] = {false};
+bool flag[9] = {false};
 uint16_t sno;
 char sctp;
 uint16_t ska_sav, lo_hi_operand; 
@@ -121,7 +122,9 @@ void disassemble(const char* filename) {
 #if SHOW_JSR
 	flag[7] = 1;
 #endif
-
+#if PRINT_OPC_BYTES
+	flag[8] = 1;
+#endif
 
 /********      Init symtab_epz  *******/
 
@@ -468,6 +471,12 @@ uint16_t disassln(uint16_t ska) {
 	}
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
+
+	if (flag[8] == 1) { //SHOW_OPCODES
+		pts_p(" %X ", *codeptr);
+	}
+
+
 
 
 	if (flag[7] != 1) { //SHOW_JSR
