@@ -22,7 +22,7 @@ int getch(void);
 #define DFB_BYTES_PER_LINE 6 //8
 #define SHOW_LO 0 // Show ':L'
 
-#define PRINT_DISS_LINNUM 0		// 0.
+#define PRINT_DISS_LINNUM 1		// 0.
 #define ADDR_LEFT_COMMENT 0		// 1.
 #define SHOW_LEFT_COMMENT 0		// 2.
 #define PRINT_PC_ADDRESS  1		// 3. Turns on edit mode in SOURCGEN
@@ -35,6 +35,7 @@ int getch(void);
 #define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
 
+uint8_t* opcodeptr;
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 uint16_t disassln(uint16_t pc);
 void phb(uint8_t* ptr);
@@ -246,29 +247,30 @@ void disassemble(const char* filename) {
 
 /****************** disassln  ********************/
 
-uint16_t disassln(uint16_t ska) // ska = start address -- taken from pc
+uint16_t disassln(uint16_t ska){ // ska = start address -- taken from pc
 	uint8_t offset;
 	char* ptr;
 	uint8_t* codeptr;
 
 	char cnt;
 	unsigned int temp;
-	char linbuf[10] = { 0 };
+	char beglabbuf[10] = { 0 };
 
-	char* lnbfptr = linbuf;
+	char* lnbfptr = beglabbuf;
 	//char* lnbfptrsv;
 	char ch;
 	uint8_t apparent_line_length = 0;
 
 /***********      Init line_buffer  **************/
 
+	opcodeptr = NULL;
 	line_buffer[0] = '\0';
 	linebeg_lablen = 0;
 	offset_added = false;
 
 	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
 		linebeg_lablen = 0;
-		lnbfptr = linbuf;
+		lnbfptr = beglabbuf;
 		if (sss[sno].symbol)
 			while (sss[sno].symbol[linebeg_lablen])
 				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
@@ -277,10 +279,11 @@ uint16_t disassln(uint16_t ska) // ska = start address -- taken from pc
 	if ((sss[sno + 1].symadr == ska) && (sno < symnum - 1)) {// needed for everything else
 		sno++;
 		linebeg_lablen = 0;
-		lnbfptr = linbuf;
-		if (sss[sno].symbol)									// Label at line beginning?
-			while (sss[sno].symbol[linebeg_lablen])
-				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];// Label at line beginning
+		lnbfptr = beglabbuf;
+		if (sss[sno].symbol)
+			while (sss[sno].symbol[linebeg_lablen])//label at line beginning
+				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
+
 	}
 
 	*lnbfptr++ = '\t';
@@ -315,7 +318,7 @@ uint16_t disassln(uint16_t ska) // ska = start address -- taken from pc
 
 
 
-	pts_p("%s", linbuf); // Label at line beginning
+	pts_p("%s", beglabbuf); // Label at line beginning
 
 
 	symtab_init = symtab_epz;
@@ -468,10 +471,11 @@ uint16_t disassln(uint16_t ska) // ska = start address -- taken from pc
 	}
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
+	opcodeptr = codeptr;
 
-	if (flag[8] == 1) { //SHOW_OPCODES
-		pts_p(" %X ", *codeptr);
-	}
+	//if (flag[8] == 1) { //SHOW_OPCODES
+	//	pts_p(" %X ", *codeptr);
+	//}
 
 
 
@@ -501,6 +505,8 @@ uint16_t disassln(uint16_t ska) // ska = start address -- taken from pc
 
 		line_skip++;
 	}
+
+	
 
 	switch (opertytb[*codeptr++]) {
 	case OPC:		
@@ -1002,8 +1008,35 @@ void print_line() {
 
 		if (flag[3]) { // PRINT_PC_ADDRESS
 			if (sss[sno].symadr != pc) { // if not left comment
-				if (pcsav != 0)
+				if (pcsav != 0){
 					fprintf(outputfile, "%04X", pcsav);
+
+					if (opcodeptr) {             // address is not null
+						switch (oplen[*opcodeptr]) {
+
+						case 1:
+							fprintf(outputfile, " %02X      ", opcodeptr[0]);
+							break;
+
+						case 2:
+							fprintf(outputfile, " %02X %02X   ",
+								opcodeptr[0], opcodeptr[1]);
+							break;
+
+						case 3:
+							fprintf(outputfile, " %02X %02X %02X",
+								opcodeptr[0], opcodeptr[1], opcodeptr[2]);
+							break;
+
+						default:
+							fprintf(outputfile, "         ");
+							break;
+						}
+									
+					}
+					else
+						fprintf(outputfile, "         ");
+				}
 				fprintf(outputfile, "\t");
 			}
 		}

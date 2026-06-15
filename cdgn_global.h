@@ -75,3 +75,4 @@ enum { OPC, NN, AA, AAAA, AAX, AAAAX, AAY, AAAAY, BAAXB, BAABY, BRA, BAAAAB, ERR
 #define Q OPC
 
 #endif
+unsigned char oplen[256];
