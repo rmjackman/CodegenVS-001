@@ -475,13 +475,13 @@ int main(int argc, char* argv[])
 				include_flg = 0;
 			}
 
-			if (strchr(outflgs, 'L') || strchr(outflgs, 'l'))
+			if (strpbrk(outflgs, "Ll"))
 			{
 				if (*prnlnbufbeg || *prnlnbuf)
 				{
 					if (bytcnt < LSTBYTES)
 					{
-						if (!(strchr(outflgs, 'M') || strchr(outflgs, 'm')))
+						if (!strpbrk(outflgs, "Mm"))
 						{
 							for (i = LSTBYTES - bytcnt; i > 0; i--)
 								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "   ");
@@ -752,7 +752,7 @@ int main(int argc, char* argv[])
 			{
 				if (strcmp(opcode, "MACRO") && strcmp(opcode, "MEND") && !macroflg) /* Not in macro */
 				{
-					if ((maclevel == 0) || !(strchr(outflgs, 'M') || strchr(outflgs, 'm'))) //M = macros not expanded
+					if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) //M = macros not expanded
 					{
 
 						if (!(strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3)))
@@ -817,8 +817,9 @@ int main(int argc, char* argv[])
 
 							ptr = txtptr;
 
-							while (*ptr == ' ' || *ptr == '\t' || *ptr == '*' || *ptr == ';')
+							while (*ptr && strchr(" \t*;", *ptr)) {
 								ptr++;
+							}
 							while (*ptr != '\n' && i < COMMENT_LEN - 1) {
 								sss[symnum].comment[i++] = *ptr++;
 							}
@@ -914,7 +915,7 @@ int main(int argc, char* argv[])
 							ptr--;
 						ptr++;
 							if (*ptr++ == '*') { // comment at line begin
-								while (*ptr == ' ' || *ptr == '\t' || *ptr == '*')
+								while (strchr(" \t*", *ptr))
 									ptr++;
 								while (*ptr != '\n' && *ptr != '*' && i < COMMENT_LEN - 1) {
 									sss[symnum].comment[i++] = *ptr++;
@@ -1833,7 +1834,7 @@ int main(int argc, char* argv[])
 
 
 	/* Symbol table */
-	if (strchr(outflgs, 'N') || strchr(outflgs, 'n')) {
+	if (strpbrk(outflgs, "Nn")) {
 		fprintf(stream2, "\n\n**** Symbol table *****\n\n");
 		for (i = 0; i < symnumext; i++) {
 			if (sss[i].symbol)
@@ -1842,7 +1843,7 @@ int main(int argc, char* argv[])
 	}
 
 	/* xasm Symbol table */
-	if (strchr(outflgs, 'X') || strchr(outflgs, 'x')) {
+	if (strpbrk(outflgs, "Xx")) {
 		fprintf(stream2, "Label table:\n");
 		for (i = 0; i < symnumext; i++) {
 			if (sss[i].symbol[0]) {
@@ -1853,7 +1854,7 @@ int main(int argc, char* argv[])
 	}
 
 	/* SOURCGEN symbol table */
-	if (strchr(outflgs, 'T') || strchr(outflgs, 't')) {
+	if (strpbrk(outflgs, "Tt")) {
 		if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n")<0)   
 			perror("Error writing to file");
 		for (i = 0; i < symnumext; i++) {
@@ -2540,7 +2541,7 @@ void toxlbuf(uint8_t ch)
 			}
 
 		}
-		if ((strchr(outflgs, 'L') || strchr(outflgs, 'l')) && !(strchr(outflgs, 'M') || strchr(outflgs, 'm')))
+		if (strpbrk(outflgs, "Ll") && !strpbrk(outflgs, "Mm"))
 		{
 
 			sprintf_s(tempstr, sizeof(tempstr), "%02X ", ch & 255);
@@ -2727,7 +2728,7 @@ void sectyp(char line_type)
 {
 	//if(pc == 0x4729)
 		//pc=pc;
-	if ((line_type == '&' || line_type == '@' || line_type == '(' || line_type == '[') && pass == 2) {
+	if (pass == 2 && strchr("&@([", line_type)) {
 		for (int i = 0; i < symnum; i++) {
 			if (sss[i].symadr == pc) {
 				sss[i].symtyp = line_type;
@@ -2916,3 +2917,4 @@ static void print_visible(const char* s) {
 		s++;
 	}
 }
+
