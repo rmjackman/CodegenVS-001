@@ -195,9 +195,14 @@ void disassemble(const char* filename) {
 
 		printf("Writing segment %d\n", segment);
 		pc = start_address[segment];
+
+		pcsav = 0;
+		print_line();  print_line();
+		pts_p("\tORG $%X", pc); print_line();
+		print_line();
 		
-		fprintf(outputfile, "\n\n\n\t\ORG $%X\n\n", pc); // Write to the file
-		diss_linnum +=3;
+		//fprintf(outputfile, "\n\n\n\t\ORG $%X\n\n", pc); // Write to the file
+		//diss_linnum +=3;
 		
 		sno = 0;
 		while (sss[sno].symadr < pc) {
