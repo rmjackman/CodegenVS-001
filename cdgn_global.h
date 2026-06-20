@@ -76,40 +76,14 @@ enum { OPC, NN, AA, AAAA, AAX, AAAAX, AAY, AAAAY, BAAXB, BAABY, BRA, BAAAAB, ERR
 
 unsigned char oplen[256];
 
-#if CREATE_DBG
+#endif // GDGN_GLOBAL_H
+
+
+
+#ifndef DBG_H
+#define DBG_H
+
 #include <stdio.h>
-
-extern FILE* dbgfp;
-#endif
-
-#if defined(CREATE_DBG) && CREATE_DBG
-
-void dbg_file(
-    unsigned id,
-    const char* name);
-
-void dbg_seg(
-    unsigned id,
-    unsigned start,
-    const char* name);
-
-void dbg_span(
-    unsigned id,
-    unsigned seg,
-    unsigned start,
-    unsigned size);
-
-void dbg_line(
-    unsigned id,
-    unsigned file,
-    unsigned line,
-    unsigned span);
-
-void dbg_sym(
-    unsigned id,
-    const char* name,
-    unsigned value,
-    unsigned size);
 
 typedef struct DbgContext {
     FILE* fp;
@@ -122,8 +96,30 @@ typedef struct DbgContext {
 
 } DbgContext;
 
-void dbg_close(DbgContext* dbg);
+/* --- function prototypes --- */
 
-#endif
+void dbg_file(DbgContext* ctx, unsigned id, const char* name);
 
-#endif // GDGN_GLOBAL_H
+void dbg_seg(DbgContext* ctx, unsigned id, unsigned start, const char* name);
+
+void dbg_span(DbgContext* ctx,
+    unsigned id,
+    unsigned seg,
+    unsigned start,
+    unsigned size);
+
+void dbg_line(DbgContext* ctx,
+    unsigned id,
+    unsigned file,
+    unsigned line,
+    unsigned span);
+
+void dbg_sym(DbgContext* ctx,
+    unsigned id,
+    const char* name,
+    unsigned value,
+    unsigned size);
+
+void dbg_close(DbgContext* ctx);
+
+#endif /* DBG_H */

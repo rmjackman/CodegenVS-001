@@ -37,7 +37,7 @@ int getch(void);
 
 uint8_t* opcodeptr;
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
-uint16_t disassln(uint16_t pc);
+uint16_t disassln(DbgContext* ctx, uint16_t ska);
 void phb(uint8_t* ptr);
 uint16_t adnmb(uint8_t* ptr);
 uint16_t adnmw(uint8_t* ptr);
@@ -57,7 +57,7 @@ uint16_t sno;
 char sctp;
 uint16_t ska_sav, lo_hi_operand; 
 char lo_hi_task;
-uint8_t segment;
+uint8_t segment = 0;
 uint8_t number_of_segments;
 uint16_t start_address[MAX_SEGMENTS];
 uint16_t end_address[MAX_SEGMENTS];
@@ -224,13 +224,16 @@ void disassemble(const char* filename) {
 		printf("Writing segment %d\n", segment);
 		pc = start_address[segment];
 
+
+
 		pcsav = 0;
 		print_line();  print_line();
 		pts_p("\tORG $%X", pc); print_line();
 		print_line();
 		
-		//fprintf(outputfile, "\n\n\n\t\ORG $%X\n\n", pc); // Write to the file
-		//diss_linnum +=3;
+#if CREATE_DBG
+		dbg_seg(&ctx, segment, pc, "CODE");
+#endif
 		
 		sno = 0;
 		while (sss[sno].symadr < pc) {
@@ -256,7 +259,7 @@ void disassemble(const char* filename) {
 		ch = 0;
 		while (1) {
 			pcsav = pc;
-			pc = disassln(pc);
+			pc = disassln(&ctx, pc);
 
 
 			if (pc == 0x94a9)
@@ -283,7 +286,7 @@ void disassemble(const char* filename) {
 
 /****************** disassln  ********************/
 
-uint16_t disassln(uint16_t ska){ // ska = start address -- taken from pc
+uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- taken from pc
 	uint8_t offset;
 	char* ptr;
 	uint8_t* codeptr;
@@ -498,6 +501,7 @@ uint16_t disassln(uint16_t ska){ // ska = start address -- taken from pc
 
 		ska = (sss[sno + 1].symadr);//next symbol-table entry
 		pts_p("\n\tORG $%X\n", ska);
+
 		return(ska);
 
 
