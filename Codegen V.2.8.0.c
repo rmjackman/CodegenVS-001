@@ -27,17 +27,7 @@
 
 #define NN_NEW 1
 
-#define DBG_ENABLED 1
 
-#if DBG_ENABLED
-static FILE* dbgfile;
-static int span_id = 0;
-static int line_id = 0;
-static int seg_id = 0;
-
-static unsigned seg_base_pc;   // current ORG base
-static unsigned line_start_pc;  // start of this source line
-#endif
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -59,16 +49,7 @@ enum { UNUSED, SYMBOL, MACRO, MACRO_UNUSED, MACRO_LAB };
 
 /**************************  prototypes  ***************/
 
-#ifndef DBG_H
-#define DBG_H
 
-#if DBG_ENABLED
-void dbg_span(unsigned start, unsigned end);
-#else
-#define dbg_span(s,e) ((void)0)
-#endif
-
-#endif
 uint32_t expresstoi(void);
 uint32_t symtoi1(void);
 uint32_t expresstoi_p2(void);
@@ -461,12 +442,7 @@ int main(int argc, char* argv[])
 	*txtendptr++ = '\n';
 	*txtendptr++ = '\0';
 	
-#if DBG_ENABLED
-	fopen_s(&dbgfile, "AUTORUN.DBG", "w");
 
-	fprintf(dbgfile,
-		"file id=0,name=\"AUTORUN.SRC\"\n");
-#endif
 
 	/********************** Main loop *******************/
 
@@ -496,9 +472,7 @@ int main(int argc, char* argv[])
 
 		for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen)
 		{
-#if DBG_ENABLED
-			line_start_pc = pc;
-#endif
+
 			
 			if ((*txtptr == 0) && (include_flg))
 			{
@@ -790,11 +764,6 @@ int main(int argc, char* argv[])
 						if (!(strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3)))
 						{
 							if (pc != pc_sav){
-
-								/* ---- DBG span break (ORG or jump discontinuity) ---- */
-#if DBG_ENABLED
-								dbg_span(pc_sav, pc);   /* handles ORG automatically */
-#endif
 
 								sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X: ", pc);	// PC ADDRESS
 							}
@@ -1226,16 +1195,6 @@ int main(int argc, char* argv[])
 #endif
 					printf("Segment %4X ", pc);
 
-/*#if DBG_ENABLED
-					seg_base_pc = pc;
-
-					fprintf(dbgfile,
-						"seg id=%d,start=0x%04X,addrsize=absolute\n",
-						seg_id,
-						pc);
-
-					seg_id++;
-#endif*/
 
 				}
 				continue;
@@ -1737,35 +1696,7 @@ int main(int argc, char* argv[])
 				break;
 			}
 
-#if DBG_ENABLED
-			if ((pass == 2)
-				&& (maclevel == 0)
-				&& strcmp(opcode, "MACRO")
-				&& strcmp(opcode, "MEND")
-				&& !macroflg) {
-				unsigned size = pc - line_start_pc;
 
-				if (size) {
-					unsigned span_start = line_start_pc - seg_base_pc;
-
-					fprintf(dbgfile,
-						"span id=%d,seg=%d,start=%u,size=%u\n",
-						span_id,
-						seg_id,
-						span_start,
-						size);
-
-					fprintf(dbgfile,
-						"line id=%d,file=0,line=%d,type=1,span=%d\n",
-						line_id,
-						linnum,
-						span_id);
-
-					span_id++;
-					line_id++;
-				}
-			}
-#endif
 
 		}// end toxlbuf  end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf
 		printf("to %4X\n", pc - 1);
@@ -2062,9 +1993,7 @@ int main(int argc, char* argv[])
 
 	//end Save SMT
 
-#if DBG_ENABLED
-	fclose(dbgfile);
-#endif
+
 
 	/******************* Save to image ************************************/
 
@@ -3003,32 +2932,3 @@ static void print_visible(const char* s) {
 	}
 }
 
-#if DBG_ENABLED
-
-//#include <stdio.h>
-
-static FILE* dbgfp = NULL;
-
-/* call this once at start */
-void dbg_init(const char* fname) {
-	fopen_s(&dbgfp, fname, "w");
-}
-
-/* REQUIRED function (fixes your linker error) */
-void dbg_span(unsigned start, unsigned end) {
-	if (!dbgfp) return;
-
-	fprintf(dbgfp,
-		"span start=%04X size=%u\n",
-		start,
-		(end >= start) ? (end - start) : 0);
-}
-
-void dbg_close(void) {
-	if (dbgfp) {
-		fclose(dbgfp);
-		dbgfp = NULL;
-	}
-}
-
-#endif

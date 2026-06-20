@@ -22,7 +22,7 @@
 
 #define GDGN_GLOBAL_H
 
-
+#define CREATE_DBG 1
 
 
 #define DOS_BLOCK_SIZE (333-4)*32-16
@@ -74,5 +74,56 @@ char esc_ch_tab[];
 enum { OPC, NN, AA, AAAA, AAX, AAAAX, AAY, AAAAY, BAAXB, BAABY, BRA, BAAAAB, ERROR };
 #define Q OPC
 
-#endif
 unsigned char oplen[256];
+
+#if CREATE_DBG
+#include <stdio.h>
+
+extern FILE* dbgfp;
+#endif
+
+#if defined(CREATE_DBG) && CREATE_DBG
+
+void dbg_file(
+    unsigned id,
+    const char* name);
+
+void dbg_seg(
+    unsigned id,
+    unsigned start,
+    const char* name);
+
+void dbg_span(
+    unsigned id,
+    unsigned seg,
+    unsigned start,
+    unsigned size);
+
+void dbg_line(
+    unsigned id,
+    unsigned file,
+    unsigned line,
+    unsigned span);
+
+void dbg_sym(
+    unsigned id,
+    const char* name,
+    unsigned value,
+    unsigned size);
+
+typedef struct DbgContext {
+    FILE* fp;
+
+    unsigned next_file_id;
+    unsigned next_seg_id;
+    unsigned next_span_id;
+    unsigned next_line_id;
+    unsigned next_sym_id;
+
+} DbgContext;
+
+void dbg_close(DbgContext* dbg);
+
+#endif
+
+#endif // GDGN_GLOBAL_H

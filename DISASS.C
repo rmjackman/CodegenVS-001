@@ -1,4 +1,4 @@
-/************************** include *****************/
+﻿/************************** include *****************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,12 +74,29 @@ char output_filename[FILENAME_MAX];
 FILE* outputfile;
 
 void disassemble(const char* filename) {
+
+
+
+
 	char ch;
 	int i = 0;
 	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
 
+#if CREATE_DBG
 
+	DbgContext ctx;   // ← HERE (stack-owned, clean, no globals)
 
+	typedef struct DbgContext {
+		FILE* fp;
+
+		unsigned next_file_id;
+		unsigned next_seg_id;
+		unsigned next_span_id;
+		unsigned next_line_id;
+		unsigned next_sym_id;
+
+	} DbgContext;
+#endif
 
 
 	if (extension_pos == NULL) {
@@ -96,6 +113,17 @@ void disassemble(const char* filename) {
 		return;
 	}
 	printf("\n\n\nDIS Filename %s\n\n\n", output_filename);
+
+#if CREATE_DBG
+
+
+
+	if (!dbg_init(&ctx, "AUTORUN.DBG", "AUTORUN.SRC")) {
+		printf("Cannot create DBG file\n");
+		return;
+	}
+
+#endif
 
 	number_of_segments = read_loadfile(filename); //loafilename
 
@@ -246,6 +274,9 @@ void disassemble(const char* filename) {
 		}
 	}
 	fclose(outputfile); // Close the file
+#if CREATE_DBG
+	dbg_close(&ctx);
+#endif
 	puts("Done.\n");
 	return;
 }
@@ -1066,3 +1097,95 @@ void print_line() {
 	}
 	*line_buffer = '\0'; // Reset line_buffer
 }
+
+
+
+#if CREATE_DBG
+
+void dbg_file(DbgContext* ctx, unsigned id, const char* name) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"file\tid=%u,name=\"%s\"\n",
+		id, name);
+}
+
+void dbg_seg(DbgContext* ctx, unsigned id, unsigned start, const char* name) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"seg\tid=%u,name=\"%s\",start=0x%04X,addrsize=absolute\n",
+		id, name, start);
+}
+
+void dbg_span(DbgContext* ctx,
+	unsigned id,
+	unsigned seg,
+	unsigned start,
+	unsigned size) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"span\tid=%u,seg=%u,start=%u,size=%u\n",
+		id, seg, start, size);
+}
+
+void dbg_line(DbgContext* ctx,
+	unsigned id,
+	unsigned file,
+	unsigned line,
+	unsigned span) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"line\tid=%u,file=%u,line=%u,span=%u,type=1\n",
+		id, file, line, span);
+}
+
+void dbg_sym(DbgContext* ctx,
+	unsigned id,
+	const char* name,
+	unsigned value,
+	unsigned size) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"sym\tid=%u,name=\"%s\",addrsize=absolute,size=%u,val=0x%04X\n",
+		id, name, size, value);
+}
+
+
+
+int dbg_init(DbgContext* ctx, const char* dbg_filename, const char* src_filename) {
+	if (!ctx)
+		return 0;
+
+	memset(ctx, 0, sizeof(*ctx));
+
+	ctx->next_file_id = 0;
+	ctx->next_seg_id = 0;
+	ctx->next_span_id = 0;
+	ctx->next_line_id = 0;
+	ctx->next_sym_id = 0;
+
+	if (fopen_s(&ctx->fp, dbg_filename, "w") != 0 || !ctx->fp)
+		return 0;
+
+	/*
+		CC65 DBG expects a "file" record first
+		This establishes file id 0 = main source file
+	*/
+	fprintf(ctx->fp,
+		"file\tid=0,name=\"%s\"\n",
+		src_filename ? src_filename : "");
+
+	return 1;
+}
+
+void dbg_close(DbgContext* dbg) {
+	if (dbg && dbg->fp) {
+		fclose(dbg->fp);
+		dbg->fp = NULL;
+	}
+}
+#endif

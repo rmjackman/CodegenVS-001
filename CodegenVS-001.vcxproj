@@ -131,7 +131,9 @@
     <ClCompile Include="DISASDAT.C">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="DISASS.C" />
+    <ClCompile Include="DISASS.C">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="dos25dat.c" />
   </ItemGroup>
   <ItemGroup>

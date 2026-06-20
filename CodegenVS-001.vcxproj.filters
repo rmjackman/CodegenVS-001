@@ -36,4 +36,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="6502 Source\SGEN4xx.SRC" />
+  </ItemGroup>
 </Project>
