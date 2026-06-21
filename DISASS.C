@@ -30,7 +30,7 @@ int getch(void);
 #define SKA_AS_COMMENT    0		// 5.
 #define SHOW_RH_COMMENT   0		// 6.
 #define SHOW_JSR          0		// 7.
-#define PRINT_OPC_BYTES   1		// 8.
+#define PRINT_OPC_BYTES   0		// 8.
 
 #define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
@@ -343,7 +343,6 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 	}
 
-	*lnbfptr++ = '\t';
 	*lnbfptr = '\0';
 	sctp = sss[sno].symtyp;
 
@@ -376,13 +375,12 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 	if (linebeg_lablen){
 		pts_p("%s", beglabbuf); // Label at line beginning
+		
 #if CREATE_DBG
-		beglabbuf[linebeg_lablen] = '\0';
 		dbg_sym(ctx, ctx->next_sym_id++, beglabbuf, pc);
-
 #endif
 	}
-
+	ptc('\t');
 	symtab_init = symtab_epz;
 
 	codeptr = xlram + ska;
@@ -1103,7 +1101,6 @@ void print_line() {
 				fprintf(outputfile, "\t");
 			}
 		}
-
 
 		fprintf(outputfile, "%s\n", line_buffer);
 
