@@ -34,7 +34,7 @@ int getch(void);
 
 #define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
-
+uint16_t seg_start_address;
 uint8_t* opcodeptr;
 char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
 uint16_t disassln(DbgContext* ctx, uint16_t ska);
@@ -96,6 +96,8 @@ void disassemble(const char* filename) {
 		unsigned next_sym_id;
 
 	} DbgContext;
+
+	int span_id = 0;
 #endif
 
 
@@ -200,6 +202,13 @@ void disassemble(const char* filename) {
 			if (sss[i].symadr  > 9) ptc ('$');
 			pts_p("%X", sss[i].symadr);
 
+#if CREATE_DBG
+
+			if (!(sss[i].symtyp == ']')) {
+				dbg_sym(&ctx, ctx.next_sym_id++, sss[i].symbol, sss[i].symadr);
+			}
+#endif
+
 #if SHOW_B_W_FREQUENCY
 
 			if (sss[i].ofst) {
@@ -232,7 +241,8 @@ void disassemble(const char* filename) {
 		print_line();
 		
 #if CREATE_DBG
-		dbg_seg(&ctx, segment, pc, "CODE");
+		seg_start_address = pc;
+		dbg_seg(&ctx, segment, pc);
 #endif
 		
 		sno = 0;
@@ -259,8 +269,16 @@ void disassemble(const char* filename) {
 		ch = 0;
 		while (1) {
 			pcsav = pc;
-			pc = disassln(&ctx, pc);
 
+			pc = disassln(&ctx, pc);// D I S A S S   L I N E
+
+#if CREATE_DBG
+			if (!((lo_hi_task == 1) || (lo_hi_task == 2))){
+				dbg_span(&ctx, ++ctx.next_span_id, segment, pcsav - seg_start_address, pc - pcsav);
+				dbg_line(&ctx, ctx.next_line_id++, 0, diss_linnum+1, ctx.next_span_id);
+	
+		}
+#endif
 
 			if (pc == 0x94a9)
 				pc=pc;	//breakpoint
@@ -356,9 +374,14 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	}
 
 
+	if (linebeg_lablen){
+		pts_p("%s", beglabbuf); // Label at line beginning
+#if CREATE_DBG
+		beglabbuf[linebeg_lablen] = '\0';
+		dbg_sym(ctx, ctx->next_sym_id++, beglabbuf, pc);
 
-	pts_p("%s", beglabbuf); // Label at line beginning
-
+#endif
+	}
 
 	symtab_init = symtab_epz;
 
@@ -1110,16 +1133,16 @@ void dbg_file(DbgContext* ctx, unsigned id, const char* name) {
 	if (!ctx || !ctx->fp) return;
 
 	fprintf(ctx->fp,
-		"file\tid=%u,name=\"%s\"\n",
+		"file\tid=%u,name=\"%s\"\n\n",
 		id, name);
 }
 
-void dbg_seg(DbgContext* ctx, unsigned id, unsigned start, const char* name) {
+void dbg_seg(DbgContext* ctx, unsigned id, unsigned start) {
 	if (!ctx || !ctx->fp) return;
 
 	fprintf(ctx->fp,
-		"seg\tid=%u,name=\"%s\",start=0x%04X,addrsize=absolute\n",
-		id, name, start);
+		"seg\tid=%u,start=0x%X,addrsize=absolute\n\n",
+		id, start);
 }
 
 void dbg_span(DbgContext* ctx,
@@ -1130,7 +1153,7 @@ void dbg_span(DbgContext* ctx,
 	if (!ctx || !ctx->fp) return;
 
 	fprintf(ctx->fp,
-		"span\tid=%u,seg=%u,start=%u,size=%u\n",
+		"span\tid=%u,seg=%u,start=0x%X,size=%u\n",
 		id, seg, start, size);
 }
 
@@ -1142,20 +1165,19 @@ void dbg_line(DbgContext* ctx,
 	if (!ctx || !ctx->fp) return;
 
 	fprintf(ctx->fp,
-		"line\tid=%u,file=%u,line=%u,span=%u,type=1\n",
+		"line\tid=%u,file=%u,line=%u,span=%u,type=1\n\n",
 		id, file, line, span);
 }
 
 void dbg_sym(DbgContext* ctx,
 	unsigned id,
 	const char* name,
-	unsigned value,
-	unsigned size) {
+	unsigned value) {
 	if (!ctx || !ctx->fp) return;
 
 	fprintf(ctx->fp,
-		"sym\tid=%u,name=\"%s\",addrsize=absolute,size=%u,val=0x%04X\n",
-		id, name, size, value);
+		"sym\tid=%u,name=\"%s\",addrsize=absolute,val=0x%04X\n",
+		id, name, value);
 }
 
 

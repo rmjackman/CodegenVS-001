@@ -100,7 +100,7 @@ typedef struct DbgContext {
 
 void dbg_file(DbgContext* ctx, unsigned id, const char* name);
 
-void dbg_seg(DbgContext* ctx, unsigned id, unsigned start, const char* name);
+void dbg_seg(DbgContext* ctx, unsigned id, unsigned start);
 
 void dbg_span(DbgContext* ctx,
     unsigned id,
@@ -117,8 +117,7 @@ void dbg_line(DbgContext* ctx,
 void dbg_sym(DbgContext* ctx,
     unsigned id,
     const char* name,
-    unsigned value,
-    unsigned size);
+    unsigned value);
 
 void dbg_close(DbgContext* ctx);
 
