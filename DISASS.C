@@ -1172,9 +1172,16 @@ void dbg_sym(DbgContext* ctx,
 	unsigned value) {
 	if (!ctx || !ctx->fp) return;
 
+	if(value <= 0xFF){
+	fprintf(ctx->fp,
+		"sym\tid=%u,name=\"%s\",addrsize=zeropage,val=0x%02X\n",
+		id, name, value);
+	}
+	else{
 	fprintf(ctx->fp,
 		"sym\tid=%u,name=\"%s\",addrsize=absolute,val=0x%04X\n",
 		id, name, value);
+	}
 }
 
 
