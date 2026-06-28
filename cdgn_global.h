@@ -13,7 +13,9 @@
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\T31.SRC"
 
-#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
+#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
+                 
 
 #include <stdint.h>
 
