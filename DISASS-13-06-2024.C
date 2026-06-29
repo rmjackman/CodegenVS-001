@@ -4,7 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-int getch(void);
+int _getch(void);
 
 typedef struct
 	{
@@ -53,7 +53,7 @@ void disassemble(unsigned int pc)
 	while(toupper(ch) != 'X')
 		{
 		pc = disassln(pc);
-		ch = getch();
+		ch = _getch();
 		}
 	}
 

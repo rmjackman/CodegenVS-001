@@ -6,9 +6,9 @@
 #include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include "cdgn_global.h"
-int getch(void);
 
 #define SYMBOL_OFFSET 9 // SYMBOL+1, SYMBOL+2 ...
 #define MAX_SEGMENTS 256
@@ -44,7 +44,7 @@ uint16_t adnmw(uint8_t* ptr);
 void adnmw2(uint16_t ska);
 char intern_to_atascii(char ch);
 void pts(const char* str);
-void pts_p(const char* format, void* arg);
+void pts_p(const char* format, ...);
 void ptc(char c);
 char ptb(unsigned char num);
 uint8_t read_loadfile(const char filename[FILENAME_MAX]);
@@ -832,7 +832,7 @@ void adnmw2(uint16_t ska) {
 	}
 	
 	else if (sss[i].ofst & 128) { // is negative
-		if (sss[i].symadr - ska <= (uint8_t)sss[i].ofst & 127) {    // eg. STA SYMBOL-1
+		if (sss[i].symadr - ska <= ((uint8_t)sss[i].ofst & 127)) {    // eg. STA SYMBOL-1
 
 			pts_p("%s-", sss[i].symbol);
 			if (sss[i].symadr - ska > 9) ptc('$'); // only if $ is needed
@@ -924,10 +924,13 @@ void pts(const char* str) {
 	snprintf(line_buffer + current_length, LINE_BUFFER_SIZE - current_length, "%s", str);
 }
 
-void pts_p(const char* format, void* arg) {
+void pts_p(const char* format, ...) {
 	size_t current_length = strlen(line_buffer);
 	char temp_buffer[LINE_BUFFER_SIZE];
-	snprintf(temp_buffer, sizeof(temp_buffer), format, arg);
+	va_list args;
+	va_start(args, format);
+	vsnprintf(temp_buffer, sizeof(temp_buffer), format, args);
+	va_end(args);
 	strncat_s(line_buffer, LINE_BUFFER_SIZE, temp_buffer, LINE_BUFFER_SIZE - current_length - 1);
 }
 
