@@ -18,9 +18,6 @@
     <ClCompile Include="dos25dat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="file_to_image_work.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DISASDAT.C">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,6 +25,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Codegen V.2.8.0.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="file_to_image_work.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -13,8 +13,8 @@
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\T31.SRC"
 
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
-#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
+#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
+//#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
                  
 
 #include <stdint.h>
@@ -56,7 +56,7 @@ uint8_t* xlram;
 
 void hit_Enter(void);
 char src_filename[MAX_FILENAME_LEN];
-char loafilename[MAX_FILENAME_LEN];
+static char loafilename[MAX_FILENAME_LEN];
 
 const unsigned char dos25_block[DOS_BLOCK_SIZE];
 const unsigned char dos25_votc_dir[DOS25_VOTC_DIR_SIZE];

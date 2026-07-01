@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -135,15 +135,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="dos25dat.c" />
+    <ClCompile Include="file_to_image_work.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cdgn_global.h" />
-    <ClCompile Include="file_to_image_work.c">
-      <FileType>CppCode</FileType>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="6502 Source\SGEN4xx.SRC" />
+    <None Include="6502 Source\T31.SRC" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

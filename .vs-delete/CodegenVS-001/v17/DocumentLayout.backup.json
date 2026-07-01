@@ -1,0 +1,175 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\cdgn_global.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|solutionrelative:cdgn_global.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\Codegen V.2.8.0.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|solutionrelative:Codegen V.2.8.0.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\DISASS.C||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|solutionrelative:DISASS.C||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Program Files (x86)\\Atari800WinPLus\\SGEN408.LST||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\DISASDAT.C||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|solutionrelative:DISASDAT.C||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{6054AD7B-C821-48B3-B852-C7CDE90CE96D}|CodegenVS-001.vcxproj|solutionrelative:6502 Source\\SGEN4xx.SRC||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|G:\\My Drive\\CODEGEN-2\\SGEN408.LST||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "cdgn_global.h",
+              "DocumentMoniker": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\cdgn_global.h",
+              "RelativeDocumentMoniker": "cdgn_global.h",
+              "ToolTip": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\cdgn_global.h",
+              "RelativeToolTip": "cdgn_global.h",
+              "ViewState": "AgIAADoAAAAAAAAAAAAAAEMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2024-07-15T13:23:17.891Z",
+              "IsPinned": true,
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{ba58fdf3-7af7-4b60-b69b-40ac68d83b75}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1a46fd64-28d5-434c-8eb3-17a02d419b53}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "SGEN408.LST",
+              "DocumentMoniker": "C:\\Program Files (x86)\\Atari800WinPLus\\SGEN408.LST",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Program Files (x86)\\Atari800WinPLus\\SGEN408.LST",
+              "ToolTip": "C:\\Program Files (x86)\\Atari800WinPLus\\SGEN408.LST",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Program Files (x86)\\Atari800WinPLus\\SGEN408.LST",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-09-03T12:35:15.937Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "SGEN408.LST",
+              "DocumentMoniker": "G:\\My Drive\\CODEGEN-2\\SGEN408.LST",
+              "ToolTip": "G:\\My Drive\\CODEGEN-2\\SGEN408.LST",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAEAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-09-03T12:34:04.771Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "DISASDAT.C",
+              "DocumentMoniker": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\DISASDAT.C",
+              "RelativeDocumentMoniker": "DISASDAT.C",
+              "ToolTip": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\DISASDAT.C",
+              "RelativeToolTip": "DISASDAT.C",
+              "ViewState": "AgIAAFkAAAAAAAAAAAAAAGIAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2024-08-29T17:57:46.721Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "DISASS.C",
+              "DocumentMoniker": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\DISASS.C",
+              "RelativeDocumentMoniker": "DISASS.C",
+              "ToolTip": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\DISASS.C",
+              "RelativeToolTip": "DISASS.C",
+              "ViewState": "AgIAAMoAAAAAAAAAAAArwNMAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2024-07-21T17:16:59.84Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Codegen V.2.8.0.c",
+              "DocumentMoniker": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\Codegen V.2.8.0.c",
+              "RelativeDocumentMoniker": "Codegen V.2.8.0.c",
+              "ToolTip": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\Codegen V.2.8.0.c",
+              "RelativeToolTip": "Codegen V.2.8.0.c",
+              "ViewState": "AgIAANUHAAAAAAAAAAAawOcHAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2024-07-15T13:26:35.064Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "SGEN4xx.SRC",
+              "DocumentMoniker": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC",
+              "RelativeDocumentMoniker": "6502 Source\\SGEN4xx.SRC",
+              "ToolTip": "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN4xx.SRC",
+              "RelativeToolTip": "6502 Source\\SGEN4xx.SRC",
+              "ViewState": "AgIAACcBAAAAAAAAAAAUwDQBAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-03-11T15:40:16.051Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "stdio.h",
+              "DocumentMoniker": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h",
+              "ToolTip": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt\\stdio.h",
+              "ViewState": "AgIAAHkCAAAAAAAAAAAawIUCAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-05-23T12:04:18.184Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

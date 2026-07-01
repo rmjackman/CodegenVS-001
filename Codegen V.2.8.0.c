@@ -173,29 +173,52 @@ uint8_t* xlram = NULL; // Declare xlram as a global variable
 
 #endif
 
+static const unsigned char	opcdat1[] = "BRKPHPASLCLCPLPROLSECRTIPHALSRCLIRTSPLARORSEI"
+"DEYTXATYATXSTAYTAXCLVTSXINYDEXCLDINXNOPSED";
+static const unsigned char dat1[] = { 0,8,10,24,40,42,56,	64,72,74,88,96,104,106,120,
+					136,138,152,154,168,170,184,186,200,202,216,232,234,248 };
+
+static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA LDA CMP SBC ASL ROL "
+"LSR ROR STX LDX DEC INC "
+"BRK PHP ASL CLC PLP ROL SEC RTI PHA LSR CLI RTS PLA ROR SEI "
+"DEY TXA TYA TXS TAY TAX CLV TSX INY DEX CLD INX NOP SED "
+"BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
+
+static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
+"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE ";
+static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG ";
+
+static const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
+static unsigned short bradat[] = { 0x10,0x30,0x50,0x70,0x90,0xb0,0xd0,0xf0 };
+static char macdumtab[MAXDUMS][10];		// moved to static
+static char dumbuf[80];						// moved to static
+static char macsymbol[MAXMACSYMS][10] = { {0} };
+static char* macptrtab[MAXMACSYMS] = { 0 };
+static char loclabtb[MAXLOCLABS][5] = { {0} };
+static int labexttab[MAXLOCLABS] = { 0 };			// 0001 to 9999
+static int lclb[MAXMACLEV][MXLBS] = { {0} };		// table of label nos. in present macro
+static unsigned short lclbnum[MAXMACLEV] = { 0 };
+static char include_filename[MAX_FILENAME_LEN] = { 0 };
+static char loafilename[MAX_FILENAME_LEN] = { 0 };
+static char smbfilename[MAX_FILENAME_LEN] = { 0 };
+static char lstfilename[MAX_FILENAME_LEN] = { 0 };
+static char addtoimg_filename[64][20] = { {0} };			//
+static char append_filename[36][20] = { {0} };				//
+static char link_filename[36][20] = { {0} };				//
+static char linkfile_filename[MAX_FILENAME_LEN] = { 0 };
+static char emul_filename[MAX_FILENAME_LEN] = { 0 };
+static char pathstr[MAX_FILENAME_LEN] = { 0 };
+static char dsk_filename[MAX_FILENAME_LEN] = { 0 };
+static char cmp_file[MAX_FILENAME_LEN] = { 0 };
+
+
 
 /****************************    main()     ****************/
 
 
 int main(int argc, char* argv[])
 {
-	const unsigned char	opcdat1[] = "BRKPHPASLCLCPLPROLSECRTIPHALSRCLIRTSPLARORSEI"
-		"DEYTXATYATXSTAYTAXCLVTSXINYDEXCLDINXNOPSED";
-	const unsigned char dat1[] = { 0,8,10,24,40,42,56,	64,72,74,88,96,104,106,120,
-						136,138,152,154,168,170,184,186,200,202,216,232,234,248 };
 
-	const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA LDA CMP SBC ASL ROL "
-		"LSR ROR STX LDX DEC INC "
-		"BRK PHP ASL CLC PLP ROL SEC RTI PHA LSR CLI RTS PLA ROR SEI "
-		"DEY TXA TYA TXS TAY TAX CLV TSX INY DEX CLD INX NOP SED "
-		"BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
-
-	const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
-		"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE ";
-	const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG ";
-
-	const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
-	unsigned short bradat[] = { 0x10,0x30,0x50,0x70,0x90,0xb0,0xd0,0xf0 };
 	int braoffset = 0;
 
 	char* includebuf;
@@ -216,13 +239,11 @@ int main(int argc, char* argv[])
 	int temp = 0;
 	int intab[] = { 0x40,0,0x20,0x60,0xA0,0xC0,0x80,0xE0 };
 
-	char* operptr,
-		macdumtab[MAXDUMS][10] = { {0} },
-		dumbuf[80] = { 0 };
+	char* operptr;
+
 	int dumnum = 0, macroflg = 0;
 
-	char macsymbol[MAXMACSYMS][10] = { {0} };
-	char* macptrtab[MAXMACSYMS] = { 0 };
+
 	short macnum = 0;
 
 	char* linbegsav[MAXMACLEV] = { 0 };
@@ -230,30 +251,17 @@ int main(int argc, char* argv[])
 	char* macargsptr[MAXMACLEV] = { 0 };
 	char* lnbfptr;
 	short loclabnum = 0;						// # of labels in loclabtb
-	char loclabtb[MAXLOCLABS][5] = { {0} };
+
+
 	int loclabtbpos;
-	int labexttab[MAXLOCLABS] = { 0 };			// 0001 to 9999
-	int lclb[MAXMACLEV][MXLBS] = { {0} };		// table of label nos. in present macro
-	unsigned short lclbnum[MAXMACLEV] = { 0 };
 	char lab[5] = { 0 };
 	char* labptr;
 
 	char prnlnbuf[120] = { 0 };
 	short twiceflg = 0;
 
-	char include_filename[MAX_FILENAME_LEN] = { 0 };
-	char loafilename[MAX_FILENAME_LEN] = { 0 };
-	char smbfilename[MAX_FILENAME_LEN] = { 0 };
-	char lstfilename[MAX_FILENAME_LEN] = { 0 };
-	char addtoimg_filename[64][20] = { {0} };
-	char append_filename[36][20] = { {0} };
-	char link_filename[36][20] = { {0} };
-	char linkfile_filename[MAX_FILENAME_LEN] = { 0 };
+
 	short link_cnt = 0;
-	char emul_filename[MAX_FILENAME_LEN] = { 0 };
-	char pathstr[MAX_FILENAME_LEN] = { 0 };
-	char dsk_filename[MAX_FILENAME_LEN] = { 0 };
-	char cmp_file[MAX_FILENAME_LEN] = { 0 };
 	short lo_fg = 0;
 	short objfile_flag = 0;
 	short addtoimg_cnt = 0;
@@ -1683,7 +1691,10 @@ int main(int argc, char* argv[])
 					printf("\n\nOpcode mismatch %X <> %X", 0xff & (*xlbfptr), 0xff & data[cnt][operno]);
 					error("This zero-page label must be defined before present line.");
 				}
-			if (data[cnt][operno] == 0) error("This addressing is not possible with this opcode");
+			if (cnt < 0 || operno < 0 || operno >= 13) {
+				error("Index out of bounds in data array");
+			}
+			else if (data[cnt][operno] == 0) error("This addressing is not possible with this opcode");
 			toxlbuf((char)data[cnt][operno]);		// opcode command
 			toxlbuf((char)symval);					// address low byte
 
@@ -1773,9 +1784,11 @@ int main(int argc, char* argv[])
 
 #if SORT_EQU_EPZ
 
-	int j = 0;
+	// Old method
+
+/*	int j = 0;
 	int symno = 0;
-	ssstype temparray[0xff] = { 0 };
+	static ssstype temparray[0xff] = { 0 };
 
 	while (sss[symno].symadr <= 0xFF)		//find greatest zero page or constant entry
 		symno++;
@@ -1796,8 +1809,35 @@ int main(int argc, char* argv[])
 		else symno--;
 	}
 	while (j >= 0)
-		sss[i++] = temparray[j--];
+		sss[i++] = temparray[j--]; */
 
+
+
+		//New method
+
+	int scan;
+	int insert = 0;
+	int lastzp = 0;
+	ssstype ssstemp;
+
+	while (sss[lastzp].symadr <= 0xFF)
+		lastzp++;
+
+	if (lastzp > 0)
+		lastzp--;
+
+	for (scan = 0; scan <= lastzp; scan++) {
+
+		if (sss[scan].symtyp == ']') {
+
+			ssstemp = sss[scan];
+
+			for (i = scan; i > insert; i--)
+				sss[i] = sss[i - 1];
+
+			sss[insert++] = ssstemp;
+		}
+	}
 #endif // 
 
 /* Remove unneeded symbols */
