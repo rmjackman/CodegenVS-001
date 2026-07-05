@@ -218,14 +218,46 @@ static char cmp_file[MAX_FILENAME_LEN] = { 0 };
 
 int main(int argc, char* argv[])
 {
+	/*xlram_codetpy = malloc (0xffff); /* each address could be assigned a flag used in symtyp
+				Addresses in normal code which do not coincide with an opcode are assigned zero */
 
-	int braoffset = 0;
+	xlram = (char*)malloc(0xffff);
+	if (xlram == NULL) {
+		printf("Can't allocate memory for text buffer.\a\n");
+		hit_Enter();
+		exit(1);
+	}
 
+	char* txtbuf = (char*)malloc(MAX_TXT_SIZ);
+	if (txtbuf == NULL) {
+		printf("Can't allocate memory for text buffer.\a\n");
+		hit_Enter();
+		exit(1);
+	}
+
+	char* xlbuf = (char*)malloc(MAX_BIN_SIZ);
+	if (xlbuf == NULL) {
+		printf("Can't allocate memory for text buffer.\a\n");
+		hit_Enter();
+		exit(1);
+	}
+
+/******************    INITIALIZATION    ************/
+	
 	char* includebuf;
 	char* txtendptr;	// pointer to end of text Buffer (=10)
 	char* linptr;
 	char* ptr;			// temporary pointer
 	char* ptr2;			// temporary pointer
+	char* tpsav;
+	char* operptr;
+	char* lnbfptr;
+	char* labptr;
+
+
+
+
+	int braoffset = 0;
 	int pos = 0;
 	char ch = 0;
 	int offset = 0;
@@ -235,11 +267,11 @@ int main(int argc, char* argv[])
 	char label[MAX_LABEL_SIZE] = { 0 };
 	char labelstr[MAX_LABEL_SIZE] = { 0 };
 	char opcstr[MAX_LABEL_SIZE] = { 0 };
-	char* tpsav;
+
 	int temp = 0;
 	int intab[] = { 0x40,0,0x20,0x60,0xA0,0xC0,0x80,0xE0 };
 
-	char* operptr;
+
 
 	int dumnum = 0, macroflg = 0;
 
@@ -249,13 +281,13 @@ int main(int argc, char* argv[])
 	char* linbegsav[MAXMACLEV] = { 0 };
 	short linlensav[MAXMACLEV] = { 0 };
 	char* macargsptr[MAXMACLEV] = { 0 };
-	char* lnbfptr;
+
 	short loclabnum = 0;						// # of labels in loclabtb
 
 
 	int loclabtbpos;
 	char lab[5] = { 0 };
-	char* labptr;
+
 
 	char prnlnbuf[120] = { 0 };
 	short twiceflg = 0;
@@ -274,30 +306,7 @@ int main(int argc, char* argv[])
 	bool star_flg = 0;
 	bool first_NNsymbol = 1;
 
-	/*xlram_codetpy = malloc (0xffff); /* each address is assigned a flag used in symtyp
-				Addresses in normal code which do not coincide with an opcode are assigned zero */
-
-	xlram = (char*)malloc(0xffff);
-	if (xlram == NULL) {
-		printf("Can't allocate memory for text buffer.\a\n");
-		hit_Enter();
-		exit(1);
-	}
-						
-	char* txtbuf = (char*)malloc(MAX_TXT_SIZ);
-	if (txtbuf == NULL) {
-		printf("Can't allocate memory for text buffer.\a\n");
-		hit_Enter();
-		exit(1);
-	}
-
-	char* xlbuf = (char*)malloc(MAX_BIN_SIZ);
-	if (xlbuf == NULL) {
-		printf("Can't allocate memory for text buffer.\a\n");
-		hit_Enter();
-		exit(1);
-	}
-
+	
 
 	/******************** File ******************************/
 	puts("***********************************************************************");
@@ -315,6 +324,9 @@ int main(int argc, char* argv[])
 	puts("* See read_me.txt and SGEN42.SRC for further options and instructions.*");
 	puts("*                                                                     *");
 	puts("***********************************************************************\n");
+
+
+	/********************* Source File *********************/
 	
 	// 1. Command-line argument takes highest priority
 	if (argc > 1) strcpy_s(src_filename, sizeof(src_filename), argv[1]);
@@ -368,12 +380,12 @@ int main(int argc, char* argv[])
 
 		//remove path from src_filename
 		ptr = src_filename;
-		ptr2 = strrchr(src_filename, '\\');
-		ptr2++;
+		ptr2 = strrchr(src_filename, '\\') + 1;
 		do 
 			*ptr++ = *ptr2++;
 		while (*ptr2);
 		*ptr = '\0';
+
 		printf("Source file: %s -- ", src_filename);
 	}
 
@@ -395,6 +407,9 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 	printf("%zi bytes\n", txtsiz);
+
+
+	/********************* Output Files *********************/
 
 
 	strcpy_s(lstfilename, sizeof(lstfilename), src_filename);
@@ -1235,7 +1250,7 @@ int main(int argc, char* argv[])
 				} while (*txtptr == ',');
 				continue;
 			}
-			//( memchr(esc_ch_tab, *(txtptr + 1), sizeof(esc_ch_tab))
+		
 			/* DFW */ //?????????????????????????????????????
 
 			if (strcmp(opcode, "DFW") == 0)
@@ -1763,13 +1778,6 @@ int main(int argc, char* argv[])
 
 #endif
 
-		/* for (i=0; i<symnum; i++)
-				{
-				list_label(i);
-				hit_Enter();
-				}*/
-
-
 
 
 	} // END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES
@@ -1781,37 +1789,6 @@ int main(int argc, char* argv[])
 
 
 #if SORT_EQU_EPZ
-
-	// Old method
-
-/*	int j = 0;
-	int symno = 0;
-	static ssstype temparray[0xff] = { 0 };
-
-	while (sss[symno].symadr <= 0xFF)		//find greatest zero page or constant entry
-		symno++;
-	if (symno > 0) 
-		symno--;
-
-	while (sss[symno].symtyp != 0) {		// while not empty
-		if (sss[symno].symtyp == ']') {		// if entry is a constant
-
-			temparray[j++] = sss[symno];	//move entry to temp array
-			
-			//printf("Found constant %s at $%X  \n ", sss[symno].symbol, sss[symno].symadr);
-
-			for (i = symno; i >= 0; i--) // move block down one
-				sss[i] = sss[i - 1];
-			sss[0].symtyp = 0;			// mark first entry as empty
-		}
-		else symno--;
-	}
-	while (j >= 0)
-		sss[i++] = temparray[j--]; */
-
-
-
-		//New method
 
 	int scan;
 	int insert = 0;
@@ -1836,6 +1813,7 @@ int main(int argc, char* argv[])
 			sss[insert++] = ssstemp;
 		}
 	}
+
 #endif // 
 
 /* Remove unneeded symbols */

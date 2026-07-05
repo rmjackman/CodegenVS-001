@@ -1,1 +1,15 @@
 My Visual Studio C project Codegen assembles T31.SRC to AUTORUN.SYS and then disassembles AUTORUN.SYS symbolically to AUTORUN.SRC. I need code that will automatically rerun the project to assemble AUTORUN.SRC to TEMP.SYS and then compare AUTORUN.SYS with TEMP.SYS. I want this to work when I run the project in Visual Studio.
+/* CPFL */
+
+			if (strcmp(opcode, "CPFL") == 0)
+			{
+				if (pass == 2)
+				{
+					operand_to_filename(cmp_file);
+
+					if (fopen_s(&stream, cmp_file, "rb") != 0) file_err("Can't open CPFL file", cmp_file);
+
+					cpfflg = 1;
+				}
+				continue;
+			}
