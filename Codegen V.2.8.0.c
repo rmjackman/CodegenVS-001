@@ -57,10 +57,10 @@ void error(char* errstr);
 int chkopc(const unsigned char opcstring[]);
 void toxlbuf(uint8_t);
 void find_operand(void);
-void operand_to_filename(char filename[]);
+static void operand_to_filename(char filename[]);
 void list_label(int i);
 void list_label_xasm(int i);
-void list_label_f(int i);		//label zu LIS file
+void list_label_f(int i);
 void list_label_f2(int i);		//label zu LIS file T
 //uint32_t symtoi2(char* strbeg);
 uint32_t symtoi3(char* strbeg);
@@ -283,9 +283,7 @@ int main(int argc, char* argv[])
 		hit_Enter();
 		exit(1);
 	}
-
-				
-					
+						
 	char* txtbuf = (char*)malloc(MAX_TXT_SIZ);
 	if (txtbuf == NULL) {
 		printf("Can't allocate memory for text buffer.\a\n");
@@ -349,10 +347,10 @@ int main(int argc, char* argv[])
 	if (strchr(src_filename, '.') == 0) strcat_s(src_filename, sizeof(src_filename), ".src");
 	
 	printf ("\n%s\n",src_filename);
-	ptr = src_filename + strlen(src_filename) - 4;
-	if ((*ptr != '.') || (toupper(*(ptr + 1)) != 'S')
-		|| (toupper(*(ptr + 2)) != 'R')
-		|| (toupper(*(ptr + 3)) != 'C'))
+
+	size_t len = strlen(src_filename);
+
+	if (len < 4 || _stricmp(src_filename + len - 4, ".SRC") != 0)
 	{
 		printf("File must end with '.SRC'\n");
 		hit_Enter();
@@ -1846,8 +1844,8 @@ int main(int argc, char* argv[])
 	symnum = 0;
 	for (i = 0; i < symnumext; i++)
 	{
-		tmptyp = sss[symnum - 1].symtyp;
 		if (sss[i].macf == MACRO) continue;
+		if (symnum > 0) tmptyp = sss[symnum - 1].symtyp;
 		if (((sss[i].macf == UNUSED) || (sss[i].macf == MACRO_UNUSED)) && sss[i].symbol[0])
 			printf("Unused symbol: %s\n", sss[i].symbol);
 
@@ -2664,7 +2662,7 @@ void find_operand(void)
 
 /*		*************** src_filename Operand *****************     *////////////////
 
-void operand_to_filename(char filename[MAX_FILENAME_LEN])
+static void operand_to_filename(char filename[MAX_FILENAME_LEN])
 {
 
 	int cnt = 0;

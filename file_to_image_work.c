@@ -82,6 +82,7 @@ uint8_t enhanced_density = 1;	//disk format--	0: single density and double densi
 //////// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void file_to_image(char file_filename[500], char diskimage_name[500]) {
+
 	uint16_t dirsec; 
 	uint8_t entrybeg;
 	uint32_t i, j, k;
@@ -1525,7 +1526,7 @@ void print_mismatches() {
 #define BYTES_128_SECTOR 128
 #define BYTES_PER_LINE 16  // Number of bytes to print per line
 
-void print_sector(int sector) {
+static void print_sector(int sector) {
 	printf("\nSector %d\n", sector);
 	char char_buffer[BYTES_PER_LINE + 1]; // Buffer to store the character representation
 	char_buffer[BYTES_PER_LINE] = '\0';   // Null-terminate the buffer
