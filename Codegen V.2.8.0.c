@@ -26,7 +26,7 @@
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
 #define NN_NEW 1
-
+#define ROUND_TRIP_VERIFICATION 1
 
 
 /**************************  define  *****************/
@@ -255,7 +255,12 @@ int main(int argc, char* argv[])
 	char* labptr;
 
 
+#if ROUND_TRIP_VERIFICATION
+	bool verif_flg = 0;
 
+	for (;;)
+	{
+#endif
 
 	int braoffset = 0;
 	int pos = 0;
@@ -307,128 +312,133 @@ int main(int argc, char* argv[])
 	bool first_NNsymbol = 1;
 
 	
-
-	/******************** File ******************************/
-	puts("***********************************************************************");
-	puts("*                                                                     *");
-	puts("*                           CODEGEN V.2.8.0                           *");
-	puts("*                                                                     *");
-	puts("* An ATMAS-II compatible 6502-Macro-Cross-Assembler for 8-bit Ataris  *");
-	puts("*                                                                     *");
-	puts("*               Copyright 2004-2024 by Richard Jackman                *");
-	puts("*               http://www.richard-jackman.de/Atari_XL/               *");
-	puts("*                                                                     *");
-	puts("* - assembles a source-file (.SRC)                                    *");
-	puts("* - creates a boot image (temp.atr) containing DOS25 and AUTORUN.SYS  *");
-	puts("*                                                                     *");
-	puts("* See read_me.txt and SGEN42.SRC for further options and instructions.*");
-	puts("*                                                                     *");
-	puts("***********************************************************************\n");
+	if (verif_flg == 0) {
 
 
-	/********************* Source File *********************/
-	
-	// 1. Command-line argument takes highest priority
-	if (argc > 1) strcpy_s(src_filename, sizeof(src_filename), argv[1]);
-	else {
+		/******************** File ******************************/
+		puts("***********************************************************************");
+		puts("*                                                                     *");
+		puts("*                           CODEGEN V.2.8.0                           *");
+		puts("*                                                                     *");
+		puts("* An ATMAS-II compatible 6502-Macro-Cross-Assembler for 8-bit Ataris  *");
+		puts("*                                                                     *");
+		puts("*               Copyright 2004-2024 by Richard Jackman                *");
+		puts("*               http://www.richard-jackman.de/Atari_XL/               *");
+		puts("*                                                                     *");
+		puts("* - assembles a source-file (.SRC)                                    *");
+		puts("* - creates a boot image (temp.atr) containing DOS25 and AUTORUN.SYS  *");
+		puts("*                                                                     *");
+		puts("* See read_me.txt and SGEN42.SRC for further options and instructions.*");
+		puts("*                                                                     *");
+		puts("***********************************************************************\n");
+
+
+		/********************* Source File *********************/
+
+		// 1. Command-line argument takes highest priority
+		if (argc > 1) strcpy_s(src_filename, sizeof(src_filename), argv[1]);
+		else {
 
 #if IMBED_SRC_FILENAME
-		// 2. Embedded filename if compiled that way
-		strcpy_s(src_filename, sizeof(src_filename), SRC_FILENAME);
+			// 2. Embedded filename if compiled that way
+			strcpy_s(src_filename, sizeof(src_filename), SRC_FILENAME);
 #else
-		// 3. Ask user interactively
-		printf("Please enter name of file to be assembled>");
+			// 3. Ask user interactively
+			printf("Please enter name of file to be assembled>");
 
-		if (fgets(src_filename, sizeof(src_filename), stdin) != NULL) {
-			// Remove the newline character if present
-			size_t length = strlen(src_filename);
-			if (length > 0 && src_filename[length - 1] == '\n') {
-				src_filename[length - 1] = '\0';
+			if (fgets(src_filename, sizeof(src_filename), stdin) != NULL) {
+				// Remove the newline character if present
+				size_t length = strlen(src_filename);
+				if (length > 0 && src_filename[length - 1] == '\n') {
+					src_filename[length - 1] = '\0';
+				}
+
+				// Use src_filename here
+				printf("Source filename is: %s\n", src_filename);
 			}
-
-			// Use src_filename here
-			printf("Source filename is: %s\n", src_filename);
-		}
-		else {
-			printf("Error reading input.\n");
-			return 1;
-		}
+			else {
+				printf("Error reading input.\n");
+				return 1;
+			}
 #endif
-	}
-	// Add .src extension if none is present
-	if (strchr(src_filename, '.') == 0) strcat_s(src_filename, sizeof(src_filename), ".src");
-	
-	printf ("\n%s\n",src_filename);
+		}
 
-	size_t len = strlen(src_filename);
+		// Add .src extension if none is present
+		if (strchr(src_filename, '.') == 0) strcat_s(src_filename, sizeof(src_filename), ".src");
 
-	if (len < 4 || _stricmp(src_filename + len - 4, ".SRC") != 0)
-	{
-		printf("File must end with '.SRC'\n");
-		hit_Enter();
-		exit(1);
-	}
+		printf("\n%s\n", src_filename);
 
-	if (strchr(src_filename, '\\')) //If dir path designated
-	{
-		//Change directory path to SG dir
-		strcpy_s(pathstr, sizeof(pathstr), src_filename);
-		ptr = strrchr(pathstr, '\\');
-		*++ptr = '\0';
-		printf("\nDirectory path: %s\n", pathstr);
-		if (_chdir(pathstr)) error("chdir failed");
+		size_t len = strlen(src_filename);
 
-		//remove path from src_filename
-		ptr = src_filename;
-		ptr2 = strrchr(src_filename, '\\') + 1;
-		do 
-			*ptr++ = *ptr2++;
-		while (*ptr2);
-		*ptr = '\0';
+		if (len < 4 || _stricmp(src_filename + len - 4, ".SRC") != 0) {
+			printf("File must end with '.SRC'\n");
+			hit_Enter();
+			exit(1);
+		}
+
+		if (strchr(src_filename, '\\')) //If dir path designated
+		{
+			//Change directory path to SG dir
+			strcpy_s(pathstr, sizeof(pathstr), src_filename);
+			ptr = strrchr(pathstr, '\\');
+			*++ptr = '\0';
+			printf("\nDirectory path: %s\n", pathstr);
+			if (_chdir(pathstr)) error("chdir failed");
+
+			//remove path from src_filename
+			ptr = src_filename;
+			ptr2 = strrchr(src_filename, '\\') + 1;
+			do
+				*ptr++ = *ptr2++;
+			while (*ptr2);
+			*ptr = '\0';
+		}
+	}//end of if (verif_flg == 0)
+
 
 		printf("Source file: %s -- ", src_filename);
-	}
 
-	if (fopen_s(&stream, src_filename, "r") != 0)
-	{
-		printf("Can't open %s\n", src_filename);
-		perror("Error opening file");
-		exit(1);
-	}
+		if (fopen_s(&stream, src_filename, "r") != 0) {
+			printf("Can't open %s\n", src_filename);
+			perror("Error opening file");
+			exit(1);
+		}
 
 
-	txtsiz = fread(txtbuf, 1, MAX_TXT_SIZ, stream);// Read SRC file into buffer
-	fclose(stream);
+		txtsiz = fread(txtbuf, 1, MAX_TXT_SIZ, stream);// Read SRC file into buffer
+		fclose(stream);
 
-	if (txtsiz == MAX_TXT_SIZ)
-	{
-		puts("File is too long");
-		hit_Enter();
-		exit(1);
-	}
-	printf("%zi bytes\n", txtsiz);
-
-
-	/********************* Output Files *********************/
+		if (txtsiz == MAX_TXT_SIZ) {
+			puts("File is too long");
+			hit_Enter();
+			exit(1);
+		}
+		printf("%zi bytes\n", txtsiz);
 
 
-	strcpy_s(lstfilename, sizeof(lstfilename), src_filename);
+		/********************* Output Files *********************/
 
-	char* dot_position = strchr(lstfilename, '.');
-	strcpy_s(dot_position, strlen(".LIS") + 1, ".LIS");
+		if (verif_flg == 0) {
 
-	strcpy_s(loafilename, sizeof(loafilename), "AUTORUN.SYS");
-	strcpy_s(dsk_filename, sizeof(dsk_filename), "temp.atr");
+		strcpy_s(lstfilename, sizeof(lstfilename), src_filename);
+
+		char* dot_position = strchr(lstfilename, '.');
+		strcpy_s(dot_position, strlen(".LIS") + 1, ".LIS");
+
+		strcpy_s(loafilename, sizeof(loafilename), "AUTORUN.SYS");
+		strcpy_s(dsk_filename, sizeof(dsk_filename), "temp.atr");
 
 #if DELETE_TEMP_ATR
 
-	if (remove(dsk_filename) == 0) {
-		printf("%s deleted successfully.\n", dsk_filename);
-	}
-	else {
-		printf("%s not found.\n", dsk_filename);
-	}
+		if (remove(dsk_filename) == 0) {
+			printf("%s deleted successfully.\n", dsk_filename);
+		}
+		else {
+			printf("%s not found.\n", dsk_filename);
+		}
 #endif
+
+	}//end of if (verif_flg == 0)
 
 	/********************** Now work on buffer *********************/
 
@@ -436,7 +446,7 @@ int main(int argc, char* argv[])
 
 	symnum = 0;
 	*outflgs = 0;
-	cpfflg = 0;
+	
 	mismatch_flg = 0;
 	find_symad_flg = 1;
 	maclevel = 0;
@@ -446,6 +456,14 @@ int main(int argc, char* argv[])
 	append_filename[0][0] = 0;
 	linkfile_filename[0] = 0;
 	smbfilename[0] = 0;
+
+	if (verif_flg == 1) {
+		cpfflg = 1; 
+		if (fopen_s(&stream, cmp_file, "rb") != 0) 
+			file_err("Can't open CPFL file", cmp_file);
+	}
+	else cpfflg = 0;
+	
 
 	for (i = 0; i < MAXMACLEV; i++)
 		lclbnum[i] = 0;
@@ -1783,294 +1801,286 @@ int main(int argc, char* argv[])
 	} // END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES
 
 
+	if (verif_flg == 0) {
 
-
-	qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
+		qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 
 
 #if SORT_EQU_EPZ
 
-	int scan;
-	int insert = 0;
-	int lastzp = 0;
-	ssstype ssstemp;
+		int scan;
+		int insert = 0;
+		int lastzp = 0;
+		ssstype ssstemp;
 
-	while (sss[lastzp].symadr <= 0xFF)
-		lastzp++;
+		while (sss[lastzp].symadr <= 0xFF)
+			lastzp++;
 
-	if (lastzp > 0)
-		lastzp--;
+		if (lastzp > 0)
+			lastzp--;
 
-	for (scan = 0; scan <= lastzp; scan++) {
+		for (scan = 0; scan <= lastzp; scan++) {
 
-		if (sss[scan].symtyp == ']') {
+			if (sss[scan].symtyp == ']') {
 
-			ssstemp = sss[scan];
+				ssstemp = sss[scan];
 
-			for (i = scan; i > insert; i--)
-				sss[i] = sss[i - 1];
+				for (i = scan; i > insert; i--)
+					sss[i] = sss[i - 1];
 
-			sss[insert++] = ssstemp;
+				sss[insert++] = ssstemp;
+			}
 		}
-	}
 
 #endif // 
 
-/* Remove unneeded symbols */
+		/* Remove unneeded symbols */
 
-	puts("");
-	symnum = 0;
-	for (i = 0; i < symnumext; i++)
-	{
-		if (sss[i].macf == MACRO) continue;
-		if (symnum > 0) tmptyp = sss[symnum - 1].symtyp;
-		if (((sss[i].macf == UNUSED) || (sss[i].macf == MACRO_UNUSED)) && sss[i].symbol[0])
-			printf("Unused symbol: %s\n", sss[i].symbol);
+		puts("");
+		symnum = 0;
+		for (i = 0; i < symnumext; i++) {
+			if (sss[i].macf == MACRO) continue;
+			if (symnum > 0) tmptyp = sss[symnum - 1].symtyp;
+			if (((sss[i].macf == UNUSED) || (sss[i].macf == MACRO_UNUSED)) && sss[i].symbol[0])
+				printf("Unused symbol: %s\n", sss[i].symbol);
 
-		if (symnum > 0)
-		{
-			if (sss[i].symadr == sss[symnum - 1].symadr)	/* double entry */
-			{
-				if (sss[symnum - 1].symbol[0] && sss[i].symbol[0]) /* 2 labels */
+			if (symnum > 0) {
+				if (sss[i].symadr == sss[symnum - 1].symadr)	/* double entry */
 				{
-					if ((sss[symnum - 1].macf == MACRO_LAB) || (sss[i].macf == MACRO_LAB)) {
-						if (sss[symnum - 1].macf == MACRO_LAB)
-							
-							sss[symnum - 1] = sss[i];
-						continue;
+					if (sss[symnum - 1].symbol[0] && sss[i].symbol[0]) /* 2 labels */
+					{
+						if ((sss[symnum - 1].macf == MACRO_LAB) || (sss[i].macf == MACRO_LAB)) {
+							if (sss[symnum - 1].macf == MACRO_LAB)
+
+								sss[symnum - 1] = sss[i];
+							continue;
+						}
+
+						else
+							printf("%s and %s both = $%X\n", sss[i].symbol, sss[symnum - 1].symbol, sss[i].symadr);
 					}
-					
-					else
-						printf("%s and %s both = $%X\n", sss[i].symbol, sss[symnum - 1].symbol, sss[i].symadr);
+					if (!(sss[symnum - 1].symbol[0])) // no symbol
+						sss[symnum - 1] = sss[i];
+
+					if (sss[i].symtyp == 0)
+						sss[symnum - 1].symtyp = tmptyp; //restore type
+					continue;
 				}
-				if (!(sss[symnum - 1].symbol[0])) // no symbol
-					sss[symnum - 1] = sss[i];
+			}
+			sss[symnum++] = sss[i];
+		}
 
-				if (sss[i].symtyp == 0)
-					sss[symnum - 1].symtyp = tmptyp; //restore type
-				continue;
+
+
+
+
+
+
+
+		/* Symbol table */
+		if (strpbrk(outflgs, "Nn")) {
+			fprintf(stream2, "\n\n**** Symbol table *****\n\n");
+			for (i = 0; i < symnumext; i++) {
+				if (sss[i].symbol)
+					list_label_f(i);
 			}
 		}
-		sss[symnum++] = sss[i];
-	}
-	
-	
 
-
-	
-
-
-
-	/* Symbol table */
-	if (strpbrk(outflgs, "Nn")) {
-		fprintf(stream2, "\n\n**** Symbol table *****\n\n");
-		for (i = 0; i < symnumext; i++) {
-			if (sss[i].symbol)
-				list_label_f(i);
-		}
-	}
-
-	/* xasm Symbol table */
-	if (strpbrk(outflgs, "Xx")) {
-		fprintf(stream2, "Label table:\n");
-		for (i = 0; i < symnumext; i++) {
-			if (sss[i].symbol[0]) {
-				//printf("%s\n", sss[i].symbol);
-				list_label_xasm(i);
+		/* xasm Symbol table */
+		if (strpbrk(outflgs, "Xx")) {
+			fprintf(stream2, "Label table:\n");
+			for (i = 0; i < symnumext; i++) {
+				if (sss[i].symbol[0]) {
+					//printf("%s\n", sss[i].symbol);
+					list_label_xasm(i);
+				}
 			}
 		}
-	}
 
-	/* SOURCGEN symbol table */
-	if (strpbrk(outflgs, "Tt")) {
-		if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n")<0)   
-			perror("Error writing to file");
-		for (i = 0; i < symnumext; i++) {
-			if (sss[i].symtyp)
-				fprintf(stream2, "%c ", sss[i].symtyp);
-			else fprintf(stream2, "  ");
-			fprintf(stream2, "%d ", sss[i].ofst);
-			//if (sss[i].comment[0])
-				//fprintf(stream2, "*** %s\n", sss[i].comment);
-			list_label_f2(i);
-			
+		/* SOURCGEN symbol table */
+		if (strpbrk(outflgs, "Tt")) {
+			if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n") < 0)
+				perror("Error writing to file");
+			for (i = 0; i < symnumext; i++) {
+				if (sss[i].symtyp)
+					fprintf(stream2, "%c ", sss[i].symtyp);
+				else fprintf(stream2, "  ");
+				fprintf(stream2, "%d ", sss[i].ofst);
+				//if (sss[i].comment[0])
+					//fprintf(stream2, "*** %s\n", sss[i].comment);
+				list_label_f2(i);
+
+			}
 		}
-	}
-	if (lstflg) fclose(stream2);
+		if (lstflg) fclose(stream2);
 
 
-	fclose(stream);
-	/* APPEND  APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND*/
-	if (*append_filename)
-	{
-		txtsiz = xlbfptr - xlbuf;
+		fclose(stream);
+		/* APPEND  APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND*/
+		if (*append_filename) {
+			txtsiz = xlbfptr - xlbuf;
 
-		for (i = 0; i < append_cnt; i++)
-		{
-			printf("Appending %s -- ", append_filename[i]);
-			if (fopen_s(&stream, append_filename[i], "rb") != 0) file_err("Can't find", append_filename[i]);
-			if ((txtsiz = fread(xlbfptr, 1, MAX_BIN_SIZ - (xlbfptr - xlbuf), stream)) == 0)
-			{
+			for (i = 0; i < append_cnt; i++) {
+				printf("Appending %s -- ", append_filename[i]);
+				if (fopen_s(&stream, append_filename[i], "rb") != 0) file_err("Can't find", append_filename[i]);
+				if ((txtsiz = fread(xlbfptr, 1, MAX_BIN_SIZ - (xlbfptr - xlbuf), stream)) == 0) {
+					printf("file size: %zi\n", txtsiz);
+					file_err("Can't read", append_filename[i]);
+				}
 				printf("file size: %zi\n", txtsiz);
-				file_err("Can't read", append_filename[i]);
+				xlbfptr += txtsiz;
+				fclose(stream);
 			}
-			printf("file size: %zi\n", txtsiz);
-			xlbfptr += txtsiz;
-			fclose(stream);
 		}
-	}
 
 
-	/* LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA */
-	if (fopen_s(&stream, loafilename, "wb") != 0) {
-		puts("Can't open LOA file.");
-		perror("");
-		exit(1);
-	}
-
-	printf("\nSaving binary file %s\n", loafilename);
-	txtsiz = fwrite(xlbuf, 1, xlbfptr - xlbuf, stream);
-	if (txtsiz != xlbfptr - xlbuf)
-		file_err("Can't save", loafilename);
-	printf("%zi bytes\n", txtsiz);
-	fclose(stream);
-
-	/* Link Link Link Link Link Link Link Link Link Link Link Link Link Link Link Link */
-	if (*linkfile_filename)
-	{
-		xlbfptr = xlbuf;
-
-		for (i = 0; i < link_cnt; i++)
-		{
-			printf("Linking %s -- ", link_filename[i]);
-			if (fopen_s(&stream, link_filename[i], "rb") != 0) file_err("Can't find", link_filename[i]);
-			txtsiz = fread(xlbfptr, 1, MAX_BIN_SIZ - (xlbfptr - xlbuf), stream);
-			if (txtsiz == 0)
-				file_err("Can't read", link_filename[i]);
-
-			printf("file size: %zi\n", txtsiz);
-			xlbfptr += txtsiz;
-			fclose(stream);
+		/* LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA */
+		if (fopen_s(&stream, loafilename, "wb") != 0) {
+			puts("Can't open LOA file.");
+			perror("");
+			exit(1);
 		}
-		if (fopen_s(&stream, linkfile_filename, "wb") != 0) file_err("Can't open", linkfile_filename); /* write to LINKFILE */
 
-		printf("\nSaving binary file %s\n", linkfile_filename);
+		printf("\nSaving binary file %s\n", loafilename);
 		txtsiz = fwrite(xlbuf, 1, xlbfptr - xlbuf, stream);
 		if (txtsiz != xlbfptr - xlbuf)
-			puts("Write error");
-		printf("%zd bytes\n", txtsiz);
+			file_err("Can't save", loafilename);
+		printf("%zi bytes\n", txtsiz);
 		fclose(stream);
-	}
 
+		/* Link Link Link Link Link Link Link Link Link Link Link Link Link Link Link Link */
+		if (*linkfile_filename) {
+			xlbfptr = xlbuf;
 
-	/* SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT */
+			for (i = 0; i < link_cnt; i++) {
+				printf("Linking %s -- ", link_filename[i]);
+				if (fopen_s(&stream, link_filename[i], "rb") != 0) file_err("Can't find", link_filename[i]);
+				txtsiz = fread(xlbfptr, 1, MAX_BIN_SIZ - (xlbfptr - xlbuf), stream);
+				if (txtsiz == 0)
+					file_err("Can't read", link_filename[i]);
 
+				printf("file size: %zi\n", txtsiz);
+				xlbfptr += txtsiz;
+				fclose(stream);
+			}
+			if (fopen_s(&stream, linkfile_filename, "wb") != 0) file_err("Can't open", linkfile_filename); /* write to LINKFILE */
 
-	if (*smbfilename == 0)
-	{
-		strcpy_s(smbfilename, sizeof(smbfilename), loafilename);
-		
-		char* dot_position = strchr(smbfilename, '.');
-		if (dot_position != NULL) {
-			strcpy_s(dot_position, strlen(".SMT") + 1, ".SMT");
+			printf("\nSaving binary file %s\n", linkfile_filename);
+			txtsiz = fwrite(xlbuf, 1, xlbfptr - xlbuf, stream);
+			if (txtsiz != xlbfptr - xlbuf)
+				puts("Write error");
+			printf("%zd bytes\n", txtsiz);
+			fclose(stream);
 		}
-		else
-			strcat_s(smbfilename, sizeof(smbfilename), ".SMT");
-	}
 
 
-	if (fopen_s(&stream, smbfilename, "wb") != 0) {
-		perror("Error opening file");
-		exit(1);
-	}
-
-	printf("Saving symbol-file %s\n", smbfilename);
-
-	fputc(0xfb, stream);
-	fputc(0x00, stream);
-	fputc(0x00, stream);
-	fputc(0xff, stream);
-	fputc(0xff, stream);
-	fgetpos(stream, &pos1);
-	fputc(0, stream);
-	fputc(0, stream);
-	secsiz = 0;
-	fgetpos(stream, &pos2);
-	for (i = 0; i < symnumext; i++)
-	{
-		lensv = fptsmb(i);
-		secsiz += lensv;
-	}
-	fsetpos(stream, &pos1);
-	fputc((char)secsiz, stream);
-	fputc((char)(secsiz >> 8), stream);
-
-	fclose(stream);
-
-	//end Save SMT
+		/* SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT */
 
 
+		if (*smbfilename == 0) {
+			strcpy_s(smbfilename, sizeof(smbfilename), loafilename);
 
-	/******************* Save to image ************************************/
+			char* dot_position = strchr(smbfilename, '.');
+			if (dot_position != NULL) {
+				strcpy_s(dot_position, strlen(".SMT") + 1, ".SMT");
+			}
+			else
+				strcat_s(smbfilename, sizeof(smbfilename), ".SMT");
+		}
 
-	if (*dsk_filename)
-	{
-		//printf("\nXFDIMAGE: %s\n\n",dsk_filename);
 
-		if (!linkfile_filename[0])
-			file_to_image(loafilename, dsk_filename);
-		else
-			file_to_image(linkfile_filename, dsk_filename);
+		if (fopen_s(&stream, smbfilename, "wb") != 0) {
+			perror("Error opening file");
+			exit(1);
+		}
 
-		if (smttoimg_flg)
-			file_to_image(smbfilename, dsk_filename);
-		
-		if (*addtoimg_filename)								/* ADDTOIMG */
-		{
-			for (i = 0; i < addtoimg_cnt; i++)
+		printf("Saving symbol-file %s\n", smbfilename);
+
+		fputc(0xfb, stream);
+		fputc(0x00, stream);
+		fputc(0x00, stream);
+		fputc(0xff, stream);
+		fputc(0xff, stream);
+		fgetpos(stream, &pos1);
+		fputc(0, stream);
+		fputc(0, stream);
+		secsiz = 0;
+		fgetpos(stream, &pos2);
+		for (i = 0; i < symnumext; i++) {
+			lensv = fptsmb(i);
+			secsiz += lensv;
+		}
+		fsetpos(stream, &pos1);
+		fputc((char)secsiz, stream);
+		fputc((char)(secsiz >> 8), stream);
+
+		fclose(stream);
+
+		//end Save SMT
+
+
+
+		/******************* Save to image ************************************/
+
+		if (*dsk_filename) {
+			//printf("\nXFDIMAGE: %s\n\n",dsk_filename);
+
+			if (!linkfile_filename[0])
+				file_to_image(loafilename, dsk_filename);
+			else
+				file_to_image(linkfile_filename, dsk_filename);
+
+			if (smttoimg_flg)
+				file_to_image(smbfilename, dsk_filename);
+
+			if (*addtoimg_filename)								/* ADDTOIMG */
 			{
-				file_to_image(addtoimg_filename[i], dsk_filename);
+				for (i = 0; i < addtoimg_cnt; i++) {
+					file_to_image(addtoimg_filename[i], dsk_filename);
+				}
 			}
 		}
+		// end Save to image
+
+		/****************** Result of comparison with LOA file made in pass2 ********************/
 	}
-	// end Save to image
+	else {//verif_flg = 1;
+		if (cpfflg) {
+			printf("The generated LOA file was compared with the file %s\n", cmp_file);
+			if (mismatch_flg) {
+				puts("");
 
-	/****************** Result of comparison with LOA file made in pass2 ********************/
+				puts("  ##          ##");
+				puts("    ##      ##");
+				puts("      ##  ##");
+				printf("\a        ##  CPFL - MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
+				puts("      ##  ##");;
+				puts("    ##      ##");
+				puts("  ##          ##");
+				hit_Enter();
+				//exit(1);
+			}
+			else {
+				puts("");
 
-	if (cpfflg)
-	{
-		printf("The generated LOA file was compared with the file %s\n", cmp_file);
-		if (mismatch_flg)
-		{
-			puts("");
+				puts("      o          k       k");
+				puts("    o   o        k     k");
+				puts("  o       o      k   k");
+				puts(" o         o     k k         The two files are identical");
+				puts("  o       o      k   k");
+				puts("    o   o        k     k");
+				puts("      o          k       k");
 
-			puts("  ##          ##");
-			puts("    ##      ##");
-			puts("      ##  ##");
-		printf("\a        ##  CPFL - MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
-			puts("      ##  ##");;
-			puts("    ##      ##");
-			puts("  ##          ##");
-			hit_Enter();
-			//exit(1);
-		}
-		else
-		{
-			puts("");
-
-			puts("      o          k       k");
-			puts("    o   o        k     k");
-			puts("  o       o      k   k");
-			puts(" o         o     k k         The two files are identical");
-			puts("  o       o      k   k");
-			puts("    o   o        k     k");
-			puts("      o          k       k");
+			}
 
 		}
+		// end Compare with LOA file
 
-	}
-	// end Compare with LOA file
+		hit_Enter();
 
+
+		return 0;
+	}//end verif_flg == 1
 #if DISASSEMBLE
 	disassemble(loafilename);
 #endif
@@ -2094,11 +2104,19 @@ int main(int argc, char* argv[])
 
 		/***************************************************************/
 
+#if ROUND_TRIP_VERIFICATION
 
-	hit_Enter();
+	verif_flg = 1;
+	strcpy_s(src_filename, sizeof(src_filename), "AUTORUN.SRC");
+	strcpy_s(cmp_file, sizeof(cmp_file), "AUTORUN.SYS");
+	
+	}
+#endif	
+
+//	hit_Enter();
 
 
-	return 0;
+//	return 0;
 }
 
 /****************************************+*********************/

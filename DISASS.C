@@ -22,10 +22,10 @@
 #define DFB_BYTES_PER_LINE 6 //8
 #define SHOW_LO 0 // Show ':L'
 
-#define PRINT_DISS_LINNUM 1		// 0.
+#define PRINT_DISS_LINNUM 0		// 0.
 #define ADDR_LEFT_COMMENT 0		// 1.
 #define SHOW_LEFT_COMMENT 0		// 2.
-#define PRINT_PC_ADDRESS  1		// 3. Turns on edit mode in SOURCGEN
+#define PRINT_PC_ADDRESS  0		// 3. Turns on edit mode in SOURCGEN
 		// COMMAND				// 4. 
 #define SKA_AS_COMMENT    0		// 5.
 #define SHOW_RH_COMMENT   0		// 6.
