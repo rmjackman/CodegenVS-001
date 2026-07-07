@@ -449,7 +449,7 @@ int main(int argc, char* argv[]) {
 		mismatch_flg = 0;
 		find_symad_flg = 1;
 		maclevel = 0;
-		*emul_filename = 0;
+		//*emul_filename = 0;
 		//*dsk_filename = 0;
 		addtoimg_filename[0][0] = 0;
 		append_filename[0][0] = 0;
@@ -1977,31 +1977,36 @@ int main(int argc, char* argv[]) {
 			}
 			// end Compare with LOA file
 
-			hit_Enter();
+//			hit_Enter();
 
 
-			return 0;
+//			return 0;
 		}//end verif_flg == 1
 #if DISASSEMBLE
 		if (verif_flg == 0)
 			disassemble(loafilename);
 #endif
 
-		//	free(txtbuf);
-		//	free(xlbuf);
-		//	free(xlram);
+		if (verif_flg == 1) {
+			//	free(txtbuf);
+			//	free(xlbuf);
+			//	free(xlram);
 
-				/*************Run Atari800 Emulator **************************************************/
+					/*************Run Atari800 Emulator **************************************************/
 
-		if (*emul_filename) {
-			strcat_s(emul_filename, sizeof(emul_filename), " ");
-			strcat_s(emul_filename, sizeof(emul_filename), dsk_filename);
-			printf("\nStarting emulator--\n%s\n\n", emul_filename);
-			printf("Please close the emulator before re-running this program,\n");
-			
-			if (system(emul_filename)) puts("Emulator not found");
-		}
-		// end Run Atari800 Emulator
+			if (*emul_filename) {
+				strcat_s(emul_filename, sizeof(emul_filename), " ");
+				strcat_s(emul_filename, sizeof(emul_filename), dsk_filename);
+				printf("\nStarting emulator--\n%s\n\n", emul_filename);
+				printf("Please close the emulator before re-running this program,\n");
+
+				if (system(emul_filename)) puts("Emulator not found");
+			}
+			hit_Enter();
+
+
+			return 0;
+		}// end Run Atari800 Emulator
 
 			/***************************************************************/
 
@@ -2014,10 +2019,10 @@ int main(int argc, char* argv[]) {
 	}//end of long loop for verif_flg == 1
 #endif	
 
-//	hit_Enter();
+	hit_Enter();
 
 
-//	return 0;
+	return 0;
 }
 
 /****************************************+*********************/
