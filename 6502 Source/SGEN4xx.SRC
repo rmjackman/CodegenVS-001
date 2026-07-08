@@ -15,7 +15,9 @@
 *	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
 	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 	
-	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
+	ADDTOIMG MEM.SAV
+	ADDTOIMG OS.SMB	        
+      	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 	SMTFILE TEMP.SMB
 	SMTTOIMG 		add SMT-file to disk image.  (optional)
 

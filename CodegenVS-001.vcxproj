@@ -141,7 +141,9 @@
     <ClInclude Include="cdgn_global.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="6502 Source\SGEN4xx.SRC" />
+    <None Include="6502 Source\MEM.SAV" />
+    <None Include="6502 Source\OS.SMB" />
+    <None Include="6502 Source\SGEN420.SRC" />
     <None Include="6502 Source\T31.SRC" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -48,8 +48,8 @@
 *	DISASS 123456
 
 
-	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
-*	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
+*	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
 *	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
 *	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
 

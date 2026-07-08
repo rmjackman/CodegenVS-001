@@ -114,13 +114,15 @@ void disassemble(const char* filename) {
 		perror("Error opening output file");
 		return;
 	}
-	printf("\n\n\nDIS Filename %s\n\n\n", output_filename);
+	printf("Create %s with Symbolic Disassembler\n", output_filename);
 
 #if CREATE_DBG
 
-
-
-	if (!dbg_init(&ctx, "AUTORUN.DBG", "AUTORUN.SRC")) {
+	char dbg_filename[260];
+	strcpy_s(dbg_filename, sizeof(dbg_filename), output_filename);
+	strcpy_s(dbg_filename + strlen(dbg_filename) - 4, sizeof(".DBG"), ".DBG");
+	printf("Create %s\n", dbg_filename);
+	if (!dbg_init(&ctx, dbg_filename, output_filename)) {
 		printf("Cannot create DBG file\n");
 		return;
 	}
@@ -162,7 +164,7 @@ void disassemble(const char* filename) {
 	symtab_epz = 0;
 	while (sss[symtab_epz].symtyp==']')
 		symtab_epz++;
-	printf("symtab_epz = %d\n", symtab_epz);
+//	printf("symtab_epz = %d\n", symtab_epz);
 
 /********      Write header                  ********/
 	
@@ -298,7 +300,7 @@ void disassemble(const char* filename) {
 #if CREATE_DBG
 	dbg_close(&ctx);
 #endif
-	puts("Done.\n");
+	printf("Done writing %s\n", output_filename);
 	return;
 }
 
@@ -979,7 +981,7 @@ uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
 		fread(&start_low, sizeof(uint8_t), 1, file); // Read start address LOW
 
 		if (feof(file)) {
-			fprintf(stderr, "End of file reached as expected.\n");
+			fprintf(stderr, "End of file reached as expected.\n\n");
 			break; // Exit the loop
 		}
 		fread(&start_high, sizeof(uint8_t), 1, file);	// Read start address HIGH

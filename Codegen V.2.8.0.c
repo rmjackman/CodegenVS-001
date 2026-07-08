@@ -258,6 +258,11 @@ int main(int argc, char* argv[]) {
 #if ROUND_TRIP_VERIFICATION
 
 	for (;;) {		// beginning of long loop for verif_flg == 1
+		if (verif_flg == 1) {
+			puts("\n\n*******************************************************\n");
+			puts("Starting round trip verification:\n");
+		}
+		
 
 #endif
 
@@ -1737,7 +1742,7 @@ int main(int argc, char* argv[]) {
 				if (sss[i].macf == MACRO) continue;
 				if (symnum > 0) tmptyp = sss[symnum - 1].symtyp;
 				if (((sss[i].macf == UNUSED) || (sss[i].macf == MACRO_UNUSED)) && sss[i].symbol[0])
-					printf("Unused symbol: %s\n", sss[i].symbol);
+					printf("Unused symbol: %4X %s\n", sss[i].symadr,sss[i].symbol);
 
 				if (symnum > 0) {
 					if (sss[i].symadr == sss[symnum - 1].symadr)	/* double entry */
@@ -1951,7 +1956,7 @@ int main(int argc, char* argv[]) {
 					puts("  ##          ##");
 					puts("    ##      ##");
 					puts("      ##  ##");
-					printf("\a        ##  CPFL - MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
+					printf("\a        ##         MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
 					puts("      ##  ##");;
 					puts("    ##      ##");
 					puts("  ##          ##");
@@ -1964,10 +1969,7 @@ int main(int argc, char* argv[]) {
 					puts("      o          k       k");
 					puts("    o   o        k     k");
 					puts("  o       o      k   k");
-					if (verif_flg == 1)
-						puts(" o         o     k k        The reassembled code is identical.");
-					else
-						puts(" o         o     k k         The two files are identical");
+					puts(" o         o     k k                They are the same.");
 					puts("  o       o      k   k");
 					puts("    o   o        k     k");
 					puts("      o          k       k");
@@ -1998,11 +2000,11 @@ int main(int argc, char* argv[]) {
 				strcat_s(emul_filename, sizeof(emul_filename), " ");
 				strcat_s(emul_filename, sizeof(emul_filename), dsk_filename);
 				printf("\nStarting emulator--\n%s\n\n", emul_filename);
-				printf("Please close the emulator before re-running this program,\n");
+				printf("Please close the emulator before re-running Codegen.\n");
 
 				if (system(emul_filename)) puts("Emulator not found");
 			}
-			hit_Enter();
+			//hit_Enter();
 
 
 			return 0;
