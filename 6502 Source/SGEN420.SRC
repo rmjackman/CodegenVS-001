@@ -45,11 +45,11 @@
 * CODEGEN will then start your Atari800 emulator and boot the XFD-disk image file.
 * Please check the following path and file; change if necessary:
 
-*	DISASS 123456
+*	DISASS 123456	;not yet implemented
 
 
-*	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
-	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
+	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+*	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
 *	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
 *	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
 
@@ -2406,7 +2406,7 @@ skip	LDX #127		sg31
 
 *** Keys 1 to 5
 f1to5	INC TF
-*** Keys 6 t0 0
+*** Keys 6 to 0
 f6to0	SEC
 	LDA GTC
 	SBC '0'

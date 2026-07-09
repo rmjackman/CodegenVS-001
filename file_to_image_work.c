@@ -116,6 +116,7 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 
 	if (fopen_s(&filestream, "empty_ed.xfd", "wb") != 0) {
 		perror("Can't create empty_ed.xfd");
+		getchar();
 		exit(1);
 	}
 	for (i = 0; i < TOTAL_ED_SECS * SD_SEC_LEN; i++)
@@ -160,6 +161,7 @@ void file_to_image(char file_filename[500], char diskimage_name[500]) {
 	if (fopen_s(&filestream, "savexfd.cfg", "wb") != 0) {
 		puts("Can't open savexfd.cfg");
 		perror("");
+		getchar();
 		exit(1);
 	}
 	else {
@@ -178,6 +180,7 @@ open_disk_image_file:
 #if STAND_ALONE
 		printf("Can't open %s", diskimage_name);
 		perror("");
+		getchar();
 		exit(1);
 
 #else	// Create new image containing DOS 2.5	
@@ -195,32 +198,47 @@ open_disk_image_file:
 		if (fopen_s(&filestream, diskimage_name, "wb") != 0) {
 			printf("Can't create '%s'", diskimage_name);
 			perror("");
+			getchar();
 			exit(1);
 		}
 
 		if (fwrite(dos25_block, header_len, 1, filestream) != 1) { //Header
-			perror("Error writing dos25_block header"); exit(1); 
+			perror("Error writing dos25_block header");
+			getchar();
+			exit(1);
 		}
 		else
 			printf("dos25_block header written\n");
 
 		if (fwrite(dos25_block + 16, DOS_BLOCK_SIZE - 16, 1, filestream) != 1){ //DOS25
-			perror("Error writing dos25_block"); exit(1); 
+			perror("Error writing dos25_block");
+			getchar();
+			exit(1);
 		}
 		else
 			printf("dos25_block written\n");
 
 		for (i = DOS_BLOCK_SIZE - 16 + 1; i <= (360 - 1) * 128; i++) {// 0 0 0 0 .....
 			if (fputc('\0', filestream) == EOF) { 
-				perror("Error writing null character"); exit(1); }
+				perror("Error writing null character"); 
+				getchar();
+				exit(1);
+			}
 		}
 
 		if (fwrite(dos25_votc_dir, DOS25_VOTC_DIR_SIZE, 1, filestream) != 1) {// VTOC DIR
-			perror("Error writing dos25_votc_dir"); exit(1); 
+			perror("Error writing dos25_votc_dir"); 
+			getchar();
+			exit(1);
 		}
 
 		for (i = (720 - 360 - 1) * 128 + DOS25_VOTC_DIR_SIZE; i < 720 * 128; i++) { 
-			if (fputc('\0', filestream) == EOF) { perror("Error writing null character"); exit(1); } }
+			if (fputc('\0', filestream) == EOF) { 
+				perror("Error writing null character"); 
+				getchar();
+				exit(1);
+			} 
+		}
 
 
 
@@ -242,6 +260,8 @@ open_disk_image_file:
 			}
 			else {
 				perror("Error closing file");
+				getchar();
+				exit(1);
 			}
 			filestream = NULL; // Set the file stream pointer to NULL
 		}
@@ -252,6 +272,7 @@ open_disk_image_file:
 		if (fopen_s(&filestream, diskimage_name, "rb") != 0) {		// Open the newly created file
 			printf("Can't open %s", diskimage_name);
 			perror("");
+			getchar();
 			exit(1);
 		}
 #endif	
@@ -264,6 +285,7 @@ open_disk_image_file:
 		if (fseek(filestream, 0, SEEK_END) != 0) {						// Seek the end of file
 			perror("Error seeking to end of file");
 			fclose(filestream);
+			getchar();
 			exit(1);
 		}
 
@@ -272,6 +294,7 @@ open_disk_image_file:
 		if (lenf == -1) {
 			perror("Error getting file length");
 			fclose(filestream);
+			getchar();
 			exit(1);
 		}
 		printf("File size: %li bytes\n", lenf);
@@ -352,6 +375,7 @@ open_disk_image_file:
 		if (fopen_s(&filestream3, atr_filename, "wb") != 0) {
 			printf("Can't open %s\n", atr_filename);
 			perror("");
+			getchar();
 			exit(1);
 		}
 		printf("\nDisk image: ");
@@ -604,6 +628,7 @@ open_disk_image_file:
 	if (fopen_s(&filestream, fs, "rb") != 0) {
 		printf("Can't open %s. ", fs);
 		perror("");
+		getchar();
 		exit(1);
 	}
 
@@ -900,6 +925,7 @@ open_disk_image_file:
 	if (fopen_s(&filestream, diskimage_name, "wb") != 0) {
 		printf("Can't create %s", diskimage_name);
 		perror("");
+		getchar();
 		exit(1);
 	}
 
@@ -949,6 +975,7 @@ open_disk_image_file:
 			if (fwrite(&disk[sec][0], sectlen, 1, filestream3) != 1) {
 				puts("disk write error");
 				perror("");
+				getchar();
 				exit(1);
 			}
 		fclose(filestream3);

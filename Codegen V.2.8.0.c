@@ -405,6 +405,7 @@ int main(int argc, char* argv[]) {
 		if (fopen_s(&stream, src_filename, "r") != 0) {
 			printf("Can't open %s\n", src_filename);
 			perror("Error opening file");
+			hit_Enter();
 			exit(1);
 		}
 
@@ -1029,6 +1030,7 @@ int main(int argc, char* argv[]) {
 					if (fopen_s(&stream3, include_filename, "r") != 0) {
 						printf("\nCan't open INCLUDE file %s\n", include_filename);
 						perror("");
+						hit_Enter();
 						exit(1);
 					}
 
@@ -1838,6 +1840,7 @@ int main(int argc, char* argv[]) {
 			if (fopen_s(&stream, loafilename, "wb") != 0) {
 				puts("Can't open LOA file.");
 				perror("");
+				hit_Enter();
 				exit(1);
 			}
 
@@ -1891,6 +1894,7 @@ int main(int argc, char* argv[]) {
 
 			if (fopen_s(&stream, smbfilename, "wb") != 0) {
 				perror("Error opening file");
+				hit_Enter();
 				exit(1);
 			}
 

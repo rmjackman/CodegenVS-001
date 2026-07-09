@@ -23,16 +23,16 @@
 #define SHOW_LO 0 // Show ':L'
 
 #define PRINT_DISS_LINNUM 0		// 0.
-#define ADDR_LEFT_COMMENT 0		// 1.
-#define SHOW_LEFT_COMMENT 0		// 2.
+#define ADDR_LEFT_COMMENT 1		// 1.
+#define SHOW_LEFT_COMMENT 1		// 2.
 #define PRINT_PC_ADDRESS  0		// 3. Turns on edit mode in SOURCGEN
 		// COMMAND				// 4. 
-#define SKA_AS_COMMENT    0		// 5.
-#define SHOW_RH_COMMENT   0		// 6.
+#define SKA_AS_COMMENT    1		// 5.
+#define SHOW_RH_COMMENT   1		// 6.
 #define SHOW_JSR          0		// 7.
 #define PRINT_OPC_BYTES   0		// 8.
 
-#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
+#define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.
 
 uint16_t seg_start_address;
 uint8_t* opcodeptr;
