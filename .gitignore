@@ -370,3 +370,4 @@ FodyWeavers.xsd
 *.lis
 *.LST
 *.dbg
+/6502 Source/TEMP.SMB
