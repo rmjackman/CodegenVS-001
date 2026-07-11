@@ -31,7 +31,7 @@
 #define DOS_BLOCK_SIZE (333-4)*32-16
 #define DOS25_VOTC_DIR_SIZE 128+32
 #define MAX_FILENAME_LEN 256
-
+#define MAX_SYMBOL_SIZE 8           //Set to 8 for ATMAS II compatibility
 #define MAXSYMS 2500
 #define COMMENT_LEN 60
 
@@ -41,7 +41,7 @@
 #define uint32_t uint32_t
 
 typedef struct {
-	char symbol[9];
+	char symbol[MAX_SYMBOL_SIZE+1];
 	char comment[COMMENT_LEN];
 	uint16_t symadr;
 	int8_t ofst;

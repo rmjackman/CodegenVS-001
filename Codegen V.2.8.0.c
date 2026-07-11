@@ -40,7 +40,7 @@
 #define MAX_TXT_SIZ 0xfffff
 
 #define MAX_LINE_SIZE 255
-#define MAX_LABEL_SIZE 80
+#define MAX_LABEL_SIZE 80		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
 #define MAXDUMS 20
 #define LSTBYTES 8
 
@@ -720,7 +720,7 @@ int main(int argc, char* argv[]) {
 					pos = 0;
 					while (isalnum(*txtptr))
 						label[pos++] = (char)toupper(*txtptr++);
-					if (pos > 8)
+					if (pos > MAX_SYMBOL_SIZE)
 						error("Label is too long");
 					if (*txtptr == '@')
 						label[pos++] = *txtptr++;
