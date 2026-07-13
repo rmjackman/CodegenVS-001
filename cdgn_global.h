@@ -41,8 +41,8 @@
 #define uint32_t uint32_t
 
 typedef struct {
-	char symbol[MAX_SYMBOL_SIZE+1];
-	char comment[COMMENT_LEN];
+	char symbol[MAX_SYMBOL_SIZE + 1];
+	char comment[COMMENT_LEN + 1];
 	uint16_t symadr;
 	int8_t ofst;
 	uint8_t macf;
@@ -56,8 +56,8 @@ uint16_t symnum, symnumext;
 uint8_t* xlram;
 
 void hit_Enter(void);
-char src_filename[MAX_FILENAME_LEN];
-static char loafilename[MAX_FILENAME_LEN];
+char src_filename[MAX_FILENAME_LEN + 1];
+static char loafilename[MAX_FILENAME_LEN + 1];
 
 const unsigned char dos25_block[DOS_BLOCK_SIZE];
 const unsigned char dos25_votc_dir[DOS25_VOTC_DIR_SIZE];

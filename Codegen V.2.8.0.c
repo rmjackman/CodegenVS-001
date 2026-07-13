@@ -17,7 +17,7 @@
 /***************  Preprocessor   **************/
 
 #define ATARI800    1		// Set to 0 only if you are assembling code for a non-ATARI system.
-#define DISASSEMBLE 1		// 
+#define DISASSEMBLE 1		// Probably don't need to change this.
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr before starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See cdgn_global.h for examples.
@@ -40,6 +40,7 @@
 #define MAX_TXT_SIZ 0xfffff
 
 #define MAX_LINE_SIZE 255
+#define PRN_BUF_SIZE 255
 #define MAX_LABEL_SIZE 80		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
 #define MAXDUMS 20
 #define LSTBYTES 8
@@ -144,14 +145,14 @@ short prnlnum = 0;
 uint8_t syms_in_expr = 0;
 
 char tempstr[5] = { 0 };
-char prnlnbufbeg[120] = { 0 };
+char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
-char src_filename[MAX_FILENAME_LEN] = { 0 };
-char opcode[MAX_LABEL_SIZE] = { 0 }, operand[MAX_FILENAME_LEN] = { 0 };
-char outflgs[MAX_LABEL_SIZE] = { 0 };
-char prnlnbuf2[10][MAX_LABEL_SIZE] = { {0} };
-char cmpflbytln[9][MAX_LABEL_SIZE] = { {0} };
-char linbuf[MAXMACLEV][MAX_LINE_SIZE] = { {0} };
+char src_filename[MAX_FILENAME_LEN + 1] = { 0 };
+char opcode[MAX_LABEL_SIZE + 1] = { 0 }, operand[MAX_FILENAME_LEN + 1] = { 0 };
+char outflgs[MAX_LABEL_SIZE + 1] = { 0 };
+char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
+char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
+char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { {0} };
 
 ssstype	sss[MAXSYMS] = { 0 };
 
@@ -185,7 +186,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE ";
-static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG ";
+static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
 static const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
 static unsigned short bradat[] = { 0x10,0x30,0x50,0x70,0x90,0xb0,0xd0,0xf0 };
@@ -197,18 +198,18 @@ static char loclabtb[MAXLOCLABS][5] = { {0} };
 static int labexttab[MAXLOCLABS] = { 0 };			// 0001 to 9999
 static int lclb[MAXMACLEV][MXLBS] = { {0} };		// table of label nos. in present macro
 static unsigned short lclbnum[MAXMACLEV] = { 0 };
-static char include_filename[MAX_FILENAME_LEN] = { 0 };
-static char loafilename[MAX_FILENAME_LEN] = { 0 };
-static char smbfilename[MAX_FILENAME_LEN] = { 0 };
-static char lstfilename[MAX_FILENAME_LEN] = { 0 };
+static char include_filename[MAX_FILENAME_LEN + 1] = { 0 };
+static char loafilename[MAX_FILENAME_LEN + 1] = { 0 };
+static char smbfilename[MAX_FILENAME_LEN + 1] = { 0 };
+static char lstfilename[MAX_FILENAME_LEN + 1] = { 0 };
 static char addtoimg_filename[64][20] = { {0} };			//
 static char append_filename[36][20] = { {0} };				//
 static char link_filename[36][20] = { {0} };				//
-static char linkfile_filename[MAX_FILENAME_LEN] = { 0 };
-static char emul_filename[MAX_FILENAME_LEN] = { 0 };
-static char pathstr[MAX_FILENAME_LEN] = { 0 };
-static char dsk_filename[MAX_FILENAME_LEN] = { 0 };
-static char cmp_file[MAX_FILENAME_LEN] = { 0 };
+static char linkfile_filename[MAX_FILENAME_LEN + 1] = { 0 };
+static char emul_filename[MAX_FILENAME_LEN + 1] = { 0 };
+static char pathstr[MAX_FILENAME_LEN + 1] = { 0 };
+static char dsk_filename[MAX_FILENAME_LEN + 1] = { 0 };
+static char cmp_file[MAX_FILENAME_LEN + 1] = { 0 };
 
 
 
@@ -252,12 +253,12 @@ int main(int argc, char* argv[]) {
 	char* lnbfptr;
 	char* labptr;
 
-	bool verif_flg = 0;
+	short verif_flg = 0; // 0 = no verification, 1 = verification, 2 = round trip verification
 
 #if ROUND_TRIP_VERIFICATION
 
-	for (;;) {		// beginning of long loop for verif_flg == 1
-		if (verif_flg == 1) {
+	for (;;) {		// beginning of long loop for verif_flg == 2
+		if (verif_flg == 2) {
 			puts("\n\n*******************************************************\n");
 			puts("Starting round trip verification:\n");
 		}
@@ -461,8 +462,8 @@ int main(int argc, char* argv[]) {
 		linkfile_filename[0] = 0;
 		smbfilename[0] = 0;
 
-		if (verif_flg == 1) {
-			cpfflg = 1;
+		if (verif_flg == 2) {
+			//cpfflg = 1;
 			if (fopen_s(&stream, cmp_file, "rb") != 0)
 				file_err("Can't open CPFL file", cmp_file);
 		}
@@ -730,9 +731,9 @@ int main(int argc, char* argv[]) {
 
 					sprintf_s(labelstr, MAX_LABEL_SIZE, " %s ", label);
 					if (strstr(opcds, labelstr))
-						error("You can't have an opcode at the beginning of a line");
+						error("This is an opcode. It can't be at the beginning of a line");
 					if (strstr(assdirecs, labelstr) || strstr(assdirecssolo, labelstr))
-						error("You can't have an assembler directive the beginning of a line");
+						error("This is an assembler directive. It can't be at the beginning of a line");
 					break;
 				}
 
@@ -741,7 +742,7 @@ int main(int argc, char* argv[]) {
 				while ((*txtptr == ' ') || (*txtptr == '\t'))
 					txtptr++;
 
-				if (*label && (*txtptr == '\n') || (*txtptr == ';')) {// label on empty line
+				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
 					if (*txtptr == ';') {//comment directly after label on empty line
 						while ((*txtptr != '\n') && (*txtptr != '\0'))
 							txtptr++;
@@ -1102,15 +1103,23 @@ int main(int argc, char* argv[]) {
 					smttoimg_flg = 1;
 					continue;
 				}
+#if ROUND_TRIP_VERIFICATION
+				/* VERIFY */
 
+				if (strcmp(opcode, "VERIFY") == 0) {
+					verif_flg = 1;
+					continue;
+				}
+#endif
 				/* CPFL */
 
 				if (strcmp(opcode, "CPFL") == 0) {
 					if (pass == 2) {
 						operand_to_filename(cmp_file);
 
-						if (fopen_s(&stream, cmp_file, "rb") != 0) file_err("Can't open CPFL file", cmp_file);
-
+						if (fopen_s(&stream, cmp_file, "rb") != 0) 
+							file_err("Can't open CPFL file", cmp_file);
+						else printf("Opening CPFL file %s\n", cmp_file);
 						cpfflg = 1;
 					}
 					continue;
@@ -1709,7 +1718,7 @@ int main(int argc, char* argv[]) {
 		} // END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES
 
 
-		if (verif_flg == 0) {
+		if (verif_flg == 0 || verif_flg == 1) {
 
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 
@@ -1954,9 +1963,9 @@ int main(int argc, char* argv[]) {
 
 			/****************** Result of comparison with LOA file made in pass2 ********************/
 		}
-		else {//verif_flg = 1;
-			if (cpfflg) {
-				if (verif_flg == 1)
+		//else {//verif_flg == 1;
+			if (cpfflg || verif_flg == 2) {
+				if (verif_flg == 2)
 					printf("\nThe reassembled code was compared with %s\n", cmp_file);
 				else
 					printf("\nThe generated LOA file was compared with %s\n", cmp_file);
@@ -1971,9 +1980,10 @@ int main(int argc, char* argv[]) {
 					puts("    ##      ##");
 					puts("  ##          ##");
 					hit_Enter();
-					//exit(1);
+					if (cpfflg) exit(1);
 				}
 				else {
+					cpfflg = 0;
 					puts("");
 
 					puts("      o          k       k");
@@ -1993,13 +2003,13 @@ int main(int argc, char* argv[]) {
 
 
 //			return 0;
-		}//end verif_flg == 1
+		//}//end verif_flg == 2
 #if DISASSEMBLE
-		if (verif_flg == 0)
+		if (verif_flg == 0 || verif_flg == 1)
 			disassemble(loafilename);
 #endif
 
-		if (verif_flg == 1) {
+		if (verif_flg == 0 || verif_flg == 2) {
 			//	free(txtbuf);
 			//	free(xlbuf);
 			//	free(xlram);
@@ -2023,12 +2033,12 @@ int main(int argc, char* argv[]) {
 			/***************************************************************/
 
 #if ROUND_TRIP_VERIFICATION
-
-		verif_flg = 1;
-		strcpy_s(src_filename, sizeof(src_filename), "AUTORUN.SRC");
-		strcpy_s(cmp_file, sizeof(cmp_file), loafilename);
-
-	}//end of long loop for verif_flg == 1
+		if (verif_flg == 1) {
+			verif_flg = 2;
+			strcpy_s(src_filename, sizeof(src_filename), "AUTORUN.SRC");
+			strcpy_s(cmp_file, sizeof(cmp_file), loafilename);
+		}
+	}//end of long loop for verif_flg == 2
 #endif	
 
 	hit_Enter();
@@ -2524,7 +2534,7 @@ void find_operand(void) {
 
 /*		*************** src_filename Operand *****************     *////////////////
 
-static void operand_to_filename(char filename[MAX_FILENAME_LEN]) {
+static void operand_to_filename(char filename[MAX_FILENAME_LEN + 1]) {
 
 	int cnt = 0;
 	char* linptr;
