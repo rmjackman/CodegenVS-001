@@ -104,7 +104,6 @@ const unsigned char data[21][15] = {
 unsigned int sgndtb[100] = { 0 }, * sgndtbptr1, * sgndtbptr2, pcsv;
 #endif
 
-bool double_byte_flg = 1;
 char ch = 0;
 char section_type = 0;
 char* txtptr, * txtptr_sav;	//pointer for all addresses in this buffer
@@ -262,7 +261,7 @@ int main(int argc, char* argv[]) {
 			puts("\n\n*******************************************************\n");
 			puts("Starting round trip verification:\n");
 		}
-		
+
 
 #endif
 
@@ -467,7 +466,7 @@ int main(int argc, char* argv[]) {
 			if (fopen_s(&stream, cmp_file, "rb") != 0)
 				file_err("Can't open CPFL file", cmp_file);
 		}
-		
+
 		for (i = 0; i < MAXMACLEV; i++)
 			lclbnum[i] = 0;
 
@@ -711,15 +710,15 @@ int main(int argc, char* argv[]) {
 					strcpy_s(label, sizeof(label), "PLUS");
 					txtptr++;
 					break;
-				default:					// label
-				{
+				default:				// label
 					if (!isalpha(*txtptr)) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character.");
 					}
 					pos = 0;
-					while (isalnum(*txtptr))
+					while (isalnum(*txtptr)) {
 						label[pos++] = (char)toupper(*txtptr++);
+					}
 					if (pos > MAX_SYMBOL_SIZE)
 						error("Label is too long");
 					if (*txtptr == '@')
@@ -734,27 +733,34 @@ int main(int argc, char* argv[]) {
 						error("You can't have an opcode at the beginning of a line");
 					if (strstr(assdirecs, labelstr) || strstr(assdirecssolo, labelstr))
 						error("You can't have an assembler directive the beginning of a line");
-				}
+					break;
 				}
 
 				/*	********* find opcode ****************************/
 
 				while ((*txtptr == ' ') || (*txtptr == '\t'))
 					txtptr++;
+
+				if (*label && (*txtptr == '\n') || (*txtptr == ';')) {// label on empty line
+					if (*txtptr == ';') {//comment directly after label on empty line
+						while ((*txtptr != '\n') && (*txtptr != '\0'))
+							txtptr++;
+					}
+					txtptr++;
+					linnum++;
+					while ((*txtptr == ' ') || (*txtptr == '\t'))
+						txtptr++;
+				}
+
 				tpsav = txtptr;
 				if (*txtptr == '\n') continue;
-				if (isalpha(*txtptr) == 0) error("Alphabetic character expected");
+				if (*txtptr == ';') continue;	// comment (ATMAS II compatibility?)
+				if (isalpha(*txtptr) == 0)
+					error("Alphabetic character expected");
 				ptr = opcode;
 
 				while (isalnum(*txtptr))
 					*ptr++ = (char)toupper(*txtptr++);	//opcode is upper case
-
-				double_byte_flg = 0;
-
-				if (*txtptr == '<') {
-					double_byte_flg = 1;
-					txtptr++;
-				}
 
 				if (!isspace(*txtptr)) {
 					printf("Illegal character '%c' in symbol", *txtptr);
@@ -1532,7 +1538,7 @@ int main(int argc, char* argv[]) {
 
 				symval = expresstoi();
 
-				if ((symval < 256) && (double_byte_flg == 0))	// txtptr -> first byte after expression
+				if (symval < 256)// txtptr -> first byte after expression
 				{
 
 					if ((*(txtptr - 1) == ')') && (*operand == '(')) txtptr--;	//needed for expresstoi(new)
@@ -1744,7 +1750,7 @@ int main(int argc, char* argv[]) {
 				if (sss[i].macf == MACRO) continue;
 				if (symnum > 0) tmptyp = sss[symnum - 1].symtyp;
 				if (((sss[i].macf == UNUSED) || (sss[i].macf == MACRO_UNUSED)) && sss[i].symbol[0])
-					printf("Unused symbol: %4X %s\n", sss[i].symadr,sss[i].symbol);
+					printf("Unused symbol: %4X %s\n", sss[i].symadr, sss[i].symbol);
 
 				if (symnum > 0) {
 					if (sss[i].symadr == sss[symnum - 1].symadr)	/* double entry */
@@ -1952,7 +1958,7 @@ int main(int argc, char* argv[]) {
 			if (cpfflg) {
 				if (verif_flg == 1)
 					printf("\nThe reassembled code was compared with %s\n", cmp_file);
-				else 
+				else
 					printf("\nThe generated LOA file was compared with %s\n", cmp_file);
 				if (mismatch_flg) {
 					puts("");
@@ -2166,17 +2172,15 @@ uint32_t expresstoi() {
 	while (*ptr) {
 		if (isalpha(*ptr)) {
 			if ((*ptr - 'A') < 0) {
-				printf("Program error at line %d -- invalid negative argument--", __LINE__ + 4);
-				hit_Enter();
-				exit(1);
+				printf("Program error at codegen line %d -- invalid negative argument--", __LINE__ + 4);
+				error("invalid argument");
 			}
 			intstack[tos++] = symval_list[*ptr - 'A'];
 		}
 		else {
 			if (tos <= 0) {
-				printf("Program error at line %d -- Buffer overrun due to negative argument", __LINE__ + 4);
-				hit_Enter();
-				exit(1);
+				printf("Program error at codegen line %d -- Buffer overrun due to negative argument", __LINE__ + 4);
+				error("invalid argument");
 			}
 			bb = intstack[--tos];
 			aa = intstack[--tos];
@@ -2200,8 +2204,7 @@ uint32_t expresstoi() {
 
 	if (tos <= 0) {
 		printf("Program error at line %d -- Buffer overrun due to negative argument", __LINE__ + 4);
-		hit_Enter();
-		exit(1);
+		error("invalid argument");
 	}
 	result = intstack[--tos];
 
