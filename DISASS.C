@@ -22,6 +22,7 @@
 #define DFB_BYTES_PER_LINE 6 //8
 #define SHOW_LO 0 // Show ':L'
 
+//The following switches 1,2,3,5,6,7 correspond aproximately to the output menu switches in SOURCGEN
 #define PRINT_DISS_LINNUM 0		// 0.
 #define ADDR_LEFT_COMMENT 1		// 1.
 #define SHOW_LEFT_COMMENT 1		// 2.
@@ -1024,15 +1025,15 @@ void pt_ska_comment(uint16_t ska) {
 	if (sss[isav].symtyp != ']') {
 		if (sss[isav].symadr < 256) {
 			if (sss[isav].ofst)
-				pts("  *w");
+				pts(" ;w");
 			else
-				pts("  *b");
+				pts(" ;b");
 			pts_p("%i", sss[isav].frequency);
 		}
 	}
 	//else // if (sss[isav].symtyp == ']')
 		//if (sss[isav].symbol && sss[isav].symadr <= 256)
-			//pts("  *[");
+			//pts("  ;[");
 
 #endif // 
 
@@ -1043,7 +1044,7 @@ void pt_ska_comment(uint16_t ska) {
 			ptc('\t');
 			if (strlen(line_buffer) - linebeg_lablen <= 10)
 				ptc('\t');
-			pts_p("%X", ska);
+			pts_p(";%X", ska);
 		}
 	}
 
@@ -1057,6 +1058,7 @@ void pt_ska_comment(uint16_t ska) {
 				if (strlen(line_buffer) - linebeg_lablen <= 10)
 					ptc('\t');
 			}
+			pts(";");
 			pts(sss[isav].comment);
 		}
 	}
