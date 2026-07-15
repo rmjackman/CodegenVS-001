@@ -1423,13 +1423,19 @@ int main(int argc, char* argv[]) {
 
 				/* opc 'c */
 
-				if (operand[0] == '\'' || (operand[0] == '#' && operand[1] == '\'')) {
+				if (operand[0] == '\'' ) {
+					
+					size_t len = strlen(operand);
+
+					if (!((len == 2) ||
+						(len == 3 && operand[2] == '\''))){ 
+						error("invalid character constant");
+					}
 					sectyp('\'');
 					if (data[cnt][NN] == 0)
 						error("direct addressing (') cannot be used with this opcode");
 					txtptr++;
-					if (*txtptr == '\'')
-						txtptr++;
+					
 					ch = *txtptr++;
 					if (*txtptr == '\'')
 						txtptr++;
@@ -1450,6 +1456,11 @@ int main(int argc, char* argv[]) {
 					intval = expresstoi_p2();
 					if (pc == 0x3165) //0x4946
 						i = 99;
+
+					if ((operand[1] == '\'') && strlen(operand) == 4)
+						sectyp('\'');
+
+
 					if (operand[1] == '%')							// e.g. LDA #%11000000
 						sectyp('!');
 
@@ -2098,6 +2109,23 @@ uint32_t expresstoi() {
 		case '(':
 			*ptr++ = *txtptr++;
 			break;
+		case '\'':           /* Character constant */
+
+			txtptr++;        // skip opening quote
+
+			if (*txtptr == '\0')
+				error("Missing character after opening quote");
+
+			symval_list[symval_cnt] = (unsigned char)*txtptr++;
+
+			if (*txtptr != '\'')
+				error("Missing closing quote");
+
+			txtptr++;        // skip closing quote
+
+			*ptr++ = symval_cnt++ + 'A';
+			break;
+
 		default:
 			if ((symval_list[symval_cnt] = symtoi1()) == NOTFOUND) notfound = 1;
 			*ptr++ = symval_cnt++ + 'A';
@@ -2521,6 +2549,13 @@ void find_operand(void) {
 		if (!strchr(" \t\n", *txtptr))	/* there is an operand */
 		{
 			if (*txtptr == '(') txtptr++;
+
+			if (*txtptr == '\'') {			// if the operand starts with ' '
+				operand[cnt++] = *linptr++;
+				if (*linptr == ' ')
+					operand[cnt++] = *linptr++;
+			}
+
 			while (!(strchr(" \t\n", *linptr)))									/* create operand[] */
 			{
 
