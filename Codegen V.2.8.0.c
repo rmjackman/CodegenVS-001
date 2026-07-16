@@ -1429,6 +1429,15 @@ int main(int argc, char* argv[]) {
 
 					if (!((len == 2) ||
 						(len == 3 && operand[2] == '\''))){ 
+						printf("\n\noperand: %s\noperand length: %zu", operand, len);
+
+						for (size_t i = 0; i <= strlen(operand); i++) {
+							printf("operand[%zu] = 0x%02X '%c'\n",
+								i,
+								(unsigned char)operand[i],
+								operand[i] ? operand[i] : '.');
+						}
+
 						error("invalid character constant");
 					}
 					sectyp('\'');
@@ -2550,20 +2559,19 @@ void find_operand(void) {
 		{
 			if (*txtptr == '(') txtptr++;
 
-			if (*txtptr == '\'') {			// if the operand starts with ' '
-				operand[cnt++] = *linptr++;
-				if (*linptr == ' ')
-					operand[cnt++] = *linptr++;
-			}
-
 			while (!(strchr(" \t\n", *linptr)))									/* create operand[] */
 			{
+
+				if ((*linptr == '\'') && (*(linptr + 1) == ' ') && (*(linptr + 2) == '\'')) {			// test for ' '
+					operand[cnt++] = *linptr++;
+					operand[cnt++] = *linptr++;
+				}
 
 				operand[cnt++] = *linptr++;
 			}
 		}
 	}
-	operand[cnt] = 0;
+	operand[cnt] = '\0';
 }
 // end Find Operand
 
