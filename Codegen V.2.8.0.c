@@ -512,7 +512,6 @@ int main(int argc, char* argv[]) {
 
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
 
-
 				if ((*txtptr == 0) && (include_flg)) {
 					linnum = linnum_sav;
 					txtptr = txtptr_sav;
@@ -748,7 +747,7 @@ int main(int argc, char* argv[]) {
 							txtptr++;
 					}
 					txtptr++;
-					linnum++;
+					//linnum++;
 					while ((*txtptr == ' ') || (*txtptr == '\t'))
 						txtptr++;
 				}
@@ -895,6 +894,7 @@ int main(int argc, char* argv[]) {
 						macroflg++;
 						if (pass == 1) {
 							find_operand();					// A,N
+
 							operptr = operand;
 							dumnum = 0;
 							do {
@@ -1265,7 +1265,8 @@ int main(int argc, char* argv[]) {
 
 				/* ASC */
 
-				if (strcmp(opcode, "ASC") == 0) {
+				if (strcmp(opcode, "ASC") == 0) {// calculated using txtptr, not operand, since operand is not yet set
+
 					data_flg = 1;
 					do {
 						txtptr++;
@@ -1429,7 +1430,7 @@ int main(int argc, char* argv[]) {
 
 					if (!((len == 2) ||
 						(len == 3 && operand[2] == '\''))){ 
-						printf("\n\noperand: %s\noperand length: %zu", operand, len);
+						//printf("\n\noperand: %s\noperand length: %zu", operand, len);
 
 						for (size_t i = 0; i <= strlen(operand); i++) {
 							printf("operand[%zu] = 0x%02X '%c'\n",
@@ -1996,7 +1997,7 @@ int main(int argc, char* argv[]) {
 					puts("    ##      ##");
 					puts("      ##  ##");
 					printf("\a        ##         MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
-					puts("      ##  ##");;
+					puts("      ##  ##           See '******' in LIS file");
 					puts("    ##      ##");
 					puts("  ##          ##");
 					hit_Enter();
@@ -2555,14 +2556,14 @@ void find_operand(void) {
 	case '\t':	break;
 	case ' ':
 		linptr = txtptr;
-		if (!strchr(" \t\n", *txtptr))	/* there is an operand */
+		if (!strchr(" \t\n", *txtptr))	// there is an operand
 		{
 			if (*txtptr == '(') txtptr++;
 
-			while (!(strchr(" \t\n", *linptr)))									/* create operand[] */
+			while (!(strchr(" \t\n", *linptr)))									// create operand[]
 			{
 
-				if ((*linptr == '\'') && (*(linptr + 1) == ' ') && (*(linptr + 2) == '\'')) {			// test for ' '
+				if ((*linptr == '\'') && (*(linptr + 1) == ' ') && (*(linptr + 2) == '\'')) {	// test for ' '
 					operand[cnt++] = *linptr++;
 					operand[cnt++] = *linptr++;
 				}
@@ -2587,10 +2588,10 @@ static void operand_to_filename(char filename[MAX_FILENAME_LEN + 1]) {
 	case '\t': error("Filename missing");	break;
 	case ' ':
 		linptr = txtptr;
-		if (!strchr(" \t\n", *txtptr))	/* there is an operand */
+		if (!strchr(" \t\n", *txtptr))	// there is an operand
 		{
 			if (*linptr == '"') {
-				for (; ; )									/* create operand[] */
+				for (; ; )									// create operand[]
 				{
 					operand[cnt++] = *linptr++;
 					if (strchr("\"\t\n", *linptr)) {
@@ -2601,7 +2602,7 @@ static void operand_to_filename(char filename[MAX_FILENAME_LEN + 1]) {
 				}
 			}
 			else {
-				while (!(strchr(" \t\n", *linptr)))							/* create operand[] */
+				while (!(strchr(" \t\n", *linptr)))							// create operand[]
 				{
 					operand[cnt++] = *linptr++;
 				}
