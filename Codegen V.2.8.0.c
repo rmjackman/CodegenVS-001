@@ -161,6 +161,7 @@ int ssscmpadr(const ssstype* dummy1, const ssstype* dummy2);
 FILE* stream;
 FILE* stream2;
 FILE* stream3;
+FILE* stream4;
 fpos_t pos2;
 
 #if DISASSEMBLE
@@ -1824,15 +1825,18 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-			/* xasm Symbol table */
+			/* xasm Symbol table. Call using "yr xasm.lab" in debugger console */
 			if (strpbrk(outflgs, "Xx")) {
-				fprintf(stream2, "Label table:\n");
+				if (fopen_s(&stream4, "xasm.lab", "w") != 0) file_err("Can't create LST file", "xasm.lab");
+				
 				for (i = 0; i < symnumext; i++) {
-					if (sss[i].symbol[0]) {
-						//printf("%s\n", sss[i].symbol);
-						list_label_xasm(i);
+					if ((sss[i].symbol[0]) && (sss[i].symtyp != ']')) {
+						
+						fprintf(stream4, "%04X  %s\n", sss[i].symadr, sss[i].symbol);
+						
 					}
 				}
+				fclose(stream4);
 			}
 
 			/* SOURCGEN symbol table */
@@ -2657,10 +2661,10 @@ void list_label_f2(int i) {
 void list_label_xasm(int i) {
 
 	if (sss[i].macf == MACRO)
-		fprintf(stream2, "MACRO\n");
+		fprintf(stream4, "MACRO\n");
 	else
-		fprintf(stream2, "     %04X  ", sss[i].symadr);
-	fprintf(stream2, "%s\n", sss[i].symbol);
+		fprintf(stream4, "     %04X  ", sss[i].symadr);
+	fprintf(stream4, "%s\n", sss[i].symbol);
 }
 
 
