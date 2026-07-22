@@ -90,7 +90,7 @@ char opertytb[] = {OPC,BAAXB,Q,Q,Q,AA,AA,Q,				//256 bytes corespond to opcodes
 				OPC,AAAAY,Q,Q,Q,AAAAX,AAAAX,Q };
 
 
-unsigned char oplen[256] = {
+unsigned char oprndlen[256] = {
 	/* 00 */ 1,2,0,0,0,2,2,0, 1,2,1,0,0,3,3,0,
 	/* 10 */ 2,2,0,0,0,2,2,0, 1,3,0,0,0,3,3,0,
 	/* 20 */ 3,2,0,0,2,2,2,0, 1,2,1,0,3,3,3,0,

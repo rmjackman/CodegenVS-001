@@ -23,17 +23,17 @@
 #define SHOW_LO 0 // Show ':L'
 
 //The following switches 1,2,3,5,6,7 correspond aproximately to the output menu switches in SOURCGEN
-#define PRINT_DISS_LINNUM 0		// 0.
-#define ADDR_LEFT_COMMENT 1		// 1.
-#define SHOW_LEFT_COMMENT 1		// 2.
-#define PRINT_PC_ADDRESS  0		// 3. Turns on edit mode in SOURCGEN
+#define PRINT_DISS_LINNUM 1		// 0.
+#define ADDR_LEFT_COMMENT 0		// 1.
+#define SHOW_LEFT_COMMENT 0		// 2.
+#define PRINT_PCADDRESS_BYTES  1		// 3. Turns on edit mode in SOURCGEN
 		// COMMAND				// 4. 
-#define SKA_AS_COMMENT    1		// 5.
-#define SHOW_RH_COMMENT   1		// 6.
-#define SHOW_JSR          0		// 7.
+#define SKA_AS_COMMENT    0		// 5.
+#define SHOW_RH_COMMENT   0		// 6.
+#define SHOW_JSR          1		// 7.
 #define PRINT_OPC_BYTES   0		// 8.
 
-#define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.
+#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
 uint16_t seg_start_address;
 uint8_t* opcodeptr;
@@ -73,6 +73,7 @@ int line_skip = 0;
 uint8_t linebeg_lablen = 0;
 char output_filename[FILENAME_MAX];
 FILE* outputfile;
+FILE* madslstfile;
 
 void disassemble(const char* filename) {
 
@@ -117,6 +118,12 @@ void disassemble(const char* filename) {
 	}
 	printf("Create %s with Symbolic Disassembler\n", output_filename);
 
+	if (fopen_s(&madslstfile, "MADS.LST", "w") != 0) {
+		perror("Error opening MADS.LST");
+		return;
+	}
+	fprintf(madslstfile, "mads 2\nSource: %s\n", output_filename);
+
 #if CREATE_DBG
 
 	char dbg_filename[260];
@@ -144,7 +151,7 @@ void disassemble(const char* filename) {
 #if SHOW_LEFT_COMMENT
 	flag[2] = 1;
 #endif
-#if PRINT_PC_ADDRESS
+#if PRINT_PCADDRESS_BYTES
 	flag[3] = 1;
 #endif
 #if SKA_AS_COMMENT
@@ -156,9 +163,9 @@ void disassemble(const char* filename) {
 #if SHOW_JSR
 	flag[7] = 1;
 #endif
-#if PRINT_OPC_BYTES
-	flag[8] = 1;
-#endif
+//#if PRINT_OPC_BYTES
+//	flag[8] = 1;
+//#endif
 
 /********      Init symtab_epz  *******/
 
@@ -298,6 +305,7 @@ void disassemble(const char* filename) {
 		}
 	}
 	fclose(outputfile); // Close the file
+	fclose(madslstfile); // Close the file
 #if CREATE_DBG
 	dbg_close(&ctx);
 #endif
@@ -1071,45 +1079,47 @@ void print_line() {
 		diss_linnum++;
 
 		if (flag[0]) // PRINT_DISS_LINNUM
-			fprintf(outputfile, "%i  ", diss_linnum);
+			fprintf(madslstfile, "%i  ", diss_linnum);
 
 
-		if (flag[3]) { // PRINT_PC_ADDRESS
+		if (flag[3]) { // PRINT_PCADDRESS_BYTES
 			if (sss[sno].symadr != pc) { // if not left comment
 				if (pcsav != 0){
-					fprintf(outputfile, "%04X", pcsav);
+					fprintf(madslstfile, "%04X", pcsav);
 
 					if (opcodeptr) {             // address is not null
-						switch (oplen[*opcodeptr]) {
+						switch (oprndlen[*opcodeptr]) {
 
 						case 1:
-							fprintf(outputfile, " %02X      ", opcodeptr[0]);
+							fprintf(madslstfile, " %02X      ", opcodeptr[0]);
 							break;
 
 						case 2:
-							fprintf(outputfile, " %02X %02X   ",
+							fprintf(madslstfile, " %02X %02X   ",
 								opcodeptr[0], opcodeptr[1]);
 							break;
 
 						case 3:
-							fprintf(outputfile, " %02X %02X %02X",
+							fprintf(madslstfile, " %02X %02X %02X",
 								opcodeptr[0], opcodeptr[1], opcodeptr[2]);
 							break;
 
 						default:
-							fprintf(outputfile, "         ");
+							fprintf(madslstfile, "         ");
 							break;
 						}
 									
 					}
 					else
-						fprintf(outputfile, "         ");
+						fprintf(madslstfile, "         ");
 				}
-				fprintf(outputfile, "\t");
+				fprintf(madslstfile, "\t");
 			}
 		}
 
 		fprintf(outputfile, "%s\n", line_buffer);
+
+		fprintf(madslstfile, "%s\n", line_buffer);
 
 	//	printf("%s\n", line_buffer); // Print the line to the console-- TEMPORARY debug
 
@@ -1118,9 +1128,10 @@ void print_line() {
 			diss_linnum++;
 
 			if (flag[0])  // PRINT_DISS_LINNUM
-				fprintf(outputfile, "%i", diss_linnum);
+				fprintf(madslstfile, "%i", diss_linnum);
 
 			fprintf(outputfile, "\n");
+			fprintf(madslstfile, "\n");
 
 			line_skip = 0;
 		}

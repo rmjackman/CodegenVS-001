@@ -2000,7 +2000,7 @@ int main(int argc, char* argv[]) {
 					puts("  ##          ##");
 					puts("    ##      ##");
 					puts("      ##  ##");
-					printf("\a        ##         MISMATCH at address $%X, line %i\n", mismatch_pc - 1, mismatch_linnum);
+					printf("\a        ##         MISMATCH at address $%X, line %i\n", mismatch_pc - 1, linnum);
 					puts("      ##  ##           See '******' in LIS file");
 					puts("    ##      ##");
 					puts("  ##          ##");

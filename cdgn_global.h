@@ -77,7 +77,7 @@ char esc_ch_tab[];
 enum { OPC, NN, AA, AAAA, AAX, AAAAX, AAY, AAAAY, BAAXB, BAABY, BRA, BAAAAB, ERROR };
 #define Q OPC
 
-unsigned char oplen[256];
+unsigned char oprndlen[256];
 
 #endif // GDGN_GLOBAL_H
 
