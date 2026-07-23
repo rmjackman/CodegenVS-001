@@ -315,7 +315,7 @@ int main(int argc, char* argv[]) {
 		fpos_t pos1;
 		bool star_flg = 0;
 		bool first_NNsymbol = 1;
-
+		bool label_only_flg = 0;
 
 		if (verif_flg == 0) {
 
@@ -557,8 +557,10 @@ int main(int argc, char* argv[]) {
 				}
 
 				if (!maclevel) linnum++;				//no change of line number if macro
-				*label = 0;
-				labflg = 0;
+				
+				if (label_only_flg == 0){
+					*label = 0;
+				}
 				*operand = '\0';
 				linbegptr = linptr = txtptr;			//set line begin to txtptr
 				lnbfptr = linbuf[maclevel];
@@ -743,14 +745,16 @@ int main(int argc, char* argv[]) {
 					txtptr++;
 
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
-					if (*txtptr == ';') {//comment directly after label on empty line
+					/*if (*txtptr == ';') {//comment directly after label on empty line
 						while ((*txtptr != '\n') && (*txtptr != '\0'))
 							txtptr++;
 					}
 					txtptr++;
-					//linnum++;
+					linnum++;
 					while ((*txtptr == ' ') || (*txtptr == '\t'))
-						txtptr++;
+						txtptr++; */
+					label_only_flg = 1;
+					continue;
 				}
 
 				tpsav = txtptr;
@@ -813,6 +817,7 @@ int main(int argc, char* argv[]) {
 				/* LABEL AT LINE BEGIN  LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
 
 				if (*label) {
+					label_only_flg = 0;
 					if (pass == 1) {
 						if (symnum >= MAXSYMS - 1)
 							error("Too many labels");
