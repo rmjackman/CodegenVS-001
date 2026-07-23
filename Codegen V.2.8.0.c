@@ -560,6 +560,7 @@ int main(int argc, char* argv[]) {
 				
 				if (label_only_flg == 0){
 					*label = 0;
+					labflg = 0;
 				}
 				*operand = '\0';
 				linbegptr = linptr = txtptr;			//set line begin to txtptr
@@ -739,6 +740,8 @@ int main(int argc, char* argv[]) {
 					break;
 				}
 
+				label_only_flg = 0;
+
 				/*	********* find opcode ****************************/
 
 				while ((*txtptr == ' ') || (*txtptr == '\t'))
@@ -817,7 +820,7 @@ int main(int argc, char* argv[]) {
 				/* LABEL AT LINE BEGIN  LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
 
 				if (*label) {
-					label_only_flg = 0;
+					
 					if (pass == 1) {
 						if (symnum >= MAXSYMS - 1)
 							error("Too many labels");
