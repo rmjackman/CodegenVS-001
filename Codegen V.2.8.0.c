@@ -43,7 +43,7 @@
 #define PRN_BUF_SIZE 255
 #define MAX_LABEL_SIZE 80		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
 #define MAXDUMS 20
-#define LSTBYTES 8
+#define LSTBYTES 6
 
 enum { UNUSED, SYMBOL, MACRO, MACRO_UNUSED, MACRO_LAB };
 
@@ -144,7 +144,6 @@ short bytcnt = 0;
 short prnlnum = 0;
 uint8_t syms_in_expr = 0;
 
-char tempstr[5] = { 0 };
 char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
 char src_filename[MAX_FILENAME_LEN + 1] = { 0 };
@@ -267,7 +266,7 @@ int main(int argc, char* argv[]) {
 
 #endif
 
-		int braoffset = 0;
+		//int braoffset = 0;
 		int pos = 0;
 		char ch = 0;
 		int offset = 0;
@@ -278,7 +277,7 @@ int main(int argc, char* argv[]) {
 		char labelstr[MAX_LABEL_SIZE] = { 0 };
 		char opcstr[MAX_LABEL_SIZE] = { 0 };
 
-		int temp = 0;
+		//int temp = 0;
 		int intab[] = { 0x40,0,0x20,0x60,0xA0,0xC0,0x80,0xE0 };
 
 
@@ -520,17 +519,26 @@ int main(int argc, char* argv[]) {
 				}
 
 				if (strpbrk(outflgs, "Ll")) {
-					if (*prnlnbufbeg || *prnlnbuf) {
+					if (*prnlnbufbeg || *prnlnbuf) {		// if there's something to print
+
+						/* Pad short lines to full width (unless in do-not-expand-macro mode) */
 						if (bytcnt < LSTBYTES) {
 							if (!strpbrk(outflgs, "Mm")) {
 								for (i = LSTBYTES - bytcnt; i > 0; i--)
+
 									strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "   ");
+								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
 							}
+
 							else
 								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
 						}
+
+						/* Append the source line */
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), prnlnbuf);
-						fprintf(stream2, "%s", prnlnbufbeg);
+
+						fprintf(stream2, "%s", prnlnbufbeg);	//print line to LIS file
+						
 						if (cpfflg)
 							if (mismatchln_flg[0])
 								fprintf(stream2, "%s\n", cmpflbytln[0]);
@@ -546,7 +554,7 @@ int main(int argc, char* argv[]) {
 						//fprintf (stream2,"%s\n",linbuf[maclevel]); //
 						*prnlnbuf = '\0';
 						*prnlnbufbeg = '\0';
-						*prnlnbuf2[0] = '\0';
+						*prnlnbuf2[0] = '\0'; //????????????????????????????????
 						bytcnt = 0;
 						prnlnum = 0;
 						data_flg = 0;
@@ -789,10 +797,10 @@ int main(int argc, char* argv[]) {
 				if ((pass == 2) && *outflgs) {
 					if (strcmp(opcode, "MACRO") && strcmp(opcode, "MEND") && !macroflg) /* Not in macro */
 					{
-						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) //M = macros not expanded
+						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
 						{
 
-							if (!(strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))) {
+							if (!(strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))) {//regular opcode
 								if (pc != pc_sav) {
 
 									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X: ", pc);	// PC ADDRESS
@@ -1386,19 +1394,24 @@ int main(int argc, char* argv[]) {
 					continue;
 				}
 
-				/* BRA */
+				/* Relative Branches (BRA, BCC, BCS, BEQ, BNE, BPL, BMI, BVC, BVS, etc. */
 
 				if ((cnt = chkopc(brastrdat)) >= 0) {
 					sectyp(';');
-					toxlbuf((char)bradat[cnt]);
-					braoffset = temp = expresstoi_p2() - (pc + 1);
+					toxlbuf((char)bradat[cnt]);				// output the correct opcode
+
+					uint32_t target = expresstoi_p2();
+					int braoffset = (int)target - (int)(pc + 1);	// signed offset
+
 					if (pass == 2) {
-						if (temp < -128 || temp >127) {
-							printf("\nAttempted to branch a distance of %i. (Range -128 to 127 is permitted.)", temp);
+						if (braoffset < -128 || braoffset >127) {
+							printf("\nAttempted to branch a distance of %d bytes "
+								"(target=0x%X, pc=0x%X). Range is -128 to 127.\n",
+								braoffset, target, pc);
 							error("Branch out of range");
 						}
 					}
-					toxlbuf((char)braoffset);
+					toxlbuf((int8_t)braoffset);
 					continue;
 				}
 
@@ -2096,7 +2109,7 @@ uint32_t expresstoi() {
 	int symval_list[30] = { 0 };
 
 	char notfound = 0;
-	char temp = 0;
+	//char temp = 0;
 	char symval_cnt = '\0';
 	unsigned int i = 0, j = 0, k = 0;
 	int tos = 0;
@@ -2203,7 +2216,7 @@ uint32_t expresstoi() {
 						stack[tos++] = infix[i];
 
 					if (infix[i] == ')') {
-						temp = stack[--tos];
+						char temp = stack[--tos];
 						while (temp != '(') {
 							postfix[j++] = temp;
 							if (tos == 0) error("Missing opening parenthisis");
@@ -2493,8 +2506,9 @@ void error(char* errstr) {
 
 
 void toxlbuf(uint8_t ch) {
-	char tempstr[10] = { 0 };
-	if (!orgflg)error("ORG value must precede this line");
+
+	if (!orgflg)
+		error("ORG value must precede this line");
 
 	*xlbfptr = ch;
 #if DISASSEMBLE
@@ -2505,6 +2519,8 @@ void toxlbuf(uint8_t ch) {
 
 	if (pass == 2) {
 		bytcnt++;
+
+		/* Comparison / verification mode */
 		if (cpfflg) {
 			bin = fgetc(stream);
 			if (bin != (ch & 255)) {
@@ -2523,18 +2539,26 @@ void toxlbuf(uint8_t ch) {
 			}
 
 		}
+
+		/* Hex listing */
 		if (strpbrk(outflgs, "Ll") && !strpbrk(outflgs, "Mm")) {
 
-			sprintf_s(tempstr, sizeof(tempstr), "%02X ", ch & 255);
+			char tempstr[16];
+
+			sprintf_s(tempstr, sizeof(tempstr), "%02X ", ch & 0xFF);
+			
 			if (bytcnt <= LSTBYTES)
 				strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), tempstr);
 			else {
 				if (bytcnt % LSTBYTES == 1) {
 					prnlnum++;
-					sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), "%4X: ", pc - 1);
+					sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), 
+						"%4X: ", pc - 1);
 				}
 				strcat_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), tempstr);
 			}
+
+			/* Comparison column */
 			if (cpfflg) {
 				if (bytcnt % LSTBYTES == 1) {
 					if (bin != (ch & 255))
@@ -2547,7 +2571,8 @@ void toxlbuf(uint8_t ch) {
 					sprintf_s(tempstr, sizeof(tempstr), "%02X)", bin);
 				}
 				else
-					sprintf_s(tempstr, sizeof(tempstr), "%02X ", bin);
+					sprintf_s(tempstr, sizeof(tempstr), "%02X ", bin); // space is for alignment
+
 				strcat_s(cmpflbytln[prnlnum], sizeof(cmpflbytln[prnlnum]), tempstr);
 			}
 		}
