@@ -530,10 +530,15 @@ int main(int argc, char* argv[]) {
 								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
 							}
 
-							else
+							else // if in do-not-expand-macro mode, just add a tab
 								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
 						}
-
+						else
+							strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
+						if (strcmp(opcode, "ORG") == 0) {
+							strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
+							
+						}
 						/* Append the source line */
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), prnlnbuf);
 
@@ -544,6 +549,7 @@ int main(int argc, char* argv[]) {
 								fprintf(stream2, "%s\n", cmpflbytln[0]);
 
 						if (bytcnt > LSTBYTES) {
+
 							for (i = 1; i <= prnlnum; i++) {
 								fprintf(stream2, "%s\n", prnlnbuf2[i - 1]);
 								if (cpfflg)
@@ -554,7 +560,7 @@ int main(int argc, char* argv[]) {
 						//fprintf (stream2,"%s\n",linbuf[maclevel]); //
 						*prnlnbuf = '\0';
 						*prnlnbufbeg = '\0';
-						*prnlnbuf2[0] = '\0'; //????????????????????????????????
+						*prnlnbuf2[0] = '\0';
 						bytcnt = 0;
 						prnlnum = 0;
 						data_flg = 0;
@@ -803,13 +809,13 @@ int main(int argc, char* argv[]) {
 							if (!(strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))) {//regular opcode
 								if (pc != pc_sav) {
 
-									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X: ", pc);	// PC ADDRESS
+									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);	// PC ADDRESS
 								}
 								else
-									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "    : ");
+									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "    :");
 								pc_sav = pc;
 							}
-							else sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "      ");
+							else sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
 							if (*linbuf[maclevel] == '\t') {
 								strcat_s(prnlnbuf, sizeof(prnlnbuf), "\t");
 								for (i = 0; i < maclevel; i++)
@@ -1202,7 +1208,7 @@ int main(int argc, char* argv[]) {
 						}
 #endif
 						printf("Segment %4X ", pc);
-
+					
 
 					}
 					continue;
@@ -2545,15 +2551,16 @@ void toxlbuf(uint8_t ch) {
 
 			char tempstr[16];
 
-			sprintf_s(tempstr, sizeof(tempstr), "%02X ", ch & 0xFF);
+			sprintf_s(tempstr, sizeof(tempstr), " %02X", ch & 0xFF);
 			
 			if (bytcnt <= LSTBYTES)
 				strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), tempstr);
 			else {
+
 				if (bytcnt % LSTBYTES == 1) {
 					prnlnum++;
 					sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), 
-						"%4X: ", pc - 1);
+						"%4X:", pc - 1);
 				}
 				strcat_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), tempstr);
 			}
@@ -2571,7 +2578,7 @@ void toxlbuf(uint8_t ch) {
 					sprintf_s(tempstr, sizeof(tempstr), "%02X)", bin);
 				}
 				else
-					sprintf_s(tempstr, sizeof(tempstr), "%02X ", bin); // space is for alignment
+					sprintf_s(tempstr, sizeof(tempstr), " %02X", bin); // space is for alignment
 
 				strcat_s(cmpflbytln[prnlnum], sizeof(cmpflbytln[prnlnum]), tempstr);
 			}
