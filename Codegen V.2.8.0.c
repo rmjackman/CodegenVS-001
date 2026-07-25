@@ -43,7 +43,7 @@
 #define PRN_BUF_SIZE 255
 #define MAX_LABEL_SIZE 80		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
 #define MAXDUMS 20
-#define LSTBYTES 6
+#define LSTBYTES 4
 
 enum { UNUSED, SYMBOL, MACRO, MACRO_UNUSED, MACRO_LAB };
 
@@ -524,21 +524,13 @@ int main(int argc, char* argv[]) {
 						/* Pad short lines to full width (unless in do-not-expand-macro mode) */
 						if (bytcnt < LSTBYTES) {
 							if (!strpbrk(outflgs, "Mm")) {
+
 								for (i = LSTBYTES - bytcnt; i > 0; i--)
-
 									strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "   ");
-								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
 							}
+						}
+						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
 
-							else // if in do-not-expand-macro mode, just add a tab
-								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
-						}
-						else
-							strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
-						if (strcmp(opcode, "ORG") == 0) {
-							strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
-							
-						}
 						/* Append the source line */
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), prnlnbuf);
 
@@ -800,7 +792,7 @@ int main(int argc, char* argv[]) {
 				}
 				*prnlnbuf = 0;
 				*prnlnbufbeg = 0;
-				if ((pass == 2) && *outflgs) {
+				if ((pass == 2) && strpbrk(outflgs, "Ll")) {
 					if (strcmp(opcode, "MACRO") && strcmp(opcode, "MEND") && !macroflg) /* Not in macro */
 					{
 						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
@@ -822,10 +814,13 @@ int main(int argc, char* argv[]) {
 									strcat_s(prnlnbuf, sizeof(prnlnbuf), ": ");				// INDENT
 								strcat_s(prnlnbuf, sizeof(prnlnbuf), linbuf[maclevel] + 1);
 							}
-							else {
+							else {// label at line begin
+								strcat_s(prnlnbuf, sizeof(prnlnbuf), label);
+								strcat_s(prnlnbuf, sizeof(prnlnbuf), "\t");
 								for (i = 0; i < maclevel; i++)
 									strcat_s(prnlnbuf, sizeof(prnlnbuf), ": ");				// INDENT
-								strcat_s(prnlnbuf, sizeof(prnlnbuf), linbuf[maclevel]);		// Add instruction line.
+								if (strchr(linbuf[maclevel], '\t'))
+									strcat_s(prnlnbuf, sizeof(prnlnbuf), strchr(linbuf[maclevel], '\t')+1);		// Add instruction line.
 							}
 						}
 					}
