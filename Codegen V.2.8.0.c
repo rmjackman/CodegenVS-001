@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////
+﻿/////////////////////////////////////////////////////////////
 //   FILE TO IMAGE
 
 /************************** include *****************/
@@ -754,14 +754,7 @@ int main(int argc, char* argv[]) {
 					txtptr++;
 
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
-					/*if (*txtptr == ';') {//comment directly after label on empty line
-						while ((*txtptr != '\n') && (*txtptr != '\0'))
-							txtptr++;
-					}
-					txtptr++;
-					linnum++;
-					while ((*txtptr == ' ') || (*txtptr == '\t'))
-						txtptr++; */
+					
 					label_only_flg = 1;
 					continue;
 				}
@@ -790,15 +783,15 @@ int main(int argc, char* argv[]) {
 					if (strstr(assdirecs, opcstr))
 						error("Directive must be followed by a single space (not tab) and an operand");
 				}
-				*prnlnbuf = 0;
-				*prnlnbufbeg = 0;
+				*prnlnbuf = '\0';
+				*prnlnbufbeg = '\0';
 				if ((pass == 2) && strpbrk(outflgs, "Ll")) {
 					if (strcmp(opcode, "MACRO") && strcmp(opcode, "MEND") && !macroflg) /* Not in macro */
 					{
 						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
 						{
 
-							if (!(strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))) {//regular opcode
+							if (   (!strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))  ) {//regular opcode
 								if (pc != pc_sav) {
 
 									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);	// PC ADDRESS
@@ -808,20 +801,41 @@ int main(int argc, char* argv[]) {
 								pc_sav = pc;
 							}
 							else sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
-							if (*linbuf[maclevel] == '\t') {
-								strcat_s(prnlnbuf, sizeof(prnlnbuf), "\t");
-								for (i = 0; i < maclevel; i++)
-									strcat_s(prnlnbuf, sizeof(prnlnbuf), ": ");				// INDENT
-								strcat_s(prnlnbuf, sizeof(prnlnbuf), linbuf[maclevel] + 1);
+
+							size_t len = strlen(prnlnbuf);
+							size_t rem = sizeof(prnlnbuf) - len;
+
+							if (*label) {
+								if (strcmp(label, "MINUS") == 0) {
+									len += snprintf(prnlnbuf + len, rem, "-");
+								}
+								else if (strcmp(label, "PLUS") == 0) {
+									len += snprintf(prnlnbuf + len, rem, "+");
+								}
+								else {
+									len += snprintf(prnlnbuf + len, rem, "%s", label);
+								}
+								rem = sizeof(prnlnbuf) - len;
 							}
-							else {// label at line begin
-								strcat_s(prnlnbuf, sizeof(prnlnbuf), label);
-								strcat_s(prnlnbuf, sizeof(prnlnbuf), "\t");
-								for (i = 0; i < maclevel; i++)
-									strcat_s(prnlnbuf, sizeof(prnlnbuf), ": ");				// INDENT
-								if (strchr(linbuf[maclevel], '\t'))
-									strcat_s(prnlnbuf, sizeof(prnlnbuf), strchr(linbuf[maclevel], '\t')+1);		// Add instruction line.
+
+							// always add the tab after the label or whitespace
+							len += snprintf(prnlnbuf + len, rem, "\t");
+							rem = sizeof(prnlnbuf) - len;
+
+							// indentation
+							for (int i = 0; i < maclevel; i++) {
+								len += snprintf(prnlnbuf + len, rem, ": ");
+								rem = sizeof(prnlnbuf) - len;
 							}
+
+							// skip leading whitespace / label and append the rest of the line
+							char* p = strpbrk(linbuf[maclevel], " \t");
+							if (p) {
+								p += strspn(p, " \t");          // skip the whitespace itself
+								if (*p)
+									snprintf(prnlnbuf + len, rem, "%s", p);
+							}
+							// if there is no whitespace at all, we simply add nothing more
 						}
 					}
 				}
@@ -2554,8 +2568,14 @@ void toxlbuf(uint8_t ch) {
 
 				if (bytcnt % LSTBYTES == 1) {
 					prnlnum++;
-					sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), 
-						"%4X:", pc - 1);
+					if (strcmp (opcode, "ORG")) { // if not ORG
+						sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), 
+							"%4X:", pc - 1);
+					}
+					else { // if ORG
+						sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]),
+							"     ");
+					}
 				}
 				strcat_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), tempstr);
 			}
