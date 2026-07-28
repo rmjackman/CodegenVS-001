@@ -14,6 +14,7 @@
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test.src" //T31.SRC"
 #define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
                  
@@ -24,6 +25,8 @@
 #ifndef GDGN_GLOBAL_H
 
 #define GDGN_GLOBAL_H
+
+#define ATMAS_II_COMPATIBLE 0
 
 #define CREATE_DBG 1
 

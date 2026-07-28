@@ -1,0 +1,10 @@
+	RUNEMUL "C:\Programs Stand Alone\Altirra-4.21\Altirra64.exe"
+	ORG $2E0
+	DFW start
+	ORG $2000
+
+Start
+    lda #0
+    sta $d020
+Loop
+    jmp Loop

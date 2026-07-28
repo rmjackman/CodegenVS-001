@@ -713,11 +713,11 @@ int main(int argc, char* argv[]) {
 					continue;
 
 				case  '-':
-					strcpy_s(label, sizeof(label), "MINUS");
+					strcpy_s(label, sizeof(label), "minus");
 					txtptr++;
 					break;
 				case  '+':
-					strcpy_s(label, sizeof(label), "PLUS");
+					strcpy_s(label, sizeof(label), "plus");
 					txtptr++;
 					break;
 				default:				// label
@@ -727,7 +727,7 @@ int main(int argc, char* argv[]) {
 					}
 					pos = 0;
 					while (isalnum(*txtptr)) {
-						label[pos++] = (char)toupper(*txtptr++);
+						label[pos++] = (char)(*txtptr++);
 					}
 					if (pos > MAX_SYMBOL_SIZE)
 						error("Label is too long");
@@ -752,22 +752,26 @@ int main(int argc, char* argv[]) {
 
 				while ((*txtptr == ' ') || (*txtptr == '\t'))
 					txtptr++;
-
+#if !ATMAS_II_COMPATIBLE
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
 					
 					label_only_flg = 1;
 					continue;
 				}
 
+#endif
 				tpsav = txtptr;
 				if (*txtptr == '\n') continue;
-				if (*txtptr == ';') continue;	// comment (ATMAS II compatibility?)
+
+#if !ATMAS_II_COMPATIBLE
+				if (*txtptr == ';') continue;	// comment (ATMAS-II incompatibility)
+#endif
 				if (isalpha(*txtptr) == 0)
 					error("Alphabetic character expected");
 				ptr = opcode;
 
 				while (isalnum(*txtptr))
-					*ptr++ = (char)toupper(*txtptr++);	//opcode is upper case
+					*ptr++ = (char)(*txtptr++);	//opcode is upper case
 
 				if (!isspace(*txtptr)) {
 					printf("Illegal character '%c' in symbol", *txtptr);
@@ -806,10 +810,10 @@ int main(int argc, char* argv[]) {
 							size_t rem = sizeof(prnlnbuf) - len;
 
 							if (*label) {
-								if (strcmp(label, "MINUS") == 0) {
+								if (strcmp(label, "minus") == 0) {
 									len += snprintf(prnlnbuf + len, rem, "-");
 								}
-								else if (strcmp(label, "PLUS") == 0) {
+								else if (strcmp(label, "plus") == 0) {
 									len += snprintf(prnlnbuf + len, rem, "+");
 								}
 								else {
@@ -948,13 +952,13 @@ int main(int argc, char* argv[]) {
 
 					else {
 						labflg = 1;
-						if (strcmp(label, "DO") == 0) sprintf_s(label, sizeof(label), "DO%u", ++donum);
-						if (strcmp(label, "LOOP") == 0) sprintf_s(label, sizeof(label), "LOOP%u", ++loopnum);
-						if (strcmp(label, "MINUS") == 0) sprintf_s(label, sizeof(label), "MINU%u", ++minusnum);
-						if (strcmp(label, "PLUS") == 0) sprintf_s(label, sizeof(label), "PLUS%u", plusnum++);
-						if (strcmp(label, "SKIP") == 0) sprintf_s(label, sizeof(label), "SKIP%u", skipnum++);
-						if (strcmp(label, "CONT") == 0) sprintf_s(label, sizeof(label), "CONT%u", contnum++);
-						if (strcmp(label, "ENDIF") == 0) sprintf_s(label, sizeof(label), "ENDI%u", endifnum++);
+						if (strcmp(label, "do") == 0) sprintf_s(label, sizeof(label), "do%u", ++donum);
+						if (strcmp(label, "loop") == 0) sprintf_s(label, sizeof(label), "loop%u", ++loopnum);
+						if (strcmp(label, "minus") == 0) sprintf_s(label, sizeof(label), "minu%u", ++minusnum);
+						if (strcmp(label, "plus") == 0) sprintf_s(label, sizeof(label), "plus%u", plusnum++);
+						if (strcmp(label, "skip") == 0) sprintf_s(label, sizeof(label), "skip%u", skipnum++);
+						if (strcmp(label, "cont") == 0) sprintf_s(label, sizeof(label), "cont%u", contnum++);
+						if (strcmp(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
 					}
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
@@ -1432,7 +1436,7 @@ int main(int argc, char* argv[]) {
 
 				/* Subroutine */
 
-				if (strcmp(opcode, "JSR") != 0) {
+				if (strcmp(opcode, "JSR") != 0) { // not a JSR
 					if ((cnt = chkopc(opcdat)) < 0)		/* opcode not found, must be subroutine */
 					{
 						if ((strcmp(opcode, "MACRO") == 0) ||
@@ -1442,7 +1446,8 @@ int main(int argc, char* argv[]) {
 
 						if ((pass == 1) && (strstr(assdirecs, opcode)))
 							continue;
-						error("Undefined macro or opcode. NBA subroutine can't have an operand");
+						printf("\n\nopcode: %s", opcode);
+						//error("Undefined macro or opcode, or subroutine can't have an operand");
 					}
 
 				}
@@ -1450,7 +1455,7 @@ int main(int argc, char* argv[]) {
 
 				/* JSR */
 
-				if (!strcmp(opcode, "JSR")) {
+				if (!strcmp(opcode, "JSR")) { // JSR opcode found
 					if (strchr(";'!(", section_type) == 0) sectyp(';');
 					symval = expresstoi_p2();
 					toxlbuf(0x20);
@@ -2411,14 +2416,14 @@ uint32_t symtoi1() {
 	}
 
 	switch (ch) {
-	case '+': strcpy_s(strbeg, sizeof(strbeg), "PLUS"); break;
-	case '-': strcpy_s(strbeg, sizeof(strbeg), "MINUS"); break;
+	case '+': strcpy_s(strbeg, sizeof(strbeg), "plus"); break;
+	case '-': strcpy_s(strbeg, sizeof(strbeg), "minus"); break;
 	default: //label
 		if (isspace(*txtptr)) error("Ilegal space, tab, or end of line");
 		if (!(isalpha(*txtptr))) error("Label must begin with a letter");
 
 		while (isalnum(*txtptr))
-			*ptr++ = (char)toupper(*txtptr++);
+			*ptr++ = (char)(*txtptr++);
 		*ptr = '\0';//label
 	}
 
@@ -2430,13 +2435,13 @@ uint32_t symtoi1() {
 	}
 	else /* pass == 2 */
 	{
-		if (strcmp(strbeg, "DO") == 0) sprintf_s(strbeg, sizeof(strbeg), "DO%u", donum);
-		if (strcmp(strbeg, "LOOP") == 0) sprintf_s(strbeg, sizeof(strbeg), "LOOP%u", loopnum);
-		if (strcmp(strbeg, "MINUS") == 0) sprintf_s(strbeg, sizeof(strbeg), "MINU%u", minusnum);
-		if (strcmp(strbeg, "PLUS") == 0) sprintf_s(strbeg, sizeof(strbeg), "PLUS%u", plusnum);
-		if (strcmp(strbeg, "SKIP") == 0) sprintf_s(strbeg, sizeof(strbeg), "SKIP%u", skipnum);
-		if (strcmp(strbeg, "CONT") == 0) sprintf_s(strbeg, sizeof(strbeg), "CONT%u", contnum);
-		if (strcmp(strbeg, "ENDIF") == 0) sprintf_s(strbeg, sizeof(strbeg), "ENDI%u", endifnum);
+		if (strcmp(strbeg, "do") == 0) sprintf_s(strbeg, sizeof(strbeg), "do%u", donum);
+		if (strcmp(strbeg, "loop") == 0) sprintf_s(strbeg, sizeof(strbeg), "loop%u", loopnum);
+		if (strcmp(strbeg, "minus") == 0) sprintf_s(strbeg, sizeof(strbeg), "minu%u", minusnum);
+		if (strcmp(strbeg, "plus") == 0) sprintf_s(strbeg, sizeof(strbeg), "plus%u", plusnum);
+		if (strcmp(strbeg, "skip") == 0) sprintf_s(strbeg, sizeof(strbeg), "skip%u", skipnum);
+		if (strcmp(strbeg, "cont") == 0) sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
+		if (strcmp(strbeg, "endif") == 0) sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
 
 
 
