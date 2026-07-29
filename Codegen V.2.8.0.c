@@ -739,8 +739,16 @@ int main(int argc, char* argv[]) {
 					label[pos] = 0;
 
 					sprintf_s(labelstr, MAX_LABEL_SIZE, " %s ", label);
-					if (strstr(opcds, labelstr))
-						error("This is an opcode. It can't be at the beginning of a line");
+
+					if (strlen(label) == 3) {
+						unsigned char lab[4];
+						lab[0] = (unsigned char)toupper(label[0]);
+						lab[1] = (unsigned char)toupper(label[1]);
+						lab[2] = (unsigned char)toupper(label[2]);
+						lab[3] = '\0';
+						if (strstr((const char*)opcds, (const char*)lab) != NULL)
+							error("You cannot have an opcode at the beginning of a line");
+					}
 					if (strstr(assdirecs, labelstr) || strstr(assdirecssolo, labelstr))
 						error("This is an assembler directive. It can't be at the beginning of a line");
 					break;
@@ -1385,8 +1393,15 @@ int main(int argc, char* argv[]) {
 						continue;
 					}
 					else {
-						if (strlen(opcode) == 3)
-							if (strstr(opcds, opcode)) error("Opcode must be followed by a single space (not tab) and an operand");
+						if (strlen(opcode) == 3){
+							unsigned char op[4];
+							op[0] = (unsigned char)toupper(opcode[0]);
+							op[1] = (unsigned char)toupper(opcode[1]);
+							op[2] = (unsigned char)toupper(opcode[2]);
+							op[3] = '\0';
+							if (strstr((const char*)opcds, (const char*)op) != NULL) 
+								error("Opcode must be followed by a single space (not a tab) and an operand");
+						}
 						strcpy_s(operand, sizeof(operand), opcode);
 						strcpy_s(opcode, sizeof(opcode), "JSR");
 						txtptr = tpsav;
@@ -2481,19 +2496,28 @@ uint32_t symtoi1() {
 /********* chkopc    returns the position (0, 1, 2,.. ) of opc in string
 						returns -1 if not found
 						*/
-int chkopc(const unsigned char opcstring[]) {
+int chkopc(const unsigned char* opcstring) {
 	int cnt = 0;
-	const unsigned char* ptr;
+	const unsigned char* ptr = opcstring;
+	unsigned char op[3];
 
-	if (*(opcode + 3)) return (-1);
-	ptr = opcstring;
+	/* Validate that the (global) opcode is a proper 3-byte null-terminated string */
+	if (!opcode || opcode[0] == 0 || opcode[1] == 0 ||
+		opcode[2] == 0 || opcode[3] != 0)
+		return -1;
+
+	/* Convert the three characters to upper case once */
+	op[0] = (unsigned char)toupper(opcode[0]);
+	op[1] = (unsigned char)toupper(opcode[1]);
+	op[2] = (unsigned char)toupper(opcode[2]);
+
 	while (*ptr) {
-		if (!memcmp(opcode, ptr, 3))
-			return(cnt);
+		if (op[0] == ptr[0] && op[1] == ptr[1] && op[2] == ptr[2])
+			return cnt;
 		ptr += 3;
 		cnt++;
 	}
-	return(-1);
+	return -1;
 }
 // end chkopc
 
