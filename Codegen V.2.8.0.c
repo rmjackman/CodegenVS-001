@@ -25,8 +25,9 @@
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
-#define NN_NEW 1
+
 #define ROUND_TRIP_VERIFICATION 1
+
 
 
 /**************************  define  *****************/
@@ -185,7 +186,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 "BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
 
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
-"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE ";
+"ADDTOIMG SAVEAS BSAVE FILLMEM _INCLUDE LINKFILE LINK SMTFILE ";
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
 static const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
@@ -721,20 +722,30 @@ int main(int argc, char* argv[]) {
 					txtptr++;
 					break;
 				default:				// label
+					pos = 0;
+#if ATMAS_II_COMPATIBLE
 					if (!isalpha(*txtptr)) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character.");
 					}
-					pos = 0;
 					while (isalnum(*txtptr)) {
 						label[pos++] = (char)(*txtptr++);
 					}
+#else  // !ATMAS_II_COMPATIBLE
+					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
+						printf("%c is not valid", *txtptr);
+						error("Label must begin with an alphabetic character or '.' or '_'.");
+					}
+					while (isalnum(*txtptr) || strchr("._", *txtptr)) {
+						label[pos++] = (char)(*txtptr++);
+					}
+#endif
 					if (pos > MAX_SYMBOL_SIZE)
 						error("Label is too long");
 					if (*txtptr == '@')
 						label[pos++] = *txtptr++;
 					if (!isspace(*txtptr))
-						error("Label must consist only of alphabetic and numeric characters");
+						error("Illegal character at end of label");
 
 					label[pos] = 0;
 
@@ -774,13 +785,22 @@ int main(int argc, char* argv[]) {
 #if !ATMAS_II_COMPATIBLE
 				if (*txtptr == ';') continue;	// comment (ATMAS-II incompatibility)
 #endif
+
+				ptr = opcode;
+#if ATMAS_II_COMPATIBLE
 				if (isalpha(*txtptr) == 0)
 					error("Alphabetic character expected");
-				ptr = opcode;
 
 				while (isalnum(*txtptr))
 					*ptr++ = (char)(*txtptr++);	//opcode is upper case
 
+#else  // !ATMAS_II_COMPATIBLE
+				if (isalpha(*txtptr) == 0 && strchr("._", *txtptr) == NULL)
+					error("Alphabetic character or '.' or '_' expected");
+
+				while (isalnum(*txtptr) || strchr("._", *txtptr))
+					*ptr++ = (char)(*txtptr++);
+#endif
 				if (!isspace(*txtptr)) {
 					printf("Illegal character '%c' in symbol", *txtptr);
 					error("Space expected");
@@ -1070,7 +1090,7 @@ int main(int argc, char* argv[]) {
 				}
 				/* INCLUDE */
 
-				if (strcmp(opcode, "INCLUDE") == 0) {
+				if (strcmp(opcode, "_INCLUDE") == 0) {
 					if (include_flg) error("Can't have 'INCLUDE' in an included file.");
 					include_flg = 1;
 					operand_to_filename(include_filename);
@@ -1536,7 +1556,7 @@ int main(int argc, char* argv[]) {
 						sectyp('!');
 
 					else // all other possibilities
-#if NN_NEW
+
 					{
 
 						if (pass == 2) {
@@ -1590,36 +1610,7 @@ int main(int argc, char* argv[]) {
 								}
 						}
 					}
-#else // NN old
-					{
-						lo_fg = 1;
-						if (*txtptr == ':')							// e.g. LDA #OKTXT:H
-						{											// where OKTXT is any address
-							txtptr++;
-							if (toupper(*txtptr) == 'H') {
-								intval >>= 8;
-								lo_fg = 0;
-							}
-						}
-						if (lo_fg && (pass == 2)) {
-							if (intval > 255)
-								sectyp('&');
-							else if (symfg && syms_in_expr == 1) {			// zero page
-								for (i = 0; i < symnum; i++) {
-									if (sss[i].symadr == intval && sss[i].symtyp == ']') {
-										sectyp('[');
-										break;
-									}
-								}
-								if (sss[i].symtyp != ']') {
-									sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
-								}
-							}
-						}
-					}
 
-
-#endif
 					if (strchr("!&@([", section_type) == 0) //if not one of these
 						sectyp(';');//The above affact only single lines
 					toxlbuf((char)data[cnt][NN]);
