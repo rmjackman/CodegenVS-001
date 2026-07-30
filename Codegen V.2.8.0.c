@@ -1520,6 +1520,10 @@ int main(int argc, char* argv[]) {
 					if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
 
 					txtptr++;
+#if !ATMAS_II_COMPATIBLE
+					if (operand[1] == '>' || operand[1] == '<')
+						txtptr++;
+#endif
 					intval = expresstoi_p2();
 					if (pc == 0x3165) //0x4946
 						i = 99;
@@ -1547,6 +1551,12 @@ int main(int argc, char* argv[]) {
 									lo_fg = 0;
 								}
 							}
+#if !ATMAS_II_COMPATIBLE
+							else if (operand[1] == '>') {
+								intval >>= 8;
+								lo_fg = 0;
+							}
+#endif
 							if (lo_fg) {
 								if (intval > 255) {	// e.g. LDA #OKTXT:L
 									if (first_NNsymbol) {
