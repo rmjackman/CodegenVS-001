@@ -186,7 +186,10 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 "BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
 
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
-"ADDTOIMG SAVEAS BSAVE FILLMEM _INCLUDE LINKFILE LINK SMTFILE ";
+"ADDTOIMG SAVEAS BSAVE FILLMEM _INCLUDE LINKFILE LINK SMTFILE "
+#if !ATMAS_II_COMPATIBLE
+".ascii .text .byte .word .org ";
+#endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
 static const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
@@ -1216,7 +1219,11 @@ int main(int argc, char* argv[]) {
 
 				/* ORG */
 
-				if (strcmp(opcode, "ORG") == 0) {
+				if ((strcmp(opcode, "ORG") == 0)
+#if !ATMAS_II_COMPATIBLE
+					|| (strcmp(opcode, ".org")) == 0
+#endif
+					) {
 					txtptr++;
 					{
 						if (!orgflg)											/* first ORG */
@@ -1259,7 +1266,11 @@ int main(int argc, char* argv[]) {
 
 				/* DFB */
 
-				if (strcmp(opcode, "DFB") == 0) {
+				if (strcmp(opcode, "DFB") == 0
+#if !ATMAS_II_COMPATIBLE					
+					|| (strcmp(opcode, ".byte") == 0)
+#endif						
+					) {
 					data_flg = 1;
 					txtptr++;
 					if (*txtptr == '%')
@@ -1286,7 +1297,11 @@ int main(int argc, char* argv[]) {
 
 				/* DFW */ //?????????????????????????????????????
 
-				if (strcmp(opcode, "DFW") == 0) {
+				if (strcmp(opcode, "DFW") == 0
+#if !ATMAS_II_COMPATIBLE					
+					|| (strcmp(opcode, ".word") == 0)
+#endif						
+					) {
 					char* tmp_ptr;
 					data_flg = 1;
 
@@ -1329,7 +1344,11 @@ int main(int argc, char* argv[]) {
 
 				/* ASC */
 
-				if (strcmp(opcode, "ASC") == 0) {// calculated using txtptr, not operand, since operand is not yet set
+				if ((strcmp(opcode, "ASC") == 0)
+#if !ATMAS_II_COMPATIBLE					
+					|| (strcmp(opcode, ".ascii") == 0) || (strcmp(opcode, ".text") == 0)
+#endif					
+					) {// calculated using txtptr, not operand, since operand is not yet set
 
 					data_flg = 1;
 					do {
