@@ -214,7 +214,7 @@ static char emul_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char pathstr[MAX_FILENAME_LEN + 1] = { 0 };
 static char dsk_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char cmp_file[MAX_FILENAME_LEN + 1] = { 0 };
-
+char current_global[MAX_LABEL_SIZE] = "";
 
 
 /****************************    main()     ****************/
@@ -319,6 +319,7 @@ int main(int argc, char* argv[]) {
 		bool star_flg = 0;
 		bool first_NNsymbol = 1;
 		bool label_only_flg = 0;
+		
 
 		if (verif_flg == 0) {
 
@@ -513,6 +514,7 @@ int main(int argc, char* argv[]) {
 			symnumext = symnum;
 			include_flg = 0;
 
+			
 
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
 
@@ -569,7 +571,7 @@ int main(int argc, char* argv[]) {
 				if (!maclevel) linnum++;				//no change of line number if macro
 				
 				if (label_only_flg == 0){
-					*label = 0;
+					*label = '\0';
 					labflg = 0;
 				}
 				*operand = '\0';
@@ -726,7 +728,7 @@ int main(int argc, char* argv[]) {
 					break;
 				default:				// label
 					pos = 0;
-#if ATMAS_II_COMPATIBLE
+#if ATMAS_II_COMPATIBLE_ONLY
 					if (!isalpha(*txtptr)) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character.");
@@ -734,7 +736,7 @@ int main(int argc, char* argv[]) {
 					while (isalnum(*txtptr)) {
 						label[pos++] = (char)(*txtptr++);
 					}
-#else  // !ATMAS_II_COMPATIBLE
+#else  // !ATMAS_II_COMPATIBLE_ONLY
 					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character or '.' or '_'.");
@@ -774,7 +776,7 @@ int main(int argc, char* argv[]) {
 
 				while ((*txtptr == ' ') || (*txtptr == '\t'))
 					txtptr++;
-#if !ATMAS_II_COMPATIBLE
+#if !ATMAS_II_COMPATIBLE_ONLY
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
 					
 					label_only_flg = 1;
@@ -785,19 +787,19 @@ int main(int argc, char* argv[]) {
 				tpsav = txtptr;
 				if (*txtptr == '\n') continue;
 
-#if !ATMAS_II_COMPATIBLE
+#if !ATMAS_II_COMPATIBLE_ONLY
 				if (*txtptr == ';') continue;	// comment (ATMAS-II incompatibility)
 #endif
 
 				ptr = opcode;
-#if ATMAS_II_COMPATIBLE
+#if ATMAS_II_COMPATIBLE_ONLY
 				if (isalpha(*txtptr) == 0)
 					error("Alphabetic character expected");
 
 				while (isalnum(*txtptr))
 					*ptr++ = (char)(*txtptr++);	//opcode is upper case
 
-#else  // !ATMAS_II_COMPATIBLE
+#else  // !ATMAS_II_COMPATIBLE_ONLY
 				if (isalpha(*txtptr) == 0 && strchr("._", *txtptr) == NULL)
 					error("Alphabetic character or '.' or '_' expected");
 
@@ -915,22 +917,10 @@ int main(int argc, char* argv[]) {
 									sss[symnum].comment[i++] = *ptr++;
 								}
 								sss[symnum].comment[i] = 0;
-								/*if (sss[symnum].comment[0]) {
-									printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
-									getchar();
-								}*/
-
-
-
 #endif
-
-
-
 								symnum++;
 							}
 						}
-
-
 						continue;
 					}
 
@@ -990,6 +980,23 @@ int main(int argc, char* argv[]) {
 						if (strcmp(label, "skip") == 0) sprintf_s(label, sizeof(label), "skip%u", skipnum++);
 						if (strcmp(label, "cont") == 0) sprintf_s(label, sizeof(label), "cont%u", contnum++);
 						if (strcmp(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
+#if !ATMAS_II_COMPATIBLE_ONLY
+						if (*label == '.') { // local label, must be appended to previous global label
+							char temp[MAX_LABEL_SIZE];
+
+							strcpy_s(temp, sizeof(temp), label);
+
+							if (*current_global == '\0')
+								error("Local label without preceding global label");
+
+							strcpy_s(label, MAX_LABEL_SIZE, current_global);
+							strcat_s(label, MAX_LABEL_SIZE, temp);
+						}
+						else {
+							strcpy_s(current_global, sizeof(current_global), label);
+						}
+#endif
+
 					}
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
@@ -1559,7 +1566,7 @@ int main(int argc, char* argv[]) {
 					if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
 
 					txtptr++;
-#if !ATMAS_II_COMPATIBLE
+#if !ATMAS_II_COMPATIBLE_ONLY
 					if (operand[1] == '>' || operand[1] == '<')
 						txtptr++;
 #endif
@@ -1590,7 +1597,7 @@ int main(int argc, char* argv[]) {
 									lo_fg = 0;
 								}
 							}
-#if !ATMAS_II_COMPATIBLE
+#if !ATMAS_II_COMPATIBLE_ONLY
 							else if (operand[1] == '>') {
 								intval >>= 8;
 								lo_fg = 0;
@@ -2455,11 +2462,20 @@ uint32_t symtoi1() {
 	case '-': strcpy_s(strbeg, sizeof(strbeg), "minus"); break;
 	default: //label
 		if (isspace(*txtptr)) error("Ilegal space, tab, or end of line");
-		if (!(isalpha(*txtptr))) error("Label must begin with a letter");
-
+#if ATMAS_II_COMPATIBLE_ONLY
+		if (!(isalpha(*txtptr))) 
+			error("Label must begin with a letter");
 		while (isalnum(*txtptr))
 			*ptr++ = (char)(*txtptr++);
 		*ptr = '\0';//label
+#else
+		if (!(isalpha(*txtptr) || *txtptr == '.')) 
+			error("Label must begin with a letter or period");
+		while (isalnum(*txtptr) || *txtptr == '.' || *txtptr == '_')
+			*ptr++ = *txtptr++;
+
+		*ptr = '\0';//label
+#endif
 	}
 
 	//printf ("opcode: %s\tstrbeg: %s\n",operand,strbeg);
@@ -2478,7 +2494,19 @@ uint32_t symtoi1() {
 		if (strcmp(strbeg, "cont") == 0) sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
 		if (strcmp(strbeg, "endif") == 0) sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
 
+#if !ATMAS_II_COMPATIBLE_ONLY
+		if (*strbeg == '.') { // local label, must be appended to previous global label
+			char temp[MAX_LABEL_SIZE];
 
+			strcpy_s(temp, sizeof(temp), strbeg);
+
+			if (*current_global == '\0')
+				error("Local label without preceding global label");
+
+			strcpy_s(strbeg, MAX_LABEL_SIZE, current_global);
+			strcat_s(strbeg, MAX_LABEL_SIZE, temp);
+		}
+#endif
 
 		if ((sssptr = bsearch(strbeg, sss, symnum, sizeof(ssstype), strcmp)) != 0) {
 			if (maclevel)
