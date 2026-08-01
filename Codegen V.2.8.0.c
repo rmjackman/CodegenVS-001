@@ -973,13 +973,7 @@ int main(int argc, char* argv[]) {
 
 					else {
 						labflg = 1;
-						if (strcmp(label, "do") == 0) sprintf_s(label, sizeof(label), "do%u", ++donum);
-						if (strcmp(label, "loop") == 0) sprintf_s(label, sizeof(label), "loop%u", ++loopnum);
-						if (strcmp(label, "minus") == 0) sprintf_s(label, sizeof(label), "minu%u", ++minusnum);
-						if (strcmp(label, "plus") == 0) sprintf_s(label, sizeof(label), "plus%u", plusnum++);
-						if (strcmp(label, "skip") == 0) sprintf_s(label, sizeof(label), "skip%u", skipnum++);
-						if (strcmp(label, "cont") == 0) sprintf_s(label, sizeof(label), "cont%u", contnum++);
-						if (strcmp(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
+
 #if !ATMAS_II_COMPATIBLE_ONLY
 						if (*label == '.') { // local label, must be appended to previous global label
 							char temp[MAX_LABEL_SIZE];
@@ -993,10 +987,24 @@ int main(int argc, char* argv[]) {
 							strcat_s(label, MAX_LABEL_SIZE, temp);
 						}
 						else {
-							strcpy_s(current_global, sizeof(current_global), label);
+							if (strcmp(label, "do") != 0 &&
+								strcmp(label, "loop") != 0 &&
+								strcmp(label, "minus") != 0 &&
+								strcmp(label, "plus") != 0 &&
+								strcmp(label, "skip") != 0 &&
+								strcmp(label, "cont") != 0 &&
+								strcmp(label, "endif") != 0)
+
+								strcpy_s(current_global, sizeof(current_global), label);
 						}
 #endif
-
+						if (strcmp(label, "do") == 0) sprintf_s(label, sizeof(label), "do%u", ++donum);
+						if (strcmp(label, "loop") == 0) sprintf_s(label, sizeof(label), "loop%u", ++loopnum);
+						if (strcmp(label, "minus") == 0) sprintf_s(label, sizeof(label), "minu%u", ++minusnum);
+						if (strcmp(label, "plus") == 0) sprintf_s(label, sizeof(label), "plus%u", plusnum++);
+						if (strcmp(label, "skip") == 0) sprintf_s(label, sizeof(label), "skip%u", skipnum++);
+						if (strcmp(label, "cont") == 0) sprintf_s(label, sizeof(label), "cont%u", contnum++);
+						if (strcmp(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
 					}
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
@@ -2486,13 +2494,7 @@ uint32_t symtoi1() {
 	}
 	else /* pass == 2 */
 	{
-		if (strcmp(strbeg, "do") == 0) sprintf_s(strbeg, sizeof(strbeg), "do%u", donum);
-		if (strcmp(strbeg, "loop") == 0) sprintf_s(strbeg, sizeof(strbeg), "loop%u", loopnum);
-		if (strcmp(strbeg, "minus") == 0) sprintf_s(strbeg, sizeof(strbeg), "minu%u", minusnum);
-		if (strcmp(strbeg, "plus") == 0) sprintf_s(strbeg, sizeof(strbeg), "plus%u", plusnum);
-		if (strcmp(strbeg, "skip") == 0) sprintf_s(strbeg, sizeof(strbeg), "skip%u", skipnum);
-		if (strcmp(strbeg, "cont") == 0) sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
-		if (strcmp(strbeg, "endif") == 0) sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
+
 
 #if !ATMAS_II_COMPATIBLE_ONLY
 		if (*strbeg == '.') { // local label, must be appended to previous global label
@@ -2507,6 +2509,13 @@ uint32_t symtoi1() {
 			strcat_s(strbeg, MAX_LABEL_SIZE, temp);
 		}
 #endif
+		if (strcmp(strbeg, "do") == 0) sprintf_s(strbeg, sizeof(strbeg), "do%u", donum);
+		if (strcmp(strbeg, "loop") == 0) sprintf_s(strbeg, sizeof(strbeg), "loop%u", loopnum);
+		if (strcmp(strbeg, "minus") == 0) sprintf_s(strbeg, sizeof(strbeg), "minu%u", minusnum);
+		if (strcmp(strbeg, "plus") == 0) sprintf_s(strbeg, sizeof(strbeg), "plus%u", plusnum);
+		if (strcmp(strbeg, "skip") == 0) sprintf_s(strbeg, sizeof(strbeg), "skip%u", skipnum);
+		if (strcmp(strbeg, "cont") == 0) sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
+		if (strcmp(strbeg, "endif") == 0) sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
 
 		if ((sssptr = bsearch(strbeg, sss, symnum, sizeof(ssstype), strcmp)) != 0) {
 			if (maclevel)
