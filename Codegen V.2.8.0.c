@@ -42,7 +42,7 @@
 
 #define MAX_LINE_SIZE 255
 #define PRN_BUF_SIZE 255
-#define MAX_LABEL_SIZE 80		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
+#define MAX_LABEL_SIZE 64		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
 #define MAXDUMS 20
 #define LSTBYTES 4
 
@@ -620,7 +620,7 @@ int main(int argc, char* argv[]) {
 							*labptr = 0;
 
 							for (loclabtbpos = 0; loclabtbpos < loclabnum; loclabtbpos++)
-								if (strcmp(loclabtb[loclabtbpos], lab) == 0) break; // local label found
+								if (_stricmp(loclabtb[loclabtbpos], lab) == 0) break; // local label found
 							if (loclabtbpos == loclabnum) // label into loclabtb
 							{
 								strcpy_s(loclabtb[loclabnum], sizeof(loclabtb[loclabnum]), lab);
@@ -823,12 +823,12 @@ int main(int argc, char* argv[]) {
 				*prnlnbuf = '\0';
 				*prnlnbufbeg = '\0';
 				if ((pass == 2) && strpbrk(outflgs, "Ll")) {
-					if (strcmp(opcode, "MACRO") && strcmp(opcode, "MEND") && !macroflg) /* Not in macro */
+					if (_stricmp(opcode, "MACRO") && _stricmp(opcode, "MEND") && !macroflg) /* Not in macro */
 					{
 						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
 						{
 
-							if (   (!strstr("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))  ) {//regular opcode
+							if (   (!strstr("EQU EPZ ORG equ epz org", opcode) && (strlen(opcode) == 3))  ) {//regular opcode
 								if (pc != pc_sav) {
 
 									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);	// PC ADDRESS
@@ -843,10 +843,10 @@ int main(int argc, char* argv[]) {
 							size_t rem = sizeof(prnlnbuf) - len;
 
 							if (*label) {
-								if (strcmp(label, "minus") == 0) {
+								if (_stricmp(label, "minus") == 0) {
 									len += snprintf(prnlnbuf + len, rem, "-");
 								}
-								else if (strcmp(label, "plus") == 0) {
+								else if (_stricmp(label, "plus") == 0) {
 									len += snprintf(prnlnbuf + len, rem, "+");
 								}
 								else {
@@ -890,7 +890,7 @@ int main(int argc, char* argv[]) {
 
 					/* EPZ EQU  LABEL AT LINE BEGIN*/
 
-					if ((strcmp(opcode, "EQU") == 0) || (strcmp(opcode, "EPZ") == 0)) {
+					if ((_stricmp(opcode, "EQU") == 0) || (_stricmp(opcode, "EPZ") == 0)) {
 						txtptr++;
 						i = expresstoi();
 						if (pass == 1) {
@@ -898,9 +898,9 @@ int main(int argc, char* argv[]) {
 								strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
 								sss[symnum].symadr = i;
 #if SORT_EQU_EPZ
-								if ((strcmp(opcode, "EQU") == 0) && (i < 256))
+								if ((_stricmp(opcode, "EQU") == 0) && (i < 256))
 									sss[symnum].symtyp = ']';
-								else //if (strcmp(opcode, "EPZ") == 0)
+								else //if (_stricmp(opcode, "EPZ") == 0)
 #endif
 									sss[symnum].symtyp = '#';
 
@@ -927,7 +927,7 @@ int main(int argc, char* argv[]) {
 
 					/* RMB  LABEL AT LINE BEGIN*/			//(Init ving memory bytes)
 
-					if (strcmp(opcode, "RMB") == 0) {
+					if (_stricmp(opcode, "RMB") == 0) {
 						if (!rmbflg)error("INITRMB value must precede this line");
 
 						if (pass == 1)
@@ -945,7 +945,7 @@ int main(int argc, char* argv[]) {
 
 					/* MACRO  LABEL AT LINE BEGIN*/
 
-					if (strcmp(opcode, "MACRO") == 0)		// MovAl   MACRO A,N
+					if (_stricmp(opcode, "MACRO") == 0)		// MovAl   MACRO A,N
 					{
 						if (macroflg) error("MEND missing");
 						macroflg++;
@@ -987,24 +987,26 @@ int main(int argc, char* argv[]) {
 							strcat_s(label, MAX_LABEL_SIZE, temp);
 						}
 						else {
-							if (strcmp(label, "do") != 0 &&
-								strcmp(label, "loop") != 0 &&
-								strcmp(label, "minus") != 0 &&
-								strcmp(label, "plus") != 0 &&
-								strcmp(label, "skip") != 0 &&
-								strcmp(label, "cont") != 0 &&
-								strcmp(label, "endif") != 0)
+							if (_stricmp(label, "do") != 0 &&
+								_stricmp(label, "loop") != 0 &&
+								_stricmp(label, "minus") != 0 &&
+								_stricmp(label, "plus") != 0 &&
+								_stricmp(label, "skip") != 0 &&
+								_stricmp(label, "cont") != 0 &&
+								_stricmp(label, "endif") != 0 &&
+								maclevel == 0
+								)  // only update current_global if it's not a special label and not in a macro
 
 								strcpy_s(current_global, sizeof(current_global), label);
 						}
 #endif
-						if (strcmp(label, "do") == 0) sprintf_s(label, sizeof(label), "do%u", ++donum);
-						if (strcmp(label, "loop") == 0) sprintf_s(label, sizeof(label), "loop%u", ++loopnum);
-						if (strcmp(label, "minus") == 0) sprintf_s(label, sizeof(label), "minu%u", ++minusnum);
-						if (strcmp(label, "plus") == 0) sprintf_s(label, sizeof(label), "plus%u", plusnum++);
-						if (strcmp(label, "skip") == 0) sprintf_s(label, sizeof(label), "skip%u", skipnum++);
-						if (strcmp(label, "cont") == 0) sprintf_s(label, sizeof(label), "cont%u", contnum++);
-						if (strcmp(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
+						if (_stricmp(label, "do") == 0) sprintf_s(label, sizeof(label), "do%u", ++donum);
+						if (_stricmp(label, "loop") == 0) sprintf_s(label, sizeof(label), "loop%u", ++loopnum);
+						if (_stricmp(label, "minus") == 0) sprintf_s(label, sizeof(label), "minu%u", ++minusnum);
+						if (_stricmp(label, "plus") == 0) sprintf_s(label, sizeof(label), "plus%u", plusnum++);
+						if (_stricmp(label, "skip") == 0) sprintf_s(label, sizeof(label), "skip%u", skipnum++);
+						if (_stricmp(label, "cont") == 0) sprintf_s(label, sizeof(label), "cont%u", contnum++);
+						if (_stricmp	(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
 					}
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
@@ -1037,7 +1039,7 @@ int main(int argc, char* argv[]) {
 
 	/* MEND */
 
-				if (strcmp(opcode, "MEND") == 0) {
+				if (_stricmp(opcode, "MEND") == 0) {
 					if (macroflg)
 						macroflg--;
 					else {
@@ -1068,7 +1070,7 @@ int main(int argc, char* argv[]) {
 								}
 								dumbuf[pos] = 0;
 								for (cnt = 0; cnt < dumnum; cnt++) {
-									if (strcmp(macdumtab[cnt], dumbuf) == 0) {
+									if (_stricmp(macdumtab[cnt], dumbuf) == 0) {
 										while (pos)
 											*(txtptr - pos--) = (char)cnt | 128;
 										break;/* out of for loop */
@@ -1082,7 +1084,7 @@ int main(int argc, char* argv[]) {
 
 				/* LINKFILE */
 
-				if (strcmp(opcode, "LINKFILE") == 0) {
+				if (_stricmp(opcode, "LINKFILE") == 0) {
 					if (pass == 2)
 						operand_to_filename(linkfile_filename);
 					continue;
@@ -1090,7 +1092,7 @@ int main(int argc, char* argv[]) {
 
 				/* LINK */
 
-				if (strcmp(opcode, "LINK") == 0) {
+				if (_stricmp(opcode, "LINK") == 0) {
 					if (pass == 2) {
 						if (!linkfile_filename[0])
 							error("LINKFILE must be designated before this line");
@@ -1101,14 +1103,14 @@ int main(int argc, char* argv[]) {
 
 				/* APPEND */
 
-				if (strcmp(opcode, "APPEND") == 0) {
+				if (_stricmp(opcode, "APPEND") == 0) {
 					if (pass == 2)
 						operand_to_filename(append_filename[append_cnt++]);
 					continue;
 				}
 				/* INCLUDE */
 
-				if (strcmp(opcode, "_INCLUDE") == 0) {
+				if (_stricmp(opcode, "_INCLUDE") == 0) {
 					if (include_flg) error("Can't have 'INCLUDE' in an included file.");
 					include_flg = 1;
 					operand_to_filename(include_filename);
@@ -1149,23 +1151,23 @@ int main(int argc, char* argv[]) {
 				/* ADDTOIMG  SMTFILE  RUN_EMUL  DSKIMAGE */
 
 				if (pass == 2) {
-					if (strcmp(opcode, "ADDTOIMG") == 0) {
+					if (_stricmp(opcode, "ADDTOIMG") == 0) {
 						operand_to_filename(addtoimg_filename[addtoimg_cnt++]); continue;
 					}
-					if (strcmp(opcode, "SMTFILE") == 0) {
+					if (_stricmp(opcode, "SMTFILE") == 0) {
 						operand_to_filename(smbfilename); continue;
 					}
-					if (strcmp(opcode, "RUNEMUL") == 0) {
+					if (_stricmp(opcode, "RUNEMUL") == 0) {
 						operand_to_filename(emul_filename); continue;
 					}
-					if ((strcmp(opcode, "DSKIMAGE") == 0) || (strcmp(opcode, "XFDIMAGE") == 0) || (strcmp(opcode, "ATRIMAGE") == 0)) {
+					if ((_stricmp(opcode, "DSKIMAGE") == 0) || (_stricmp(opcode, "XFDIMAGE") == 0) || (_stricmp(opcode, "ATRIMAGE") == 0)) {
 						operand_to_filename(dsk_filename); continue;
 					}
 				}
 
 				/* SAVEAS */
 
-				if ((strcmp(opcode, "SAVEAS") == 0) || (strcmp(opcode, "BSAVE") == 0)) {
+				if ((	_stricmp(opcode, "SAVEAS") == 0) || (_stricmp(opcode, "BSAVE") == 0)) {
 					if (pass == 1)
 						operand_to_filename(loafilename);
 					continue;
@@ -1174,28 +1176,28 @@ int main(int argc, char* argv[]) {
 
 				/* NOHEADER OBJFILE */
 
-				if ((strcmp(opcode, "NOHEADER") == 0) || (strcmp(opcode, "OBJFILE") == 0)) {
+				if ((_stricmp(opcode, "NOHEADER") == 0) || (_stricmp(opcode, "OBJFILE") == 0)) {
 					objfile_flag = 1;
 					continue;
 				}
 
 				/* SMTTOIMG */
 
-				if (strcmp(opcode, "SMTTOIMG") == 0) {
+				if (_stricmp(opcode, "SMTTOIMG") == 0) {
 					smttoimg_flg = 1;
 					continue;
 				}
 #if ROUND_TRIP_VERIFICATION
 				/* VERIFY */
 
-				if (strcmp(opcode, "VERIFY") == 0) {
+				if (_stricmp(opcode, "VERIFY") == 0) {
 					verif_flg = 1;
 					continue;
 				}
 #endif
 				/* CPFL */
 
-				if (strcmp(opcode, "CPFL") == 0) {
+				if (_stricmp(opcode, "CPFL") == 0) {
 					if (pass == 2) {
 						operand_to_filename(cmp_file);
 
@@ -1210,7 +1212,7 @@ int main(int argc, char* argv[]) {
 
 
 				/* OUT */
-				if ((strcmp(opcode, "OUT") == 0)) {
+				if (( _stricmp(opcode, "OUT") == 0)) {
 					if (pass == 2) {
 						find_operand();
 						strcpy_s(outflgs, sizeof(outflgs), operand);
@@ -1225,7 +1227,7 @@ int main(int argc, char* argv[]) {
 
 				/* INITRMB */			//(Init reserving memory bytes)
 
-				if (strcmp(opcode, "INITRMB") == 0) {
+				if (_stricmp(opcode, "INITRMB") == 0) {
 					txtptr++;
 					rmbadr = expresstoi_p2();
 					rmbflg = 1;
@@ -1234,9 +1236,9 @@ int main(int argc, char* argv[]) {
 
 				/* ORG */
 
-				if ((strcmp(opcode, "ORG") == 0)
+				if (( _stricmp(opcode, "ORG") == 0)
 #if !ATMAS_II_COMPATIBLE
-					|| (strcmp(opcode, ".org")) == 0
+					|| (_stricmp(opcode, ".org")) == 0
 #endif
 					) {
 					txtptr++;
@@ -1281,9 +1283,9 @@ int main(int argc, char* argv[]) {
 
 				/* DFB */
 
-				if (strcmp(opcode, "DFB") == 0
+				if (_stricmp(opcode, "DFB") == 0
 #if !ATMAS_II_COMPATIBLE					
-					|| (strcmp(opcode, ".byte") == 0)
+					|| (_stricmp(opcode, ".byte") == 0)
 #endif						
 					) {
 					data_flg = 1;
@@ -1312,9 +1314,9 @@ int main(int argc, char* argv[]) {
 
 				/* DFW */ //?????????????????????????????????????
 
-				if (strcmp(opcode, "DFW") == 0
+				if (_stricmp(opcode, "DFW") == 0
 #if !ATMAS_II_COMPATIBLE					
-					|| (strcmp(opcode, ".word") == 0)
+					|| (_stricmp(opcode, ".word") == 0)
 #endif						
 					) {
 					char* tmp_ptr;
@@ -1344,7 +1346,7 @@ int main(int argc, char* argv[]) {
 
 				/* FILLMEM */
 
-				if (strcmp(opcode, "FILLMEM") == 0) {
+				if (_stricmp(opcode, "FILLMEM") == 0) {
 					data_flg = 1;
 					if (*(txtptr + 1) == '\'') sectyp('"'); else sectyp('#');
 					txtptr++;
@@ -1359,9 +1361,9 @@ int main(int argc, char* argv[]) {
 
 				/* ASC */
 
-				if ((strcmp(opcode, "ASC") == 0)
+				if (( _stricmp(opcode, "ASC") == 0)
 #if !ATMAS_II_COMPATIBLE					
-					|| (strcmp(opcode, ".ascii") == 0) || (strcmp(opcode, ".text") == 0)
+					|| (_stricmp(opcode, ".ascii") == 0) || (_stricmp(opcode, ".text") == 0)
 #endif					
 					) {// calculated using txtptr, not operand, since operand is not yet set
 
@@ -1425,7 +1427,7 @@ int main(int argc, char* argv[]) {
 				/* OPCODE IS A MACRO */
 
 				for (i = 0; i < macnum; i++)
-					if (strcmp(macsymbol[i], opcode) == 0) break;
+					if (_stricmp(macsymbol[i], opcode) == 0) break;
 				if (i < macnum) {
 					linbegsav[maclevel] = linbegptr;
 					linlensav[maclevel] = linlen;
@@ -1465,7 +1467,7 @@ int main(int argc, char* argv[]) {
 
 				/* JMP */
 
-				if (strcmp(opcode, "JMP") == 0) {
+				if (_stricmp(opcode, "JMP") == 0) {
 					sectyp(';');
 					if (*operand == '(') {
 						if (operand[strlen(operand) - 1] != ')') error("Illegal syntax or addressing");
@@ -1505,12 +1507,12 @@ int main(int argc, char* argv[]) {
 
 				/* Subroutine */
 
-				if (strcmp(opcode, "JSR") != 0) { // not a JSR
+				if (_stricmp(opcode, "JSR") != 0) { // not a JSR
 					if ((cnt = chkopc(opcdat)) < 0)		/* opcode not found, must be subroutine */
 					{
-						if ((strcmp(opcode, "MACRO") == 0) ||
-							(strcmp(opcode, "EPZ") == 0) ||
-							(strcmp(opcode, "EQU") == 0))
+						if (( _stricmp(opcode, "MACRO") == 0) ||
+							( _stricmp(opcode, "EPZ") == 0) ||
+							( _stricmp(opcode, "EQU") == 0))
 							error("Label missing at beginning of line"); // since otherwise these would have been taken care of
 
 						if ((pass == 1) && (strstr(assdirecs, opcode)))
@@ -1524,7 +1526,7 @@ int main(int argc, char* argv[]) {
 
 				/* JSR */
 
-				if (!strcmp(opcode, "JSR")) { // JSR opcode found
+				if (!_stricmp(opcode, "JSR")) { // JSR opcode found
 					if (strchr(";'!(", section_type) == 0) sectyp(';');
 					symval = expresstoi_p2();
 					toxlbuf(0x20);
@@ -1804,11 +1806,11 @@ int main(int argc, char* argv[]) {
 				}
 
 
-				qsort(sss, symnum, sizeof(ssstype), strcmp);
+				qsort(sss, symnum, sizeof(ssstype), _stricmp);
 
 
 				for (i = symnum - 1; i > 1; i--) {
-					if (strcmp(sss[i].symbol, sss[i - 1].symbol) == 0) {
+					if (_stricmp(sss[i].symbol, sss[i - 1].symbol) == 0) {
 						printf("\nSame label twice -\n");
 						list_label(i - 1);
 						list_label(i);
@@ -2509,15 +2511,15 @@ uint32_t symtoi1() {
 			strcat_s(strbeg, MAX_LABEL_SIZE, temp);
 		}
 #endif
-		if (strcmp(strbeg, "do") == 0) sprintf_s(strbeg, sizeof(strbeg), "do%u", donum);
-		if (strcmp(strbeg, "loop") == 0) sprintf_s(strbeg, sizeof(strbeg), "loop%u", loopnum);
-		if (strcmp(strbeg, "minus") == 0) sprintf_s(strbeg, sizeof(strbeg), "minu%u", minusnum);
-		if (strcmp(strbeg, "plus") == 0) sprintf_s(strbeg, sizeof(strbeg), "plus%u", plusnum);
-		if (strcmp(strbeg, "skip") == 0) sprintf_s(strbeg, sizeof(strbeg), "skip%u", skipnum);
-		if (strcmp(strbeg, "cont") == 0) sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
-		if (strcmp(strbeg, "endif") == 0) sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
+		if (_stricmp(strbeg, "do") == 0) sprintf_s(strbeg, sizeof(strbeg), "do%u", donum);
+		if (_stricmp(strbeg, "loop") == 0) sprintf_s(strbeg, sizeof(strbeg), "loop%u", loopnum);
+		if (_stricmp(strbeg, "minus") == 0) sprintf_s(strbeg, sizeof(strbeg), "minu%u", minusnum);
+		if (_stricmp(strbeg, "plus") == 0) sprintf_s(strbeg, sizeof(strbeg), "plus%u", plusnum);
+		if (_stricmp(strbeg, "skip") == 0) sprintf_s(strbeg, sizeof(strbeg), "skip%u", skipnum);
+		if (_stricmp(strbeg, "cont") == 0) sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
+		if (_stricmp(strbeg, "endif") == 0) sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
 
-		if ((sssptr = bsearch(strbeg, sss, symnum, sizeof(ssstype), strcmp)) != 0) {
+		if ((sssptr = bsearch(strbeg, sss, symnum, sizeof(ssstype), _stricmp)) != 0) {
 			if (maclevel)
 				sssptr->macf = MACRO_LAB;
 			else
@@ -2654,7 +2656,7 @@ void toxlbuf(uint8_t ch) {
 
 				if (bytcnt % LSTBYTES == 1) {
 					prnlnum++;
-					if (strcmp (opcode, "ORG")) { // if not ORG
+					if (_stricmp(opcode, "ORG")) { // if not ORG
 						sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), 
 							"%4X:", pc - 1);
 					}

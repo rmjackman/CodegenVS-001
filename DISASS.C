@@ -322,7 +322,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 	char cnt;
 	unsigned int temp;
-	char beglabbuf[10] = { 0 };
+	char beglabbuf[64] = { 0 };
 
 	char* lnbfptr = beglabbuf;
 	//char* lnbfptrsv;
