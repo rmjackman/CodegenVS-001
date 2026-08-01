@@ -739,7 +739,7 @@ int main(int argc, char* argv[]) {
 #else  // !ATMAS_II_COMPATIBLE_ONLY
 					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
 						printf("%c is not valid", *txtptr);
-						error("Label must begin with an alphabetic character or '.' or '_'.");
+						error("Label must begin with an alphabetic character or '.' or '_'");
 					}
 					while (isalnum(*txtptr) || strchr("._", *txtptr)) {
 						label[pos++] = (char)(*txtptr++);
