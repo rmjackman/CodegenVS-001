@@ -72,6 +72,8 @@ int prec(char symbol);
 uint16_t parseNumber(char* txtptr);
 int isSpecialCharacter(char ch);
 static void print_visible(const char* s);
+char* stristr(const char* str, const char* search);
+bool contains_word_icase(const char* list, const char* word);
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -186,9 +188,9 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 "BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
 
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
-"ADDTOIMG SAVEAS BSAVE FILLMEM _INCLUDE LINKFILE LINK SMTFILE "
+"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
 #if !ATMAS_II_COMPATIBLE
-".ascii .text .byte .word .org ";
+"ascii text byte word ";
 #endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
@@ -728,7 +730,7 @@ int main(int argc, char* argv[]) {
 					break;
 				default:				// label
 					pos = 0;
-#if ATMAS_II_COMPATIBLE_ONLY
+#if ATMAS_II_COMPATIBLE
 					if (!isalpha(*txtptr)) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character.");
@@ -736,7 +738,7 @@ int main(int argc, char* argv[]) {
 					while (isalnum(*txtptr)) {
 						label[pos++] = (char)(*txtptr++);
 					}
-#else  // !ATMAS_II_COMPATIBLE_ONLY
+#else  // !ATMAS_II_COMPATIBLE
 					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character or '.' or '_'");
@@ -757,15 +759,10 @@ int main(int argc, char* argv[]) {
 					sprintf_s(labelstr, MAX_LABEL_SIZE, " %s ", label);
 
 					if (strlen(label) == 3) {
-						unsigned char lab[4];
-						lab[0] = (unsigned char)toupper(label[0]);
-						lab[1] = (unsigned char)toupper(label[1]);
-						lab[2] = (unsigned char)toupper(label[2]);
-						lab[3] = '\0';
-						if (strstr((const char*)opcds, (const char*)lab) != NULL)
+						if (contains_word_icase((const char*)opcds, labelstr))
 							error("You cannot have an opcode at the beginning of a line");
 					}
-					if (strstr(assdirecs, labelstr) || strstr(assdirecssolo, labelstr))
+					if (contains_word_icase(assdirecs, labelstr) || contains_word_icase(assdirecssolo, labelstr))
 						error("This is an assembler directive. It can't be at the beginning of a line");
 					break;
 				}
@@ -776,7 +773,7 @@ int main(int argc, char* argv[]) {
 
 				while ((*txtptr == ' ') || (*txtptr == '\t'))
 					txtptr++;
-#if !ATMAS_II_COMPATIBLE_ONLY
+#if !ATMAS_II_COMPATIBLE
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
 					
 					label_only_flg = 1;
@@ -787,24 +784,39 @@ int main(int argc, char* argv[]) {
 				tpsav = txtptr;
 				if (*txtptr == '\n') continue;
 
-#if !ATMAS_II_COMPATIBLE_ONLY
+#if !ATMAS_II_COMPATIBLE
 				if (*txtptr == ';') continue;	// comment (ATMAS-II incompatibility)
 #endif
 
 				ptr = opcode;
-#if ATMAS_II_COMPATIBLE_ONLY
+#if ATMAS_II_COMPATIBLE
 				if (isalpha(*txtptr) == 0)
 					error("Alphabetic character expected");
 
 				while (isalnum(*txtptr))
 					*ptr++ = (char)(*txtptr++);	//opcode is upper case
 
-#else  // !ATMAS_II_COMPATIBLE_ONLY
-				if (isalpha(*txtptr) == 0 && strchr("._", *txtptr) == NULL)
-					error("Alphabetic character or '.' or '_' expected");
+#else  // !ATMAS_II_COMPATIBLE
+				if (isalpha(*txtptr) == 0 && strchr("._*=", *txtptr) == NULL)
+					error("Alphabetic character or '.' or '_' or '*' or '=' expected");
 
-				while (isalnum(*txtptr) || strchr("._", *txtptr))
-					*ptr++ = (char)(*txtptr++);
+				if (*txtptr == '*') {
+					*ptr++ = *txtptr++;
+					if (*txtptr != '=')
+						error("You need *= or ORG to set the program counter");
+					*ptr++ = *txtptr++;
+					if (!isspace(*txtptr))
+						error("Space expected after *=");
+				}
+				else if (*txtptr == '=') {
+					*ptr++ = *txtptr++;
+					if (!isspace(*txtptr))
+						error("Space expected after '='");
+				}
+				else
+
+					while (isalnum(*txtptr) || strchr("._", *txtptr))
+						*ptr++ = (char)(*txtptr++);
 #endif
 				if (!isspace(*txtptr)) {
 					printf("Illegal character '%c' in symbol", *txtptr);
@@ -815,9 +827,39 @@ int main(int argc, char* argv[]) {
 
 				/*  Check operand for directives   */
 
+				if (opcode[0] == '.' && (contains_word_icase(assdirecs, (opcode + 1))|| contains_word_icase(assdirecssolo, (opcode + 1)))) 
+					memmove(opcode, opcode + 1, strlen(opcode));
+
+				/*  Check operand for alias directives   */
+#if !ATMAS_II_COMPATIBLE
+				if (contains_word_icase(" ENDM ",opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "MEND");
+				}
+				if (contains_word_icase(" MAC ",opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "MACRO");
+				}
+				if (contains_word_icase(" *= ",opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "ORG");
+				}
+				if (contains_word_icase(" = ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "EQU");
+				}
+				if (contains_word_icase(" BYTE DB ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "DFB");
+				}
+				if (contains_word_icase(" WORD DW ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "DFW");
+				}
+				if (contains_word_icase(" ASCII TEXT ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "ASC");
+				}
+				if (contains_word_icase(" FILL ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "FILLMEM");
+				}
+#endif
 				if (!(*txtptr == ' ') || *(txtptr + 1) == ' ' || *(txtptr + 1) == '\n' || *(txtptr + 1) == '\t') {
 					sprintf_s(opcstr, MAX_LABEL_SIZE, " %s ", opcode);
-					if (strstr(assdirecs, opcstr))
+					if (contains_word_icase(assdirecs, opcstr))
 						error("Directive must be followed by a single space (not tab) and an operand");
 				}
 				*prnlnbuf = '\0';
@@ -828,7 +870,7 @@ int main(int argc, char* argv[]) {
 						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
 						{
 
-							if (   (!strstr("EQU EPZ ORG equ epz org", opcode) && (strlen(opcode) == 3))  ) {//regular opcode
+							if (   (!contains_word_icase("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))  ) {//regular opcode
 								if (pc != pc_sav) {
 
 									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);	// PC ADDRESS
@@ -889,6 +931,9 @@ int main(int argc, char* argv[]) {
 					}
 
 					/* EPZ EQU  LABEL AT LINE BEGIN*/
+
+					if (strcmp(opcode,"=") == 0)
+						strcpy_s(opcode, sizeof(opcode), "EQU");
 
 					if ((_stricmp(opcode, "EQU") == 0) || (_stricmp(opcode, "EPZ") == 0)) {
 						txtptr++;
@@ -974,7 +1019,7 @@ int main(int argc, char* argv[]) {
 					else {
 						labflg = 1;
 
-#if !ATMAS_II_COMPATIBLE_ONLY
+#if !ATMAS_II_COMPATIBLE
 						if (*label == '.') { // local label, must be appended to previous global label
 							char temp[MAX_LABEL_SIZE];
 
@@ -1110,7 +1155,7 @@ int main(int argc, char* argv[]) {
 				}
 				/* INCLUDE */
 
-				if (_stricmp(opcode, "_INCLUDE") == 0) {
+				if (_stricmp(opcode, "INCLUDE") == 0) {
 					if (include_flg) error("Can't have 'INCLUDE' in an included file.");
 					include_flg = 1;
 					operand_to_filename(include_filename);
@@ -1236,11 +1281,7 @@ int main(int argc, char* argv[]) {
 
 				/* ORG */
 
-				if (( _stricmp(opcode, "ORG") == 0)
-#if !ATMAS_II_COMPATIBLE
-					|| (_stricmp(opcode, ".org")) == 0
-#endif
-					) {
+				if (( _stricmp(opcode, "ORG") == 0) || (strcmp(opcode, "*=") == 0)) {
 					txtptr++;
 					{
 						if (!orgflg)											/* first ORG */
@@ -1285,7 +1326,7 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "DFB") == 0
 #if !ATMAS_II_COMPATIBLE					
-					|| (_stricmp(opcode, ".byte") == 0)
+					|| (_stricmp(opcode, "byte") == 0)
 #endif						
 					) {
 					data_flg = 1;
@@ -1316,7 +1357,7 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "DFW") == 0
 #if !ATMAS_II_COMPATIBLE					
-					|| (_stricmp(opcode, ".word") == 0)
+					|| (_stricmp(opcode, "word") == 0)
 #endif						
 					) {
 					char* tmp_ptr;
@@ -1363,7 +1404,7 @@ int main(int argc, char* argv[]) {
 
 				if (( _stricmp(opcode, "ASC") == 0)
 #if !ATMAS_II_COMPATIBLE					
-					|| (_stricmp(opcode, ".ascii") == 0) || (_stricmp(opcode, ".text") == 0)
+					|| (_stricmp(opcode, "ascii") == 0) || (_stricmp(opcode, "text") == 0)
 #endif					
 					) {// calculated using txtptr, not operand, since operand is not yet set
 
@@ -1455,7 +1496,7 @@ int main(int argc, char* argv[]) {
 							op[1] = (unsigned char)toupper(opcode[1]);
 							op[2] = (unsigned char)toupper(opcode[2]);
 							op[3] = '\0';
-							if (strstr((const char*)opcds, (const char*)op) != NULL) 
+							if (contains_word_icase((const char*)opcds, (const char*)op))
 								error("Opcode must be followed by a single space (not a tab) and an operand");
 						}
 						strcpy_s(operand, sizeof(operand), opcode);
@@ -1515,7 +1556,7 @@ int main(int argc, char* argv[]) {
 							( _stricmp(opcode, "EQU") == 0))
 							error("Label missing at beginning of line"); // since otherwise these would have been taken care of
 
-						if ((pass == 1) && (strstr(assdirecs, opcode)))
+						if ((pass == 1) && (contains_word_icase(assdirecs, opcode)))
 							continue;
 						printf("\n\nopcode: %s", opcode);
 						//error("Undefined macro or opcode, or subroutine can't have an operand");
@@ -1576,7 +1617,7 @@ int main(int argc, char* argv[]) {
 					if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
 
 					txtptr++;
-#if !ATMAS_II_COMPATIBLE_ONLY
+#if !ATMAS_II_COMPATIBLE
 					if (operand[1] == '>' || operand[1] == '<')
 						txtptr++;
 #endif
@@ -1607,7 +1648,7 @@ int main(int argc, char* argv[]) {
 									lo_fg = 0;
 								}
 							}
-#if !ATMAS_II_COMPATIBLE_ONLY
+#if !ATMAS_II_COMPATIBLE
 							else if (operand[1] == '>') {
 								intval >>= 8;
 								lo_fg = 0;
@@ -2345,7 +2386,7 @@ uint32_t expresstoi() {
 		ptr++;
 	}
 
-	if (strstr(opcode, "),Y")) txtptr--;
+	if (stristr(opcode, "),Y")) txtptr--;
 
 	if (tos <= 0) {
 		printf("Program error at line %d -- Buffer overrun due to negative argument", __LINE__ + 4);
@@ -2472,7 +2513,7 @@ uint32_t symtoi1() {
 	case '-': strcpy_s(strbeg, sizeof(strbeg), "minus"); break;
 	default: //label
 		if (isspace(*txtptr)) error("Ilegal space, tab, or end of line");
-#if ATMAS_II_COMPATIBLE_ONLY
+#if ATMAS_II_COMPATIBLE
 		if (!(isalpha(*txtptr))) 
 			error("Label must begin with a letter");
 		while (isalnum(*txtptr))
@@ -2498,7 +2539,7 @@ uint32_t symtoi1() {
 	{
 
 
-#if !ATMAS_II_COMPATIBLE_ONLY
+#if !ATMAS_II_COMPATIBLE
 		if (*strbeg == '.') { // local label, must be appended to previous global label
 			char temp[MAX_LABEL_SIZE];
 
@@ -3018,3 +3059,43 @@ static void print_visible(const char* s) {
 	}
 }
 
+char* stristr(const char* str, const char* search) {
+	if (!*search)
+		return (char*)str;
+
+	while (*str) {
+		const char* p1 = str;
+		const char* p2 = search;
+
+		while (*p1 && *p2 &&
+			tolower((unsigned char)*p1) == tolower((unsigned char)*p2)) {
+			p1++;
+			p2++;
+		}
+
+		if (!*p2)
+			return (char*)str;
+
+		str++;
+	}
+
+	return NULL;
+}
+
+bool contains_word_icase(const char* list, const char* word) {
+	size_t len = strlen(word);
+
+	while (*list) {
+		while (*list == ' ')
+			list++;
+
+		if (_strnicmp(list, word, len) == 0 &&
+			(list[len] == ' ' || list[len] == '\0'))
+			return true;
+
+		while (*list && *list != ' ')
+			list++;
+	}
+
+	return false;
+}

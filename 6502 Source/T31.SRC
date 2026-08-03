@@ -13,7 +13,7 @@
 	OUT T		SOURCGEN symbol table
 EOL     EQU $9B
 
-ICCOM	EQU $342
+ICCOM	= $342
 ICBAL	EQU $344
 ICBAH	EQU $345
 ICBLL	EQU $348
@@ -38,8 +38,8 @@ COLCRS	EPZ $55
 STICK0	EQU $0278
 STRIG0	EQU $284
 
-	_INCLUDE if_while_macros.src
-	_INCLUDE Macros.SRC
+	INCLUDE if_while_macros.src
+	INCLUDE Macros.SRC
 
 GR	MACRO S
 	LDA #S
@@ -286,7 +286,7 @@ BG1	TSX
 	MovlW BRKKY,BKTP
 	
 	LDA SKCTL Disable the POKEY key click directly
-	AND #%11111110  ; clear bit 0
+	and #%11111110  ; clear bit 0
 	STA SKCTL	
         
 	SCTLRET
