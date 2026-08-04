@@ -190,7 +190,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
 #if !ATMAS_II_COMPATIBLE
-"ascii text byte word ";
+"ascii text db byte dw word fill ";
 #endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
@@ -1326,7 +1326,7 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "DFB") == 0
 #if !ATMAS_II_COMPATIBLE					
-					|| (_stricmp(opcode, "byte") == 0)
+					//|| (_stricmp(opcode, "byte") == 0)
 #endif						
 					) {
 					data_flg = 1;
@@ -1357,7 +1357,7 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "DFW") == 0
 #if !ATMAS_II_COMPATIBLE					
-					|| (_stricmp(opcode, "word") == 0)
+					//|| (_stricmp(opcode, "word") == 0)
 #endif						
 					) {
 					char* tmp_ptr;
@@ -1389,12 +1389,29 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "FILLMEM") == 0) {
 					data_flg = 1;
-					if (*(txtptr + 1) == '\'') sectyp('"'); else sectyp('#');
 					txtptr++;
+					if (*txtptr == '#') txtptr++;			// skip '#' if present
+					
+					
 					cnt = expresstoi_p2();
-					if (*txtptr != ',') error("Comma followed by byte value expected");
-					txtptr++;
-					ch = (char)expresstoi_p2();
+					if (*txtptr == ',') {
+
+						txtptr++;
+						if (*txtptr == '#') txtptr++;			// skip '#' if present
+
+						sectyp((*txtptr == '\'') ? '"' : '#');
+
+						int value = expresstoi_p2();
+
+						if (value < 0 || value > 255)
+							error("FILLMEM value out of range");
+
+						ch = (unsigned char)value;
+					}
+					else {
+						ch = 0;
+						sectyp('#');
+					}
 					for (i = 0; i < cnt; i++)
 						toxlbuf(ch);
 					continue;
@@ -1404,7 +1421,7 @@ int main(int argc, char* argv[]) {
 
 				if (( _stricmp(opcode, "ASC") == 0)
 #if !ATMAS_II_COMPATIBLE					
-					|| (_stricmp(opcode, "ascii") == 0) || (_stricmp(opcode, "text") == 0)
+					//|| (_stricmp(opcode, "ascii") == 0) || (_stricmp(opcode, "text") == 0)
 #endif					
 					) {// calculated using txtptr, not operand, since operand is not yet set
 
