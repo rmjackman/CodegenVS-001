@@ -775,11 +775,13 @@ int main(int argc, char* argv[]) {
 					txtptr++;
 #if !ATMAS_II_COMPATIBLE
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
-					
-					label_only_flg = 1;
+
+					strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
+					sss[symnum++].symadr = pc;
+					//label_only_flg = 1;
 					continue;
 				}
-
+				
 #endif
 				tpsav = txtptr;
 				if (*txtptr == '\n') continue;
