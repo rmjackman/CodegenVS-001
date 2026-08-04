@@ -1390,8 +1390,6 @@ int main(int argc, char* argv[]) {
 				if (_stricmp(opcode, "FILLMEM") == 0) {
 					data_flg = 1;
 					txtptr++;
-					if (*txtptr == '#') txtptr++;			// skip '#' if present
-					
 					
 					cnt = expresstoi_p2();
 					if (*txtptr == ',') {
@@ -2483,6 +2481,12 @@ uint32_t symtoi1() {
 		txtptr++;
 		return(pc);
 	}
+
+	if (ch == '#') {				//  skip '#'
+		txtptr++;
+		ch = *txtptr;
+	}
+			
 	if (isdigit(ch))				/*  :Decimal */
 	{
 		while (isdigit(*txtptr))
