@@ -190,7 +190,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
 #if !ATMAS_II_COMPATIBLE
-"ascii text db byte dw word fill ";
+"ascii text db byte dw word fill = *= ";
 #endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
@@ -217,7 +217,7 @@ static char pathstr[MAX_FILENAME_LEN + 1] = { 0 };
 static char dsk_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char cmp_file[MAX_FILENAME_LEN + 1] = { 0 };
 char current_global[MAX_LABEL_SIZE] = "";
-
+char stand_alone_label[MAX_LABEL_SIZE] = "";
 
 /****************************    main()     ****************/
 
@@ -320,7 +320,6 @@ int main(int argc, char* argv[]) {
 		fpos_t pos1;
 		bool star_flg = 0;
 		bool first_NNsymbol = 1;
-		bool label_only_flg = 0;
 		
 
 		if (verif_flg == 0) {
@@ -570,12 +569,13 @@ int main(int argc, char* argv[]) {
 					}
 				}
 
-				if (!maclevel) linnum++;				//no change of line number if macro
+				if (!maclevel) 
+					linnum++;				//no change of line number if macro
 				
-				if (label_only_flg == 0){
-					*label = '\0';
-					labflg = 0;
-				}
+				
+				*label = '\0';
+				labflg = 0;
+				
 				*operand = '\0';
 				linbegptr = linptr = txtptr;			//set line begin to txtptr
 				lnbfptr = linbuf[maclevel];
@@ -767,7 +767,6 @@ int main(int argc, char* argv[]) {
 					break;
 				}
 
-				label_only_flg = 0;
 
 				/*	********* find opcode ****************************/
 
@@ -776,9 +775,10 @@ int main(int argc, char* argv[]) {
 #if !ATMAS_II_COMPATIBLE
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
 
-					strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
-					sss[symnum++].symadr = pc;
-					//label_only_flg = 1;
+
+
+					strcpy_s(stand_alone_label, sizeof(stand_alone_label), label);
+
 					continue;
 				}
 				
@@ -923,6 +923,19 @@ int main(int argc, char* argv[]) {
 
 				/* LABEL AT LINE BEGIN  LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
 
+				if (*stand_alone_label) {
+					if (*label) {
+						if (_stricmp(opcode, "EQU") && _stricmp(opcode, "EPZ")){// not EQU and not EPZ
+							error("A stand-alone label is already assaociated with this line.");
+						}
+					}
+					else
+					{
+						strcpy_s(label, sizeof(label), stand_alone_label);
+						*stand_alone_label = 0;
+					}
+				}
+
 				if (*label) {
 					
 					if (pass == 1) {
@@ -934,8 +947,8 @@ int main(int argc, char* argv[]) {
 
 					/* EPZ EQU  LABEL AT LINE BEGIN*/
 
-					if (strcmp(opcode,"=") == 0)
-						strcpy_s(opcode, sizeof(opcode), "EQU");
+					//if (strcmp(opcode,"=") == 0)
+						//strcpy_s(opcode, sizeof(opcode), "EQU");
 
 					if ((_stricmp(opcode, "EQU") == 0) || (_stricmp(opcode, "EPZ") == 0)) {
 						txtptr++;
@@ -1056,7 +1069,7 @@ int main(int argc, char* argv[]) {
 						if (_stricmp	(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
 					}
 					if ((pass == 1) && !(macroflg)) {
-						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
+						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);//Add label to symbol table
 
 #if COMMENTS
 						i = 0;
@@ -1280,6 +1293,11 @@ int main(int argc, char* argv[]) {
 					rmbflg = 1;
 					continue;
 				}
+				
+				/* End of directives that don't generate code or data, or change the program counter */
+
+
+
 
 				/* ORG */
 

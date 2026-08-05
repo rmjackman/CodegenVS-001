@@ -486,7 +486,9 @@ VCEND	STA VCNT2
 	LDA #0
 	STA MOUSEMD     ; MOUSEMD = 0 (mouse mode off by default)
 	STA LASTTRG     ; LASTTRG = 0 (for edge detection)
-GETLP  ;This is a test comment after an initial label      
+GETLP  ;Test: comment directly after a label  
+
+testsp	equ 1    ;Test: GETLP skips this line
 	LDA #1		assume mouse/joystick input
 	STA MSFLAG	MSFLAG = 1 (default)
 	LDY CH		load keyboard code (255 = none)
