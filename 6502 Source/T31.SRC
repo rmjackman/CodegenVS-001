@@ -12,7 +12,7 @@
 *	OUT LMT
 	OUT T		SOURCGEN symbol table
 EOL     EQU $9B
-
+-----------------------------------------------------------------------
 ICCOM	= $342
 ICBAL	EQU $344
 ICBAH	EQU $345
@@ -37,10 +37,10 @@ ROWCRS	EPZ $54
 COLCRS	EPZ $55
 STICK0	EQU $0278
 STRIG0	EQU $284
-
+-----------------------------------------------------
 	INCLUDE if_while_macros.src
 	INCLUDE Macros.SRC
-
+-----------------------------------------------------
 GR	MACRO S
 	LDA #S
 	GRAPHR
@@ -127,7 +127,7 @@ MMOVE	MACRO OA,A2,L
 	MMOVER
 	MEND	
 ****** End of macros ************
-*
+--------------------------------------------------
 WARMST	EPZ 8
 BOOT 	EPZ 9
 DOSVEC	EPZ $0A
@@ -197,7 +197,7 @@ cPRBF	EQU $8010	print buffer
 cCBLKBUF	EQU $8100	copy-block buffer cSSP bytes
 
 cSSP	EQU 960		screen size (SSP also exists)
-
+--------------------------------------------------------------------------------
 	ORG $8100+960 to 92EA
 
 JMPBEG	JMP BEGIN

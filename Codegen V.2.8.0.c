@@ -721,13 +721,21 @@ int main(int argc, char* argv[]) {
 					continue;
 
 				case  '-':
-					strcpy_s(label, sizeof(label), "minus");
-					txtptr++;
-					break;
+					if (isspace(*(txtptr + 1))) {
+						strcpy_s(label, sizeof(label), "minus");
+						txtptr++;
+						break;
+					}
+					else
+						continue;//comment
 				case  '+':
+					if (isspace(*(txtptr + 1))) {
 					strcpy_s(label, sizeof(label), "plus");
 					txtptr++;
 					break;
+					}
+					else
+						continue;//comment
 				default:				// label
 					pos = 0;
 #if ATMAS_II_COMPATIBLE
@@ -1301,7 +1309,9 @@ int main(int argc, char* argv[]) {
 
 				/* ORG */
 
-				if (( _stricmp(opcode, "ORG") == 0) || (strcmp(opcode, "*=") == 0)) {
+				if ( _stricmp(opcode, "ORG") == 0) {
+					if (*stand_alone_label)
+						error("ORG cannot be used with a stand-alone label");
 					txtptr++;
 					{
 						if (!orgflg)											/* first ORG */
