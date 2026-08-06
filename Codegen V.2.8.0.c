@@ -1363,26 +1363,35 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "DFB") == 0) {
 					data_flg = 1;
-					txtptr++;
-					if (*txtptr == '%')
-						sectyp('%');
-					else if (isalpha(*txtptr)) {
-						char* txtptr_save = txtptr;
-						char byte = (char)symtoi1();
-						if (memchr(esc_ch_tab, byte, 16))
-							sectyp(',');		//'?' changed to ','
-						else
-							sectyp('#');
-						txtptr = txtptr_save;
-					}
-					else if (*txtptr == '\'')
-						sectyp(',');		//'?' changed to ','
-					else sectyp('#');
-					txtptr--;
+
 					do {
 						txtptr++;
+
+						if (*txtptr == '%') {
+							sectyp('%');
+						}
+						else if (*txtptr == '\'') {
+							sectyp(',');
+						}
+						else if (isalpha((unsigned char)*txtptr)) {
+							char* txtptr_save = txtptr;
+							unsigned char byte = (unsigned char)symtoi1();
+
+							if (memchr(esc_ch_tab, byte, 16))
+								sectyp(',');
+							else
+								sectyp('#');
+
+							txtptr = txtptr_save;
+						}
+						else {
+							sectyp('#');
+						}
+
 						toxlbuf((char)expresstoi_p2());
+
 					} while (*txtptr == ',');
+
 					continue;
 				}
 #if !ATMAS_II_COMPATIBLE
