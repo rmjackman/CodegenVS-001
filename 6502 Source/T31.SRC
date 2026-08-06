@@ -9,8 +9,8 @@
 	CPFL TEMP.SYS
 	OUT X		XASM.LAB
 *	OUT LM
-*	OUT LMT
-	OUT T		SOURCGEN symbol table
+	OUT L
+*	OUT T		SOURCGEN symbol table
 EOL     EQU $9B
 -----------------------------------------------------------------------
 ICCOM	= $342
@@ -1317,7 +1317,8 @@ F	LDA FFLG
 BANKTAB	DFB $FF
 	DFB $EF,$EB,$E7,$E3
 	DFB $AF,$AB,$A7,$A3
-	DFB $6F,$6B,$67,$63
+*	DFB $6F,$6B,$67,$63
+	HX 6f6b6763
 	DFB $2F,$2B,$27,$23
 
 H	WNDW

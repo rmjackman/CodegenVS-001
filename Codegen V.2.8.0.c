@@ -190,7 +190,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
 #if !ATMAS_II_COMPATIBLE
-"ascii text db byte dw word fill = *= ";
+"ascii text db byte dw word fill = *= IN OF HX";
 #endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
@@ -842,11 +842,12 @@ int main(int argc, char* argv[]) {
 
 				/*  Check operand for alias directives   */
 #if !ATMAS_II_COMPATIBLE
-				if (contains_word_icase(" ENDM ",opcode)) {
-					strcpy_s(opcode, sizeof(opcode), "MEND");
-				}
+
 				if (contains_word_icase(" MAC ",opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "MACRO");
+				}
+				if (contains_word_icase(" ENDM ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "MEND");
 				}
 				if (contains_word_icase(" *= ",opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "ORG");
@@ -865,6 +866,12 @@ int main(int argc, char* argv[]) {
 				}
 				if (contains_word_icase(" FILL ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "FILLMEM");
+				}
+				if (contains_word_icase(" OF ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "SAVEAS");
+				}
+				if (contains_word_icase(" IN ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "INCLUDE");
 				}
 #endif
 				if (!(*txtptr == ' ') || *(txtptr + 1) == ' ' || *(txtptr + 1) == '\n' || *(txtptr + 1) == '\t') {
@@ -1354,11 +1361,7 @@ int main(int argc, char* argv[]) {
 
 				/* DFB */
 
-				if (_stricmp(opcode, "DFB") == 0
-#if !ATMAS_II_COMPATIBLE					
-					//|| (_stricmp(opcode, "byte") == 0)
-#endif						
-					) {
+				if (_stricmp(opcode, "DFB") == 0) {
 					data_flg = 1;
 					txtptr++;
 					if (*txtptr == '%')
@@ -1382,14 +1385,43 @@ int main(int argc, char* argv[]) {
 					} while (*txtptr == ',');
 					continue;
 				}
+#if !ATMAS_II_COMPATIBLE
+				/* HX */
 
+				if (_stricmp(opcode, "HX") == 0) {
+					data_flg = 1;
+					txtptr++;
+					while (isxdigit((unsigned char)txtptr[0]) &&
+						isxdigit((unsigned char)txtptr[1])) {
+
+						int hi, lo;
+
+						hi = txtptr[0];
+						lo = txtptr[1];
+
+						if (hi >= '0' && hi <= '9') hi -= '0';
+						else if (hi >= 'A' && hi <= 'F') hi -= 'A' - 10;
+						else if (hi >= 'a' && hi <= 'f') hi -= 'a' - 10;
+
+						if (lo >= '0' && lo <= '9') lo -= '0';
+						else if (lo >= 'A' && lo <= 'F') lo -= 'A' - 10;
+						else if (lo >= 'a' && lo <= 'f') lo -= 'a' - 10;
+
+						toxlbuf((char)((hi << 4) | lo));
+
+						sectyp('#');
+						txtptr += 2;
+					}
+
+					if (isxdigit((unsigned char)*txtptr))
+						error("Odd number of hexadecimal digits in HX directive.");
+
+					continue;
+				}
+#endif
 				/* DFW */ //?????????????????????????????????????
 
-				if (_stricmp(opcode, "DFW") == 0
-#if !ATMAS_II_COMPATIBLE					
-					//|| (_stricmp(opcode, "word") == 0)
-#endif						
-					) {
+				if (_stricmp(opcode, "DFW") == 0) {
 					char* tmp_ptr;
 					data_flg = 1;
 
@@ -1447,11 +1479,7 @@ int main(int argc, char* argv[]) {
 
 				/* ASC */
 
-				if (( _stricmp(opcode, "ASC") == 0)
-#if !ATMAS_II_COMPATIBLE					
-					//|| (_stricmp(opcode, "ascii") == 0) || (_stricmp(opcode, "text") == 0)
-#endif					
-					) {// calculated using txtptr, not operand, since operand is not yet set
+				if (( _stricmp(opcode, "ASC") == 0)) {// calculated using txtptr, not operand, since operand is not yet set
 
 					data_flg = 1;
 					do {
