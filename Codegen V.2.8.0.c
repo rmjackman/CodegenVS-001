@@ -74,6 +74,8 @@ int isSpecialCharacter(char ch);
 static void print_visible(const char* s);
 char* stristr(const char* str, const char* search);
 bool contains_word_icase(const char* list, const char* word);
+void emit_bytes();
+void emit_ascii_string();
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -190,12 +192,14 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
 #if !ATMAS_II_COMPATIBLE
-"ascii text db byte dw word fill = *= IN OF HX";
+"ascii text db byte dw word fill = *= IN OF HX DA ";
 #endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
 static const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
 static unsigned short bradat[] = { 0x10,0x30,0x50,0x70,0x90,0xb0,0xd0,0xf0 };
+int intab[] = { 0x40,0,0x20,0x60,0xA0,0xC0,0x80,0xE0 };
+
 static char macdumtab[MAXDUMS][10];		// moved to static
 static char dumbuf[80];						// moved to static
 static char macsymbol[MAXMACSYMS][10] = { {0} };
@@ -275,7 +279,6 @@ int main(int argc, char* argv[]) {
 		//int braoffset = 0;
 		int pos = 0;
 		char ch = 0;
-		int offset = 0;
 		unsigned int operval = 0;
 		int operno = 0;
 		int i = 0, intval = 0, intval_sav = 0;
@@ -284,7 +287,7 @@ int main(int argc, char* argv[]) {
 		char opcstr[MAX_LABEL_SIZE] = { 0 };
 
 		//int temp = 0;
-		int intab[] = { 0x40,0,0x20,0x60,0xA0,0xC0,0x80,0xE0 };
+		
 
 
 
@@ -1365,31 +1368,7 @@ int main(int argc, char* argv[]) {
 					data_flg = 1;
 
 					do {
-						txtptr++;
-
-						if (*txtptr == '%') {
-							sectyp('%');
-						}
-						else if (*txtptr == '\'') {
-							sectyp(',');
-						}
-						else if (isalpha((unsigned char)*txtptr)) {
-							char* txtptr_save = txtptr;
-							unsigned char byte = (unsigned char)symtoi1();
-
-							if (memchr(esc_ch_tab, byte, 16))
-								sectyp(',');
-							else
-								sectyp('#');
-
-							txtptr = txtptr_save;
-						}
-						else {
-							sectyp('#');
-						}
-
-						toxlbuf((char)expresstoi_p2());
-
+						emit_bytes();
 					} while (*txtptr == ',');
 
 					continue;
@@ -1492,52 +1471,25 @@ int main(int argc, char* argv[]) {
 
 					data_flg = 1;
 					do {
-						txtptr++;
-						switch (*txtptr++) {
-						case '%':								/* screen code  */
-							sectyp('$');
-							while ((*txtptr != '%') && (*txtptr != '\n')) {
-								offset = *txtptr >> 5;
-								ch = *txtptr++ & 0x1f;
-								ch |= *(intab + offset);
-								toxlbuf(ch);
-							}
-							break;
+						emit_ascii_string();
+						
+					} while (*txtptr == ',');
+					continue;
+				}
 
-						case '$':								/* screen code, end inverse  */
-							sectyp('$');
-							while ((*txtptr != '$') && (*txtptr != '\n')) {
-								offset = *txtptr >> 5;
-								ch = *txtptr++ & 0x1f;
-								ch |= *(intab + offset);
-								toxlbuf((char)(ch | 128));
-							}
-							break;
-						case '/':								/* inverse ASC */
-							sectyp('"');
-							while ((*txtptr != '/') && (*txtptr != '\n'))
-								toxlbuf((char)(128 | *txtptr++));
-							break;
-						case '\\':								/* ASC, end inverse  */
-							sectyp('\\');
-							for (; ; ) {
-								ch = *txtptr++;
-								if ((*txtptr == '\\') || (*txtptr == '\n')) break;
-								toxlbuf(ch);
-							}
-							toxlbuf((char)(128 | ch));
-							break;
-						default:								/* normal ASC: kann use any other non alnum character */
-							sectyp('"');
-							if (!isalnum(*(txtptr - 1))) {
-								ch = *(txtptr - 1);
-								while ((*txtptr != ch) && (*txtptr != '\n'))
-									toxlbuf(*txtptr++);
-							}
-							else
-								error("invalid string marking");
+
+				if ((_stricmp(opcode, "DA") == 0)) {// calculated using txtptr, not operand, since operand is not yet set
+					
+					data_flg = 1;
+					do {
+						if (strchr("\"\\/", *(txtptr+1)) ){
+							emit_ascii_string();
+							//txtptr++;
 						}
-					} while (*(++txtptr) == ',');
+						else if (strchr("%'#", *(txtptr+1))){
+							emit_bytes();
+						}
+					} while (*txtptr == ',');
 					continue;
 				}
 
@@ -3186,4 +3138,82 @@ bool contains_word_icase(const char* list, const char* word) {
 	}
 
 	return false;
+}
+
+void emit_bytes() {// emit bytes for DFB directive
+	txtptr++;
+
+	if (*txtptr == '%') {
+		sectyp('%');
+	}
+	else if (*txtptr == '\'') {
+		sectyp(',');
+	}
+	else if (isalpha((unsigned char)*txtptr)) {
+		char* txtptr_save = txtptr;
+		unsigned char byte = (unsigned char)symtoi1();
+
+		if (memchr(esc_ch_tab, byte, 16))
+			sectyp(',');
+		else
+			sectyp('#');
+
+		txtptr = txtptr_save;
+	}
+	else {
+		sectyp('#');
+	}
+
+	toxlbuf((char)expresstoi_p2());
+
+}
+
+void emit_ascii_string() {
+	int offset = 0;
+	txtptr++;
+	switch (*txtptr++) {
+	case '%':								/* screen code  */
+		sectyp('$');
+		while ((*txtptr != '%') && (*txtptr != '\n')) {
+			offset = *txtptr >> 5;
+			ch = *txtptr++ & 0x1f;
+			ch |= *(intab + offset);
+			toxlbuf(ch);
+		}
+		break;
+
+	case '$':								/* screen code, end inverse  */
+		sectyp('$');
+		while ((*txtptr != '$') && (*txtptr != '\n')) {
+			offset = *txtptr >> 5;
+			ch = *txtptr++ & 0x1f;
+			ch |= *(intab + offset);
+			toxlbuf((char)(ch | 128));
+		}
+		break;
+	case '/':								/* inverse ASC */
+		sectyp('"');
+		while ((*txtptr != '/') && (*txtptr != '\n'))
+			toxlbuf((char)(128 | *txtptr++));
+		break;
+	case '\\':								/* ASC, end inverse  */
+		sectyp('\\');
+		for (; ; ) {
+			ch = *txtptr++;
+			if ((*txtptr == '\\') || (*txtptr == '\n')) break;
+			toxlbuf(ch);
+		}
+		toxlbuf((char)(128 | ch));
+		break;
+	default:								/* normal ASC: kann use any other non alnum character */
+		sectyp('"');
+		if (!isalnum(*(txtptr - 1))) {
+			ch = *(txtptr - 1);
+			while ((*txtptr != ch) && (*txtptr != '\n'))
+				toxlbuf(*txtptr++);
+		}
+		else
+			error("invalid string marking");
+	}
+	txtptr++;
 }

@@ -258,7 +258,7 @@ ENG	DFB 1,21
 	ASC "zZyY
 	DFB 0
 GER	DFB 11,10
-	ASC "yYzZ"
+	.DA "yY",'z',"Z"		ASC "yYzZ"
 CHARBUF	ASC "?"
 ***********************************
 *	B E G I N	*
