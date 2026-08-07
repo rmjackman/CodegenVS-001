@@ -15,9 +15,9 @@
 //#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test.src" //T31.SRC"
-#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
-                 
+#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"                 
 
 #include <stdint.h>
 
@@ -46,7 +46,7 @@
 typedef struct {
 	char symbol[MAX_SYMBOL_SIZE + 1];
 	char comment[COMMENT_LEN + 1];
-	uint16_t symadr;
+	unsigned int symadr;
 	int8_t ofst;
 	uint8_t macf;
 	char symtyp;

@@ -1,0 +1,55 @@
+
+        out l
+
+;------------------------------------------------
+; Test of DA directive
+;------------------------------------------------
+
+        ORG $2000
+
+; Simple byte values
+        DA 0,1,2,255
+
+; Values which should become words
+        DA 256,$1234,$FFFF
+
+; Character constants (byte)
+        DA 'A','Z','0'
+
+; Immediate-style byte constants (if supported by Codegen)
+        DA #$12,#255
+
+; Binary and hex byte constants
+        DA %00001111,$7F
+
+; Strings
+        DA "HELLO"
+
+Atari:       DA "Atari XL"
+
+; Internal / inverse text tests
+; Adjust these according to your ASC syntax
+
+Hello:        DA \HELLO\
+        DA /HELLO/
+
+; Mixed data
+        DA "Score:",0,$1234,'!'
+
+; Expressions
+VALUE   EQU 10
+
+        DA VALUE
+        DA VALUE+5
+        DA VALUE+250
+
+; Forward reference
+        DA TABLE
+
+
+TABLE:        DA $11,$22,$33
+
+; Labels as addresses should become words
+        DA TABLE
+
+*        END

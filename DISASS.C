@@ -1121,7 +1121,7 @@ void print_line() {
 
 		fprintf(madslstfile, "%s\n", line_buffer);
 
-	//	printf("%s\n", line_buffer); // Print the line to the console-- TEMPORARY debug
+	printf("%s\n", line_buffer); // Print the line to the console-- TEMPORARY debug
 
 		if (line_skip) {
 

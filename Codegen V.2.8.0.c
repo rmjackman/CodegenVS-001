@@ -74,7 +74,8 @@ int isSpecialCharacter(char ch);
 static void print_visible(const char* s);
 char* stristr(const char* str, const char* search);
 bool contains_word_icase(const char* list, const char* word);
-void emit_bytes();
+void emit_byte();
+void emit_word();
 void emit_ascii_string();
 /*************************  global variables  ************/
 
@@ -230,7 +231,7 @@ int main(int argc, char* argv[]) {
 	/*xlram_codetpy = malloc (0xffff); /* each address could be assigned a flag used in symtyp
 				Addresses in normal code which do not coincide with an opcode are assigned zero */
 
-	xlram = (char*)malloc(0xffff);
+	xlram = (char*)malloc(0x10000);
 	if (xlram == NULL) {
 		printf("Can't allocate memory for text buffer.\a\n");
 		hit_Enter();
@@ -715,7 +716,7 @@ int main(int argc, char* argv[]) {
 					} while (*txtptr != '#');
 					linlen = 1;
 
-					if (*(txtptr + 1) == '#') {	// ## indicates section omitted from assembly
+					if (txtptr[1] == '#') {	// ## indicates section omitted from assembly
 						txtptr++;
 						linlen = 2;
 					}// else # indicates section omitted from assembly
@@ -724,7 +725,7 @@ int main(int argc, char* argv[]) {
 					continue;
 
 				case  '-':
-					if (isspace(*(txtptr + 1))) {
+					if (isspace(txtptr[1])) {
 						strcpy_s(label, sizeof(label), "minus");
 						txtptr++;
 						break;
@@ -732,7 +733,7 @@ int main(int argc, char* argv[]) {
 					else
 						continue;//comment
 				case  '+':
-					if (isspace(*(txtptr + 1))) {
+					if (isspace(txtptr[1])) {
 					strcpy_s(label, sizeof(label), "plus");
 					txtptr++;
 					break;
@@ -757,6 +758,12 @@ int main(int argc, char* argv[]) {
 					while (isalnum(*txtptr) || strchr("._", *txtptr)) {
 						label[pos++] = (char)(*txtptr++);
 					}
+					if ((label[0] == '.' || label[0] == '_') && pos == 1) {
+						error("Label cannot be just a '.' or a '_'");
+					}
+					if (*txtptr == ':') {
+						*txtptr = ' ';
+					}
 #endif
 					if (pos > MAX_SYMBOL_SIZE)
 						error("Label is too long");
@@ -765,7 +772,7 @@ int main(int argc, char* argv[]) {
 					if (!isspace(*txtptr))
 						error("Illegal character at end of label");
 
-					label[pos] = 0;
+					label[pos] = '\0';
 
 					sprintf_s(labelstr, MAX_LABEL_SIZE, " %s ", label);
 
@@ -877,7 +884,7 @@ int main(int argc, char* argv[]) {
 					strcpy_s(opcode, sizeof(opcode), "INCLUDE");
 				}
 #endif
-				if (!(*txtptr == ' ') || *(txtptr + 1) == ' ' || *(txtptr + 1) == '\n' || *(txtptr + 1) == '\t') {
+				if (!(*txtptr == ' ') || txtptr[1] == ' ' || txtptr[1] == '\n' || txtptr[1] == '\t') {
 					sprintf_s(opcstr, MAX_LABEL_SIZE, " %s ", opcode);
 					if (contains_word_icase(assdirecs, opcstr))
 						error("Directive must be followed by a single space (not tab) and an operand");
@@ -1368,7 +1375,7 @@ int main(int argc, char* argv[]) {
 					data_flg = 1;
 
 					do {
-						emit_bytes();
+						emit_byte();
 					} while (*txtptr == ',');
 
 					continue;
@@ -1410,26 +1417,16 @@ int main(int argc, char* argv[]) {
 				/* DFW */ //?????????????????????????????????????
 
 				if (_stricmp(opcode, "DFW") == 0) {
-					char* tmp_ptr;
+					
 					data_flg = 1;
 
 					do {
-						txtptr++;
-
-						tmp_ptr = txtptr;
-						while (isalnum(*tmp_ptr)) tmp_ptr++;
-						if (*tmp_ptr == '-' && *(tmp_ptr + 1) == '1' && !isdigit(*(tmp_ptr + 2)))
-							sectyp('-');
-						else
-							sectyp('=');
-
-						symval = expresstoi_p2();
-						toxlbuf((char)symval);
-						toxlbuf((char)(symval >> 8));
+						emit_word();
+						
 					} while (*txtptr == ',');
 
 
-					if ((*(txtptr - 2) == '-') && (*(txtptr - 1) == '1'))
+					if ((txtptr[-2] == '-') && (txtptr[-1] == '1'))
 						sectyp('-');
 
 					continue;
@@ -1482,13 +1479,26 @@ int main(int argc, char* argv[]) {
 					
 					data_flg = 1;
 					do {
-						if (strchr("\"\\/", *(txtptr+1)) ){
+						if (strchr("\"\\/", txtptr[1]) ){
 							emit_ascii_string();
 							//txtptr++;
 						}
-						else if (strchr("%'#", *(txtptr+1))){
-							emit_bytes();
+						else if (strchr("%'#", txtptr[1])){
+							emit_byte();
 						}
+						else
+						{
+							char* sav_txtptr = txtptr++;
+							int i = expresstoi();
+							txtptr = sav_txtptr;
+							if (i>=0 && i < 256) {
+								emit_byte();
+							}
+							else {
+								emit_word();
+							}
+						}
+					
 					} while (*txtptr == ',');
 					continue;
 				}
@@ -2217,7 +2227,8 @@ int main(int argc, char* argv[]) {
 
 				if (system(emul_filename)) puts("Emulator not found");
 			}
-			//hit_Enter();
+			else
+				hit_Enter();
 
 
 			return 0;
@@ -2275,7 +2286,7 @@ uint32_t expresstoi() {
 
 	if ((*txtptr == '-') || (*txtptr == '+'))	// "- " is DO, "+ " is CONT
 
-		if (isspace(*(txtptr + 1)))
+		if (isspace(txtptr[1]))
 			return (symtoi1());
 	do {
 		switch (*txtptr) {
@@ -2315,7 +2326,7 @@ uint32_t expresstoi() {
 	} while (!(isspace(*txtptr) || (*txtptr == ',') || (*txtptr == ':')));
 
 	if (*txtptr == ',')					//if ",X)"
-		if (toupper(*(txtptr + 1)) == 'X')
+		if (toupper(txtptr[1]) == 'X')
 			if (*(txtptr + 2) == ')')
 				if (isspace(*(txtptr + 3)))
 					*ptr++ = ')';			// add ')'
@@ -2607,16 +2618,16 @@ uint32_t symtoi1() {
 				sssptr->macf = SYMBOL;
 
 			char* txtptr_tmp = txtptr;
-			if (*txtptr == '+' && (isdigit(*(txtptr + 1)) || *(txtptr + 1) == '$'))	//e.g. LDA SYMBOL+2
+			if (*txtptr == '+' && (isdigit(txtptr[1]) || txtptr[1] == '$'))	//e.g. LDA SYMBOL+2
 			{
 				uint8_t ofst_candidate = expresstoi(txtptr);
 				if (ofst_candidate > sssptr->ofst && ofst_candidate < 128)		// if offset > than what is already set
-					//sssptr->ofst = *(txtptr + 1) - '0';		// Set offset
+					//sssptr->ofst = txtptr[1] - '0';		// Set offset
 					sssptr->ofst = ofst_candidate;				// Set offset
 			}
-			else if ((*txtptr == '-') && (!isalpha(*(txtptr + 1))))			//e.g. LDA SYMBOL-3
-				if ((signed char)(256 - (*(txtptr + 1) - '0')) < sssptr->ofst)		// if offset < than what is already set
-					sssptr->ofst = (signed char)(256 - (*(txtptr + 1) - '0')); // Set offset
+			else if ((*txtptr == '-') && (!isalpha(txtptr[1])))			//e.g. LDA SYMBOL-3
+				if ((signed char)(256 - (txtptr[1] - '0')) < sssptr->ofst)		// if offset < than what is already set
+					sssptr->ofst = (signed char)(256 - (txtptr[1] - '0')); // Set offset
 
 			txtptr = txtptr_tmp;
 			symfg = 1;
@@ -3140,7 +3151,7 @@ bool contains_word_icase(const char* list, const char* word) {
 	return false;
 }
 
-void emit_bytes() {// emit bytes for DFB directive
+void emit_byte() {// emit bytes for DFB directive
 	txtptr++;
 
 	if (*txtptr == '%') {
@@ -3207,8 +3218,8 @@ void emit_ascii_string() {
 		break;
 	default:								/* normal ASC: kann use any other non alnum character */
 		sectyp('"');
-		if (!isalnum(*(txtptr - 1))) {
-			ch = *(txtptr - 1);
+		if (!isalnum(txtptr[-1])) {
+			ch = txtptr[-1];
 			while ((*txtptr != ch) && (*txtptr != '\n'))
 				toxlbuf(*txtptr++);
 		}
@@ -3216,4 +3227,19 @@ void emit_ascii_string() {
 			error("invalid string marking");
 	}
 	txtptr++;
+}
+
+void emit_word() {
+	txtptr++;
+
+	char* tmp_ptr = txtptr;
+	while (isalnum(*tmp_ptr)) tmp_ptr++;
+	if (*tmp_ptr == '-' && txtptr[1] == '1' && !isdigit(txtptr[2]))
+		sectyp('-');
+	else
+		sectyp('=');
+
+	symval = expresstoi_p2();
+	toxlbuf((char)symval);
+	toxlbuf((char)(symval >> 8));
 }

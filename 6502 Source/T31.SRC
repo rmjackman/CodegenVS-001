@@ -9,7 +9,7 @@
 	CPFL TEMP.SYS
 	OUT X		XASM.LAB
 *	OUT LM
-	OUT L
+	OUT LT
 *	OUT T		SOURCGEN symbol table
 EOL     EQU $9B
 -----------------------------------------------------------------------
@@ -691,7 +691,7 @@ KCDTAB	DFB 3
 	DFW RIGHT
 	
 	DFB 166
-	DFW WDFORBAC	CTRL- /
+	.DA WDFORBAC	CTRL- /
 	DFB 167
 	DFW WDFORBAC	CTRL-INV
 	
