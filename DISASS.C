@@ -10,13 +10,14 @@
 
 #include "cdgn_global.h"
 
-#define SYMBOL_OFFSET 9 // SYMBOL+1, SYMBOL+2 ...
+#define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
+#define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
 #define MAX_SEGMENTS 256
 #define LINE_BUFFER_SIZE 1000
 
 #define LIST_TO_CONSOLE 0
 #define SHOW_SECTYP_AND_ADDRESS 0
-#define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
+
 
 #define ASC_STRING_LENGTH 21 //23
 #define DFB_BYTES_PER_LINE 6 //8
@@ -829,63 +830,74 @@ void adnmw2(uint16_t ska) {
 
 #if USE_SYMTAB_OFFSET
 
+	if (sss[isav].ofst > 0 &&
+		ska >= sss[isav].symadr &&
+		ska - sss[isav].symadr <= (uint8_t)sss[isav].ofst) {
 
+		/* Positive offset: SYMBOL+1 ... SYMBOL+ofst */
 
-	if (sss[isav].ofst > 0) {								// positive offset has priority
-		if (ska - sss[isav].symadr <= sss[isav].ofst) {     // eg. STA SYMBOL+1
-			pts_p("%s+", sss[isav].symbol);
-			if (ska - sss[isav].symadr > 9) ptc('$'); // only if $ is needed
-			pts_p("%X", ska - sss[isav].symadr);
-			offset_added = true;
-		}
-		else {
-			if (ska > 9) ptc('$'); // only if $ is needed
-			pts_p("%X", ska);
-		}
-	}
-	
-	else if (sss[i].ofst & 128) { // is negative
-		if (sss[i].symadr - ska <= ((uint8_t)sss[i].ofst & 127)) {    // eg. STA SYMBOL-1
+		offset = ska - sss[isav].symadr;
 
-			pts_p("%s-", sss[i].symbol);
-			if (sss[i].symadr - ska > 9) ptc('$'); // only if $ is needed
-			pts_p("%X", sss[i].symadr - ska);
-			offset_added = true;
-		}
-		else {
-			if (ska > 9) ptc('$'); // only if $ is needed
-			pts_p("%X", ska);
-		}
+		pts_p("%s+", sss[isav].symbol);
+
+		if (offset > 9)
+			ptc('$');
+
+		pts_p("%X", offset);
 	}
 
+	else if (sss[i].ofst < 0 &&
+		ska <= sss[i].symadr &&
+		sss[i].symadr - ska <= -(int)sss[i].ofst & 127) {
+
+		/* Negative offset: SYMBOL-1 ... SYMBOL-n */
+
+		offset = sss[i].symadr - ska;
+
+		pts_p("%s-", sss[i].symbol);
+
+		if (offset > 9)
+			ptc('$');
+
+		pts_p("%X", offset);
+	}
+
+	else {
+		/* No applicable symbol offset */
+		if (ska > 9)
+			ptc('$');
+
+		pts_p("%X", ska);
+	}
 
 #else
 
 	offset = ska - sss[isav].symadr;
-	
-	if (offset <= SYMBOL_OFFSET) {     // eg. STA SYMBOL+1
+
+	if (offset <= SYMBOL_OFFSET) {
+
 		pts_p("%s", sss[isav].symbol);
 		pts_p("+%d", offset);
 	}
-	else if ( (sss[i].symadr - ska == 1) && (sss[i].symbol[0])) {   // eg. STA SYMBOL-1
+
+	else if ((sss[i].symadr - ska == 1) && (sss[i].symbol[0])) {
 
 		pts_p("%s", sss[i].symbol);
 		pts("-1");
-	
 	}
-	
 
-
-#endif
 	else {
-		if (ska > 9) ptc('$'); // only if $ is needed
+
+		if (ska > 9)
+			ptc('$');
+
 		pts_p("%X", ska);
 	}
-	
+
+#endif
 
 
-
-#define TEST 0
+#define TEST 1
 #if TEST
 		if (pc >= 0x600) {
 			printf("\npc = $%x\n", pc);
@@ -898,7 +910,18 @@ void adnmw2(uint16_t ska) {
 			printf("sss[isav].ofst = $%x\n", sss[isav].ofst);
 			printf("sss[i].symbol = %s\n", sss[i].symbol);
 			printf("sss[isav].symbol = %s\n", sss[isav].symbol);
-			printf("%s\n", line_buffer);
+			printf("%s\n\n", line_buffer);
+
+			printf("ska       = $%04X\n", ska);
+			printf("isav      = %u\n", isav);
+			printf("isav addr = $%04X\n", sss[isav].symadr);
+			printf("isav ofst = %d ($%02X)\n",
+				sss[isav].ofst, (uint8_t)sss[isav].ofst);
+			printf("i         = %u\n", i);
+			printf("i addr    = $%04X\n", sss[i].symadr);
+			printf("i ofst    = %d ($%02X)\n",
+				sss[i].ofst, (uint8_t)sss[i].ofst);
+			printf("i symbol  = %s\n", sss[i].symbol);
 }
 #endif // TEST
 

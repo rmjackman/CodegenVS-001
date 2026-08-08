@@ -1,55 +1,102 @@
 
         out lt
-
-;------------------------------------------------
-; Test of DA directive
-;------------------------------------------------
+        verify
 
         ORG $2000
 
-; Simple byte values
-        DA 0,1,2,255
+; --------------------------------------------------------------
+; Positive offsets
+; --------------------------------------------------------------
 
-; Values which should become words
-        DA 256,$1234,$FFFF
+POS     DFB $AA
 
-; Character constants (byte)
-        DA 'A','Z','0'
-
-; Immediate-style byte constants (if supported by Codegen)
-        DA #$12,#255
-
-; Binary and hex byte constants
-        DA %00001111,$7F
-
-; Strings
-        DA "HELLO"
-
-Atari:       DA "Atari XL"
-
-; Internal / inverse text tests
-; Adjust these according to your ASC syntax
-
-Hello:        DA \HELLO\
-        DA /HELLO/
-
-; Mixed data
-        DA "Score:",0,$1234,'!'
-
-; Expressions
-VALUE   EQU 10
-
-        DA VALUE
-        DA VALUE+5
-        DA VALUE+250
-
-; Forward reference
-        DA TABLE
+P01     DFW POS
+P02     DFW POS+1
+P03     DFW POS+2
+P04     DFW POS+3
 
 
-TABLE:        DA $11,$22,$33
+; --------------------------------------------------------------
+; Negative offsets
+; --------------------------------------------------------------
 
-; Labels as addresses should become words
-        DA TABLE
+NEG     DFB $BB
 
-;*        END
+N01     DFW NEG-1
+N02     DFW NEG-2
+N03     DFW NEG-3
+N04     DFW NEG-4
+
+
+; --------------------------------------------------------------
+; Symbol before/after target
+; --------------------------------------------------------------
+
+        DFW SYM1          ; target is BEFORE SYM1
+
+SYM1    DFB $11
+
+        DFW SYM1          ; target is AFTER SYM1
+
+
+; --------------------------------------------------------------
+; Several consecutive positive offsets
+; --------------------------------------------------------------
+
+TABLE   DFB $10,$20,$30,$40,$50,$60
+
+        DFW TABLE
+        DFW TABLE+1
+        DFW TABLE+2
+        DFW TABLE+3
+        DFW TABLE+4
+        DFW TABLE+5
+
+
+; --------------------------------------------------------------
+; Word symbol
+; --------------------------------------------------------------
+
+WORD    DFW $1234
+
+        DFW WORD
+        DFW WORD+1
+        DFW WORD+2
+
+
+; --------------------------------------------------------------
+; Negative offsets around a word symbol
+; --------------------------------------------------------------
+
+BASE    DFW $5555
+
+        DFW BASE-1
+        DFW BASE-2
+        DFW BASE-3
+
+
+; --------------------------------------------------------------
+; Symbol far away
+; --------------------------------------------------------------
+
+FAR     DFB $66
+
+        ORG $2100
+
+FARAWAY DFB $77
+
+        DFW FARAWAY
+        DFW FAR
+
+
+; --------------------------------------------------------------
+; $FFFD boundary
+; --------------------------------------------------------------
+
+        ORG $FeFD
+
+BEFORE  DFW LAST       ; target $FFFD, symbol is $FFFF
+
+LAST    DFB $99        ; LAST = $FFFF
+
+        DFW LAST       ; target wraps past $FFFF if necessary
