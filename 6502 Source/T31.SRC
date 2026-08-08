@@ -255,10 +255,10 @@ BKYSV	DFW 0
 TABMAP	ASC ".......X.......X.......X.......X.......X" 
 	ASC ".......X.......X.......X.......X.......X"
 ENG	DFB 1,21
-	ASC "zZyY
+	.DA "zZyY
 	DFB 0
 GER	DFB 11,10
-	.DA "yY",'z',"Z"		ASC "yYzZ"
+	.DA "yY","z","Z"		ASC "yYzZ"
 CHARBUF	ASC "?"
 ***********************************
 *	B E G I N	*
@@ -691,7 +691,7 @@ KCDTAB	DFB 3
 	DFW RIGHT
 	
 	DFB 166
-	.DA WDFORBAC	CTRL- /
+	DFW WDFORBAC	CTRL- /
 	DFB 167
 	DFW WDFORBAC	CTRL-INV
 	

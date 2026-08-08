@@ -193,7 +193,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
 #if !ATMAS_II_COMPATIBLE
-"ascii text db byte dw word fill = *= IN OF HX DA ";
+"ascii text db byte dw word fill = *= IN OF HX DA DAT ";
 #endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
 
@@ -883,6 +883,9 @@ int main(int argc, char* argv[]) {
 				if (contains_word_icase(" IN ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "INCLUDE");
 				}
+				if (contains_word_icase(" DA ", opcode)) {
+					strcpy_s(opcode, sizeof(opcode), "DAT");
+				}
 #endif
 				if (!(*txtptr == ' ') || txtptr[1] == ' ' || txtptr[1] == '\n' || txtptr[1] == '\t') {
 					sprintf_s(opcstr, MAX_LABEL_SIZE, " %s ", opcode);
@@ -1471,17 +1474,20 @@ int main(int argc, char* argv[]) {
 						emit_ascii_string();
 						
 					} while (*txtptr == ',');
+
 					continue;
 				}
 
+				/* DAT */
 
-				if ((_stricmp(opcode, "DA") == 0)) {// calculated using txtptr, not operand, since operand is not yet set
+				if ((_stricmp(opcode, "DAT") == 0)) {// calculated using txtptr, not operand, since operand is not yet set
 					
 					data_flg = 1;
 					do {
 						if (strchr("\"\\/", txtptr[1]) ){
+							
 							emit_ascii_string();
-							//txtptr++;
+							
 						}
 						else if (strchr("%'#", txtptr[1])){
 							emit_byte();
