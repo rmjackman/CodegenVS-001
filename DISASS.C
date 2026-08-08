@@ -14,7 +14,7 @@
 #define MAX_SEGMENTS 256
 #define LINE_BUFFER_SIZE 1000
 
-
+#define LIST_TO_CONSOLE 0
 #define SHOW_SECTYP_AND_ADDRESS 0
 #define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
 
@@ -803,7 +803,9 @@ void adnmw2(uint16_t ska) {
 
 	isav = i = symtab_init;
 
-	while (sss[i].symadr <= ska) {
+	//printf("i = %d, ska = %04X symnum = %d\n", i, ska, symnum);
+
+	while (i <= symnum && sss[i].symadr <= ska) {
 		if (sss[i].symbol[0]) {         // symbol exists at this i
 			isav = i;
 			if (sss[i].symadr == ska) {     // symbol found at this address?
@@ -1120,9 +1122,9 @@ void print_line() {
 		fprintf(outputfile, "%s\n", line_buffer);
 
 		fprintf(madslstfile, "%s\n", line_buffer);
-
+#if LIST_TO_CONSOLE
 	printf("%s\n", line_buffer); // Print the line to the console-- TEMPORARY debug
-
+#endif
 		if (line_skip) {
 
 			diss_linnum++;

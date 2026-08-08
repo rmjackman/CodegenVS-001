@@ -46,7 +46,7 @@
 typedef struct {
 	char symbol[MAX_SYMBOL_SIZE + 1];
 	char comment[COMMENT_LEN + 1];
-	unsigned int symadr;
+    uint16_t symadr;
 	int8_t ofst;
 	uint8_t macf;
 	char symtyp;
@@ -56,6 +56,7 @@ typedef struct {
 
 ssstype sss[MAXSYMS];
 uint16_t symnum, symnumext;
+
 uint8_t* xlram;
 
 void hit_Enter(void);

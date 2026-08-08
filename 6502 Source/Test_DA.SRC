@@ -1,5 +1,5 @@
 
-        out l
+        out lt
 
 ;------------------------------------------------
 ; Test of DA directive
@@ -52,4 +52,4 @@ TABLE:        DA $11,$22,$33
 ; Labels as addresses should become words
         DA TABLE
 
-*        END
+;*        END

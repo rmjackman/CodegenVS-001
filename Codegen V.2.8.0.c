@@ -119,7 +119,7 @@ char* linbegptr;	// begin of present line
 
 size_t txtsiz = 0, include_txtsiz = 0;
 
-uint16_t symnum = 0, symval = 0;
+uint16_t symval = 0;
 int linnum_sav2 = 0, linnum = 0, linnum_sav = 0, mismatch_linnum = 0;
 uint16_t pc = 0, pc_sav = 0, mismatch_pc = 0;
 int presymnum = 0;
