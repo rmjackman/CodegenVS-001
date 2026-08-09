@@ -108,7 +108,8 @@ const unsigned char data[21][15] = {
 
 
 #if ATARI800
-unsigned int sgndtb[100] = { 0 }, * sgndtbptr1, * sgndtbptr2, pcsv;
+unsigned int sgndtb[100] = { 0 }, * sgndtbptr1, * sgndtbptr2;
+uint16_t pcsv;
 #endif
 
 char ch = 0;
@@ -266,6 +267,7 @@ int main(int argc, char* argv[]) {
 	char* labptr;
 
 	short verif_flg = 0; // 0 = no verification, 1 = verification, 2 = round trip verification
+	uint16_t seg_beg_sav = 0;
 
 #if ROUND_TRIP_VERIFICATION
 
@@ -428,7 +430,7 @@ int main(int argc, char* argv[]) {
 		printf("txtsiz = %zu\n", txtsiz);
 
 
-#define POINTER_ARITHMATIC_TEST 1
+#define POINTER_ARITHMATIC_TEST 0
 #if POINTER_ARITHMATIC_TEST
 		for (size_t i = 0; i < 10; i++) {
 			printf("%zu: %02X '%c'\n",
@@ -919,6 +921,10 @@ int main(int argc, char* argv[]) {
 					if (contains_word_icase(assdirecs, opcstr))
 						error("Directive must be followed by a single space (not tab) and an operand");
 				}
+				
+				if (pc < pc_sav && orgflg) // if pc is lower than the previous pc, something is wrong e.g. overflow
+					error("Program counter overflow");
+				
 				*prnlnbuf = '\0';
 				*prnlnbufbeg = '\0';
 				if ((pass == 2) && strpbrk(outflgs, "Ll")) {
@@ -1369,7 +1375,11 @@ int main(int argc, char* argv[]) {
 							orgflg = 1;
 						}
 						else {
-							printf("to %4X\n", pc - 1);		/*write NDAD */
+							printf("to %4X\n", (uint16_t)(pc - 1));		/*write NDAD */
+							if (seg_beg_sav >= (uint16_t)(pc - 1))
+								error("Program counter overflow: Segment end must be greater than segment begin");
+
+
 #if ATARI800
 							* sgndtbptr1++ = pc - 1;
 #endif
@@ -1377,7 +1387,8 @@ int main(int argc, char* argv[]) {
 						//if (*txtptr == '*')
 						sectyp('*');
 						pc = expresstoi();
-
+						pc_overflow_flg = false;
+						pc_sav = pc;
 #if ATARI800
 						if (!objfile_flag)	// If not an oject file,
 						{					// we need the load-file header specific to ATARI.
@@ -1392,7 +1403,7 @@ int main(int argc, char* argv[]) {
 						}
 #endif
 						printf("Segment %4X ", pc);
-					
+						seg_beg_sav = pc;
 
 					}
 					continue;
@@ -1899,8 +1910,10 @@ int main(int argc, char* argv[]) {
 
 
 			}// end toxlbuf  end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf
-			printf("to %4X\n", pc - 1);
-
+			printf("to %4X\n", (uint16_t)(pc - 1));		/*write last segment end address NDAD */
+			if (seg_beg_sav >= (uint16_t)(pc - 1))
+				error("Program counter overflow: Segment end must be greater than segment begin");
+			
 			if (pass == 1) {
 				puts("Checking symbols ...");
 

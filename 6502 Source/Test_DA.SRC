@@ -81,7 +81,7 @@ BASE    DFW $5555
 
 FAR     DFB $66
 
-        ORG $2100
+        ORG $fffe
 
 FARAWAY DFB $77
 
@@ -97,8 +97,8 @@ FARAWAY DFB $77
 
 BEFORE  DFW FARAWAY       ; target $FFFD, symbol is $FFFF
 
-*        ORG $600
+        ORG $fffc
 
-*LAST    LDA $99        ; LAST = $FFFF
+LAST    LDA $99        ; LAST = $FFFF
 
-*        DFW LAST       ; target wraps past $FFFF if necessary
+        DFW LAST       ; target wraps past $FFFF if necessary

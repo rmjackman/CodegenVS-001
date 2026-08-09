@@ -85,7 +85,7 @@ void disassemble(const char* filename) {
 	int i = 0;
 	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
 
-#if CREATE_DBG
+	//#if CREATE_DBG	ctx is needed in disassln() and dbg_sym() to pass the context to those functions. It is declared here as a stack variable, so it will be automatically cleaned up when disassemble() returns. This avoids the need for global variables and makes the code cleaner and more maintainable.
 
 	DbgContext ctx;   // ← HERE (stack-owned, clean, no globals)
 
@@ -101,7 +101,7 @@ void disassemble(const char* filename) {
 	} DbgContext;
 
 	int span_id = 0;
-#endif
+//#endif
 
 
 	if (extension_pos == NULL) {
@@ -296,7 +296,8 @@ void disassemble(const char* filename) {
 
 			print_line();
 
-
+			if (pc < pcsav) // if pc is lower than the previous pc, something is wrong e.g. overflow
+				break;
 			if (pc == end_address[segment] + 1)
 				break;
 			if (pc > end_address[segment] + 1) {
