@@ -897,7 +897,7 @@ void adnmw2(uint16_t ska) {
 #endif
 
 
-#define TEST 1
+#define TEST 0
 #if TEST
 		if (pc >= 0x600) {
 			printf("\npc = $%x\n", pc);

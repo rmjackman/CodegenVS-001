@@ -93,10 +93,12 @@ FARAWAY DFB $77
 ; $FFFD boundary
 ; --------------------------------------------------------------
 
-        ORG $FeFD
+        ORG $FFF0
 
-BEFORE  DFW LAST       ; target $FFFD, symbol is $FFFF
+BEFORE  DFW FARAWAY       ; target $FFFD, symbol is $FFFF
 
-LAST    DFB $99        ; LAST = $FFFF
+*        ORG $600
 
-        DFW LAST       ; target wraps past $FFFF if necessary
+*LAST    LDA $99        ; LAST = $FFFF
+
+*        DFW LAST       ; target wraps past $FFFF if necessary

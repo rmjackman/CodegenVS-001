@@ -223,6 +223,7 @@ static char dsk_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char cmp_file[MAX_FILENAME_LEN + 1] = { 0 };
 char current_global[MAX_LABEL_SIZE] = "";
 char stand_alone_label[MAX_LABEL_SIZE] = "";
+bool pc_overflow_flg = false;
 
 /****************************    main()     ****************/
 
@@ -238,7 +239,7 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 
-	char* txtbuf = (char*)malloc(MAX_TXT_SIZ);
+	char* txtbuf = calloc(MAX_TXT_SIZ, sizeof * txtbuf);
 	if (txtbuf == NULL) {
 		printf("Can't allocate memory for text buffer.\a\n");
 		hit_Enter();
@@ -422,6 +423,32 @@ int main(int argc, char* argv[]) {
 
 		txtsiz = fread(txtbuf, 1, MAX_TXT_SIZ, stream);// Read SRC file into buffer
 		fclose(stream);
+
+
+		printf("txtsiz = %zu\n", txtsiz);
+
+
+#define POINTER_ARITHMATIC_TEST 1
+#if POINTER_ARITHMATIC_TEST
+		for (size_t i = 0; i < 10; i++) {
+			printf("%zu: %02X '%c'\n",
+				txtsiz - 10 + i,
+				(unsigned char)txtbuf[txtsiz - 10 + i],
+				(txtbuf[txtsiz - 10 + i] >= 32 && txtbuf[txtsiz - 10 + i] < 127)
+				? txtbuf[txtsiz - 10 + i] : '.');
+		}
+		printf("\n");
+		txtendptr = txtbuf + txtsiz;
+		for (size_t i = 0; i < 10; i++) {
+			printf("%zu: %02X '%c'\n",
+				txtsiz - 10 + i,
+				(unsigned char)*(txtendptr - 10 + i),
+				(*(txtendptr - 10 + i) >= 32 && *(txtendptr - 10 + i) < 127)
+				? *(txtendptr - 10 + i) : '.');
+		}
+
+		getchar();
+#endif
 
 		if (txtsiz == MAX_TXT_SIZ) {
 			puts("File is too long");
@@ -1330,6 +1357,7 @@ int main(int argc, char* argv[]) {
 				/* ORG */
 
 				if ( _stricmp(opcode, "ORG") == 0) {
+					pc_overflow_flg = false;
 					if (*stand_alone_label)
 						error("ORG cannot be used with a stand-alone label");
 					txtptr++;
@@ -1370,7 +1398,9 @@ int main(int argc, char* argv[]) {
 					continue;
 				}
 
-
+				//if (pc_overflow_flg) {
+				//	error("Program counter overflowed. Please check your ORG and RMB directives.");
+				//}
 
 				/* DFB */
 
@@ -2711,12 +2741,16 @@ void toxlbuf(uint8_t ch) {
 	if (!orgflg)
 		error("ORG value must precede this line");
 
+	if (pc == 0xFFFF)	
+		pc_overflow_flg = true;
+
 	*xlbfptr = ch;
 #if DISASSEMBLE
 	* (xlram + pc) = ch;
 #endif
 	xlbfptr++;
 	pc++;
+
 
 	if (pass == 2) {
 		bytcnt++;
