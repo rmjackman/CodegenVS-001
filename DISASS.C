@@ -281,6 +281,9 @@ void disassemble(const char* filename) {
 		while (1) {
 			pcsav = pc;
 
+			if (pc == 0x8572) 
+				pc=pc;	//breakpoint
+
 			pc = disassln(&ctx, pc);// D I S A S S   L I N E
 
 #if CREATE_DBG
@@ -294,10 +297,24 @@ void disassemble(const char* filename) {
 			if (pc == 0x94a9)
 				pc=pc;	//breakpoint
 
+
 			print_line();
 
-			if (pc < pcsav) // if pc is lower than the previous pc, something is wrong e.g. overflow
+
+#define TEST_CODE 1
+
+#if TEST_CODE
+// This code eliminates error in Test_DA and label-not-found error in T31
+			if (pc < pcsav && (lo_hi_task == 0)) { // if pc is lower than the previous pc, something is wrong e.g. overflow
+				
+				
+				printf("\nPC < PCSAV: PC = $%X, PCSAV = $%X\n", pc, pcsav);
+				printf("%s\n", line_buffer);
 				break;
+
+			}
+#endif
+
 			if (pc == end_address[segment] + 1)
 				break;
 			if (pc > end_address[segment] + 1) {

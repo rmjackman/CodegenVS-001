@@ -7,7 +7,7 @@
 * ATMAS-II compatible Source code
 * Assemble using the CODEGEN Macro ASSEMBLER for PC
 *
-
+	VERIFY
 * Use the CPFL directive to compare the generated code with another file
 
 *	CPFL SGEN416.LOAorig
