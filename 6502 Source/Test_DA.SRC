@@ -43,7 +43,7 @@ SYM1    DFB $11
 ; Several consecutive positive offsets
 ; --------------------------------------------------------------
 
-TABLE   DFB $10,$20,$30,$40,$50,$60
+TABLE   DFB $10,$20,$30,$40,$50,$60,$78,$57,$53
 
         DFW TABLE
         DFW TABLE+1
@@ -81,7 +81,7 @@ BASE    DFW $5555
 
 FAR     DFB $66
 
-        ORG $fffe
+        ORG $8ffe
 
 FARAWAY DFB $77
 
@@ -99,6 +99,7 @@ BEFORE  DFW FARAWAY       ; target $FFFD, symbol is $FFFF
 
         ORG $fffc
 
-LAST    LDA $99        ; LAST = $FFFF
+LAST    dfb $99        ; LAST = $FFFF
 
         DFW LAST       ; target wraps past $FFFF if necessary
+FINAL   ASC "E"

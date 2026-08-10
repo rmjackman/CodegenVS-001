@@ -417,6 +417,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 			if (*codeptr > 9) ptc('$'); // only if $ is needed
 			pts_p("%X", *codeptr++);
 			ska++;
+			if (ska == 0) break;// prevention of overflow
 			if (ska > end_address[segment]) return(ska);
 			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
 			if (cnt-- == 0) break;
@@ -435,6 +436,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 				adr = adnmb(codeptr++);
 
 			ska++;
+			if (ska == 0) break; // prevention of overflow
 			if (ska > end_address[segment]) return(ska);
 			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
 			if (cnt-- == 0) break;
@@ -465,25 +467,27 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 		pt_ska_comment(adr);
 		return (ska + 2);
 
-	case '\\':
+	case '\\':// last character of string inverted
 		pts("ASC ");
 		ptc('\\');
 		while (!((*codeptr) & 128)) {// until end of original string
 			ptc(*codeptr++);
 			ska++;
+			if (ska == 0) break; // prevention of overflow
 		}
 		ptc((*codeptr) & 127);
 		ptc('\\');
 		return(++ska);
 
-	case '"':
+	case '"':// normal or invertedASC string
 		cnt = ASC_STRING_LENGTH;
 		pts("ASC ");
 		if (*codeptr & 128) {
-			ptc('/');
+			ptc('/');// invertedASC string
 			while (*codeptr & 128) {
 				ptc(127 & *codeptr++);
 				ska++;
+				if (ska == 0) break; // prevention of overflow
 				if (sss[sno + 1].symadr == ska) break;
 				if (--cnt == 0) break;
 			}
@@ -491,27 +495,29 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 			return(ska);
 		}
 		else {
-			ptc('"');
+			ptc('"');// normal ASC string
 			while (!(*codeptr & 128)) {
 				ptc(*codeptr++);
 				ska++;
+				if (ska == 0) break; // prevention of overflow
 				if (sss[sno + 1].symadr == ska) break;
 				if (--cnt == 0) break;
 			}
 			ptc('"');
 			return(ska);
 		}
-	case '$':
+	case '$':// normal or inverted screen-code string
 		cnt = ASC_STRING_LENGTH;
 
 		pts("ASC ");
-		if (*codeptr & 128) {
+		if (*codeptr & 128) {// inverted screen-code string
 			ptc('$');
 			while (*codeptr & 128) {
 				ch = intern_to_atascii(*codeptr);
 				ptc(127 & ch);
 				codeptr++;
 				ska++;
+				if (ska == 0) break; // prevention of overflow
 				if (sss[sno + 1].symadr == ska) break;
 				if (--cnt == 0) break;
 			}
@@ -520,11 +526,12 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 		}
 		else {
 			ptc('%');
-			while (!(*codeptr & 128)) {
+			while (!(*codeptr & 128)) {// normal screen-code string
 				ch = intern_to_atascii(*codeptr);
 				ptc(ch);
 				codeptr++;
 				ska++;
+				if (ska == 0) break; // prevention of overflow
 				if (sss[sno + 1].symadr == ska) break;
 				if (--cnt == 0) break;
 			}
