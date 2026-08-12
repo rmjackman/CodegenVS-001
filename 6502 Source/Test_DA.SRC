@@ -43,12 +43,20 @@ NMIST   EQU $D40F
         DA $4043
         DA TARGET
         DA TARGET+1
+        DA TARGET+2
+        DA TARGET+3
+        DA TARGET+4
         DA $4043
-
-TARGET  DA $11,$22,$33,$44,$55
-
-        DA >TARGET
-        DA <TARGET
+begin   TAX
+        TXA
+        lda <#target
+        sta 9 
+        lda >#target 
+        sta 10
+TARGET  DA $11,$22,$33,$44,$55,#>target
+        DA TARGET+4
+        DA >$8090
+        DA <$8090
 
         DA "END"
 

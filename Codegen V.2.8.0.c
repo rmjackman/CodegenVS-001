@@ -1409,9 +1409,14 @@ int main(int argc, char* argv[]) {
 					continue;
 				}
 
-				//if (pc_overflow_flg) {
-				//	error("Program counter overflowed. Please check your ORG and RMB directives.");
-				//}
+				
+				{// This is here only to reverse <# and >#. The operand is not yet needed
+					char* txtptr_sav = txtptr;
+					find_operand();
+					txtptr = txtptr_sav;
+				}
+
+
 
 				/* DFB */
 
@@ -2570,13 +2575,13 @@ uint32_t symtoi1() {
 #if !ATMAS_II_COMPATIBLE
 	
 	
-	if (ch == '<') {				//  skip '#'
+	if (ch == '<') {
 		txtptr++;
 		uint32_t result = symtoi1(strbeg);
 		result &= 0xFF;
 		return(result);
 	}
-	if (ch == '>') {				//  skip '#'
+	if (ch == '>') {
 		txtptr++;
 		uint32_t result = symtoi1(strbeg);
 		result >>= 8;
@@ -2688,10 +2693,9 @@ uint32_t symtoi1() {
 			char* txtptr_tmp = txtptr;
 			if (*txtptr == '+' && (isdigit(txtptr[1]) || txtptr[1] == '$'))	//e.g. LDA SYMBOL+2
 			{
-				uint8_t ofst_candidate = expresstoi(txtptr);
+				uint8_t ofst_candidate = expresstoi(txtptr);					// e.g. SYMBOL+2-7+$10
 				if (ofst_candidate > sssptr->ofst && ofst_candidate < 128)		// if offset > than what is already set
-					//sssptr->ofst = txtptr[1] - '0';		// Set offset
-					sssptr->ofst = ofst_candidate;				// Set offset
+					sssptr->ofst = ofst_candidate;								// Set offset
 			}
 			else if ((*txtptr == '-') && (!isalpha(txtptr[1])))			//e.g. LDA SYMBOL-3
 				if ((signed char)(256 - (txtptr[1] - '0')) < sssptr->ofst)		// if offset < than what is already set
@@ -2873,7 +2877,10 @@ void find_operand(void) {
 
 			while (!(strchr(" \t\n", *linptr)))									// create operand[]
 			{
-
+				if (linptr[1] == '#' && (linptr[0] == '<' || linptr[0] == '>')) {// if #< or #>
+					linptr[1] = linptr[0];										// change to <# or >#
+					linptr[0] = '#';
+				}
 				if ((*linptr == '\'') && (*(linptr + 1) == ' ') && (*(linptr + 2) == '\'')) {	// test for ' '
 					operand[cnt++] = *linptr++;
 					operand[cnt++] = *linptr++;
