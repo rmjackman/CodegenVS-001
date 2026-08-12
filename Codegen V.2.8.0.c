@@ -1713,8 +1713,9 @@ int main(int argc, char* argv[]) {
 						txtptr++;
 #endif
 					intval = expresstoi_p2();
-					if (pc == 0x3165) //0x4946
-						i = 99;
+
+					//if (pc == 0x3165) //0x4946
+					//	i = 99;
 
 					if ((operand[1] == '\'') && strlen(operand) == 4)
 						sectyp('\'');
@@ -2548,7 +2549,8 @@ uint32_t symtoi1() {
 	char ch = 0;
 	unsigned int i = 0, chrcnt = 0;
 	ssstype* sssptr;
-
+	bool unary_LT = 0;
+	bool unary_GT = 0;
 	ptr = strbeg;
 	ch = *txtptr;
 	symfg = 0;
@@ -2565,7 +2567,22 @@ uint32_t symtoi1() {
 		txtptr++;
 		ch = *txtptr;
 	}
-			
+#if !ATMAS_II_COMPATIBLE
+	
+	
+	if (ch == '<') {				//  skip '#'
+		txtptr++;
+		uint32_t result = symtoi1(strbeg);
+		result &= 0xFF;
+		return(result);
+	}
+	if (ch == '>') {				//  skip '#'
+		txtptr++;
+		uint32_t result = symtoi1(strbeg);
+		result >>= 8;
+		return(result);
+	}
+#endif
 	if (isdigit(ch))				/*  :Decimal */
 	{
 		while (isdigit(*txtptr))
@@ -2614,13 +2631,13 @@ uint32_t symtoi1() {
 	default: //label
 		if (isspace(*txtptr)) error("Ilegal space, tab, or end of line");
 #if ATMAS_II_COMPATIBLE
-		if (!(isalpha(*txtptr))) 
+		if (!(isalpha(*txtptr)))
 			error("Label must begin with a letter");
 		while (isalnum(*txtptr))
 			*ptr++ = (char)(*txtptr++);
 		*ptr = '\0';//label
 #else
-		if (!(isalpha(*txtptr) || *txtptr == '.')) 
+		if (!(isalpha(*txtptr) || *txtptr == '.'))
 			error("Label must begin with a letter or period");
 		while (isalnum(*txtptr) || *txtptr == '.' || *txtptr == '_')
 			*ptr++ = *txtptr++;
@@ -2632,8 +2649,10 @@ uint32_t symtoi1() {
 	//printf ("opcode: %s\tstrbeg: %s\n",operand,strbeg);
 
 	if (pass == 1) {
-		if (find_symad_flg)
+		if (find_symad_flg) {
+			
 			return(symtoi3(strbeg));
+		}
 	}
 	else /* pass == 2 */
 	{

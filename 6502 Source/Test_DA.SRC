@@ -1,105 +1,63 @@
 
-        out lt
         verify
+        out lt
+VALUE   EQU $A
+NMIST   EQU $D40F
 
-        ORG $2000
+        ORG $4000
 
-; --------------------------------------------------------------
-; Positive offsets
-; --------------------------------------------------------------
+        DA 0,1,2,3,$FE,$FF
 
-POS     DFB $AA
+        DA $100
+        DA $101
+        DA $1234
+        DA $FFFF
 
-P01     DFW POS
-P02     DFW POS+1
-P03     DFW POS+2
-P04     DFW POS+3
+        DA 'A','A','B','C'
 
+        DA $12,$34
 
-; --------------------------------------------------------------
-; Negative offsets
-; --------------------------------------------------------------
+        DA %00000001
+        DA %11111111
 
-NEG     DFB $BB
+        DA "AABC1234567890"
 
-N01     DFW NEG-1
-N02     DFW NEG-2
-N03     DFW NEG-3
-N04     DFW NEG-4
+        DA \ABC
 
+        DA /ABC/
 
-; --------------------------------------------------------------
-; Symbol before/after target
-; --------------------------------------------------------------
+        DA 1
 
-        DFW SYM1          ; target is BEFORE SYM1
+        DA $1234
 
-SYM1    DFB $11
+        DA 2
 
-        DFW SYM1          ; target is AFTER SYM1
+        DA $5678
 
+        DA 3,$A,$B,$FF
 
-; --------------------------------------------------------------
-; Several consecutive positive offsets
-; --------------------------------------------------------------
+        DA $100
+        DA $104
+        DA TARGET
+        DA TARGET+1
+        DA $4043
+        DA TARGET
+        DA TARGET+1
+        DA $4043
 
-TABLE   DFB $10,$20,$30,$40,$50,$60,$78,$57,$53
+TARGET  DA $11,$22,$33,$44,$55
 
-        DFW TABLE
-        DFW TABLE+1
-        DFW TABLE+2
-        DFW TABLE+3
-        DFW TABLE+4
-        DFW TABLE+5
+        DA >TARGET
+        DA <TARGET
 
+        DA "END"
 
-; --------------------------------------------------------------
-; Word symbol
-; --------------------------------------------------------------
+        DA 0
 
-WORD    DFW $1234
+        DA TARGET
 
-        DFW WORD
-        DFW WORD+1
-        DFW WORD+2
+        DA 'X'
 
+        DA 7
 
-; --------------------------------------------------------------
-; Negative offsets around a word symbol
-; --------------------------------------------------------------
-
-BASE    DFW $5555
-
-        DFW BASE-1
-        DFW BASE-2
-        DFW BASE-3
-
-
-; --------------------------------------------------------------
-; Symbol far away
-; --------------------------------------------------------------
-
-FAR     DFB $66
-
-        ORG $8ffe
-
-FARAWAY DFB $77
-
-        DFW FARAWAY
-        DFW FAR
-
-
-; --------------------------------------------------------------
-; $FFFD boundary
-; --------------------------------------------------------------
-
-        ORG $FFF0
-
-BEFORE  DFW FARAWAY       ; target $FFFD, symbol is $FFFF
-
-        ORG $fffc
-
-LAST    dfb $99        ; LAST = $FFFF
-
-        DFW LAST       ; target wraps past $FFFF if necessary
-FINAL   ASC "E"
+        DA %00001010
