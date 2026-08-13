@@ -49,6 +49,7 @@ NMIST   EQU $D40F
         DA $4043
 begin   TAX
         TXA
+        ASL !comment
         lda <#target
         sta 9 
         lda >#target 

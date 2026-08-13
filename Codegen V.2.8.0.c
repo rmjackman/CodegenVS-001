@@ -2865,22 +2865,32 @@ void find_operand(void) {
 
 	int cnt = 0;
 	char* linptr;
+	char* linptr2;
 
 	switch (*txtptr++) {
 	case '\n':
 	case '\t':	break;
 	case ' ':
 		linptr = txtptr;
-		if (!strchr(" \t\n", *txtptr))	// there is an operand
+		linptr2 = txtptr;
+
+		if (!strchr("! \t\n", *txtptr))	// there is an operand
 		{
 			if (*txtptr == '(') txtptr++;
 
-			while (!(strchr(" \t\n", *linptr)))									// create operand[]
+			//if " #<" or ",#>" in operand, change to " <#" or ",>#"
+			while (!(strchr("! \t\n", *linptr2)))
 			{
-				if (linptr[1] == '#' && (linptr[0] == '<' || linptr[0] == '>')) {// if #< or #>
-					linptr[1] = linptr[0];										// change to <# or >#
-					linptr[0] = '#';
+				if (linptr2[-1] == ' ' || linptr2[-1] == ',') {							// if " #<" or ",#>".
+					if (linptr2[1] == '#' && (linptr2[0] == '<' || linptr2[0] == '>')) {// BUG: If either were in an ASC string, they would be changed too!!!
+						linptr2[1] = linptr2[0];										// change to " <#" or ",>#"
+						linptr2[0] = '#';
+					}
 				}
+				linptr2++;
+			}
+			while (!(strchr("! \t\n", *linptr)))									// create operand[]
+			{
 				if ((*linptr == '\'') && (*(linptr + 1) == ' ') && (*(linptr + 2) == '\'')) {	// test for ' '
 					operand[cnt++] = *linptr++;
 					operand[cnt++] = *linptr++;
