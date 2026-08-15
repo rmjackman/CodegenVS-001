@@ -45,7 +45,7 @@
 #define MAX_LABEL_SIZE 64		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
 #define MAXDUMS 20
 #define LSTBYTES 4
-
+#define DA_QUOTATION_MARKS "\"!&/=?[\\]^|" // for DAT
 enum { UNUSED, SYMBOL, MACRO, MACRO_UNUSED, MACRO_LAB };
 
 
@@ -150,6 +150,7 @@ int endifnum = 0;
 short bytcnt = 0;
 short prnlnum = 0;
 uint8_t syms_in_expr = 0;
+bool reverse_unary_ch_flg = 1;
 
 char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
@@ -552,6 +553,8 @@ int main(int argc, char* argv[]) {
 
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
 
+				reverse_unary_ch_flg = 1;	// reset for each line
+				
 				if ((*txtptr == 0) && (include_flg)) {
 					linnum = linnum_sav;
 					txtptr = txtptr_sav;
@@ -723,6 +726,7 @@ int main(int argc, char* argv[]) {
 				switch (*txtptr) {
 				case '?':
 				case '\n':					// empty line
+				case '!':
 				case ';':	continue;
 				case '*':	star_flg = 1;	// comment
 					continue;
@@ -874,12 +878,16 @@ int main(int argc, char* argv[]) {
 
 				*ptr = 0; //opcode finalised
 
-				/*  Check operand for directives   */
+
+				
+
+
+				/*  Check opcode for directives   */
 
 				if (opcode[0] == '.' && (contains_word_icase(assdirecs, (opcode + 1))|| contains_word_icase(assdirecssolo, (opcode + 1)))) 
 					memmove(opcode, opcode + 1, strlen(opcode));
 
-				/*  Check operand for alias directives   */
+				/*  Check opcode for alias directives   */
 #if !ATMAS_II_COMPATIBLE
 
 				if (contains_word_icase(" MAC ",opcode)) {
@@ -1530,7 +1538,7 @@ int main(int argc, char* argv[]) {
 					
 					data_flg = 1;
 					do {
-						if (strchr("\"\\/", txtptr[1]) ){
+						if (strchr(DA_QUOTATION_MARKS, txtptr[1]) ){
 							
 							emit_ascii_string();
 							
@@ -1556,7 +1564,6 @@ int main(int argc, char* argv[]) {
 				}
 
 				/* Find operand   Find operand  Find operand  Find operand  Find operand  Find operand  Find operand */
-
 
 				find_operand();
 
@@ -1681,7 +1688,6 @@ int main(int argc, char* argv[]) {
 					if (!((len == 2) ||
 						(len == 3 && operand[2] == '\''))){ 
 						//printf("\n\noperand: %s\noperand length: %zu", operand, len);
-
 						for (size_t i = 0; i <= strlen(operand); i++) {
 							printf("operand[%zu] = 0x%02X '%c'\n",
 								i,
@@ -2876,20 +2882,32 @@ void find_operand(void) {
 
 		if (!strchr("! \t\n", *txtptr))	// there is an operand
 		{
-			if (*txtptr == '(') txtptr++;
+			if (*txtptr == '(') 
+				txtptr++; // skip "(" -- potential BUG!!! e.g. (label + 1)*2
 
-			//if " #<" or ",#>" in operand, change to " <#" or ",>#"
-			while (!(strchr("! \t\n", *linptr2)))
-			{
-				if (linptr2[-1] == ' ' || linptr2[-1] == ',') {							// if " #<" or ",#>".
-					if (linptr2[1] == '#' && (linptr2[0] == '<' || linptr2[0] == '>')) {// BUG: If either were in an ASC string, they would be changed too!!!
-						linptr2[1] = linptr2[0];										// change to " <#" or ",>#"
-						linptr2[0] = '#';
+			//******************if " #<" or ",#>" in operand, change to " <#" or ",>#"****************
+			if (reverse_unary_ch_flg && pass == 1) {
+				while (!(strchr(" \t\n", *linptr2))) {
+					if (linptr2[-1] == ' ' || linptr2[-1] == ',') {
+						char* ch_ptr = strchr(DA_QUOTATION_MARKS, *linptr2);
+						if (ch_ptr) {
+							do {
+								linptr2++;
+							} while (*linptr2 != *ch_ptr
+								&& *linptr2 != '\n'
+								&& *linptr2 != '\0');
+						}
+						else if (linptr2[1] == '#' && (linptr2[0] == '<' || linptr2[0] == '>')) {  // if " #<" or ",#<" or " #>" or ",#>".
+							linptr2[1] = linptr2[0];										// change to "<#" to "#<" or ",#>" to "#>"
+							linptr2[0] = '#';
+						}
 					}
+					linptr2++;
+					reverse_unary_ch_flg = 0;	//will remain 0 for all following find_operand calls for present line.
 				}
-				linptr2++;
 			}
-			while (!(strchr("! \t\n", *linptr)))									// create operand[]
+			//**************************************************************************************
+			while (!(strchr(" \t\n", *linptr)))									// create operand[]
 			{
 				if ((*linptr == '\'') && (*(linptr + 1) == ' ') && (*(linptr + 2) == '\'')) {	// test for ' '
 					operand[cnt++] = *linptr++;
