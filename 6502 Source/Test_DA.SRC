@@ -52,7 +52,7 @@ HIGHADR EQU >DATA1
 
 ORG $80
 
-EPZ
+
 TEMP    DFB 0
 COUNT   DFB 0
 SUM     DFW 0
@@ -71,22 +71,27 @@ START
         JSR PRINTTITLE
 
         JSR TESTDATA
-        BCC FAIL
+        BCS +
+        JMP FAIL
 
-        JSR TESTEXPR
-        BCC FAIL
++   JSR TESTEXPR
+        BCS +
+        JMP FAIL
 
-        JSR TESTADDR
-        BCC FAIL
++   JSR TESTADDR
+        BCS +
+        JMP FAIL
 
-        JSR TESTMACRO
-        BCC FAIL
++   JSR TESTMACRO
+        BCS +
+        JMP FAIL
 
-        JSR TESTCPU
++   JSR TESTCPU
 
-        BCC FAIL
+        BCS +
+        JMP FAIL
 
-        JSR PASS
++   JSR PASS
 
         RTS
 
@@ -117,7 +122,7 @@ TDLOOP
         STA SUM+1
 
         INX
-        CPX #DATA1END-DATA1
+        CPX #WORDS-DATA1
         BNE TDLOOP
 
 
@@ -213,7 +218,7 @@ DATA1
         DFB 0,1,2,3,$FE,$FF
         DFB 'A','A','B','C'
 
-DATA1END
+
 
 
 ! ------------------------------------------------
@@ -304,7 +309,7 @@ TESTEXPR
 
 ! Negative value.
 
-        LDA #5+-2
+        LDA #5-2
         CMP #3
         BNE TEFAIL
 
@@ -446,8 +451,8 @@ CLEAR   MACRO
         MEND
 
 
-LOADVAL MACRO
-        LDA #\1
+LOADVAL MACRO A
+        LDA #A
         STA TEMP
         MEND
 

@@ -10,14 +10,14 @@
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\TEMP.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\T31.SRC"
  
-#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"                 
+#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"                 
 
 #include <stdint.h>
 

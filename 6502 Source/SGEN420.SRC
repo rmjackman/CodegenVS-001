@@ -374,7 +374,7 @@ SEGTAB0	EQU $1C00	4 pages (enough for 256 segments)
 SEGTAB1	EQU $1D00	This is DOS scratch RAM
 SEGTAB2	EQU $1E00
 SEGTAB3	EQU $1F00
-* Utility TEXT $BE00, NEWED $BE70, NEWKB $BE78 to $BE7F
+* Utility TEXTbf $BE00, NEWED $BE70, NEWKB $BE78 to $BE7F
 OUTMENSV	EQU $BF00	to $BCA0 - Buffer for 1st 4 lines on screen
 * $BC00 to $C000 remain untouched by FRAMDISK, since at this location,
 *many programs use the Display List and the screen RAM.
@@ -4987,7 +4987,7 @@ loop	  INY
 	  STY MAX
 	  INX
 	  LDA LS,X
-	  STA TEXT,Y
+	  STA TEXTbf,Y
 	  CMP #EOL
 	  BEQ +
 
@@ -4995,7 +4995,7 @@ loop	  INY
 	    BNE loop
 
 	    LDA #EOL
-	    STA TEXT,Y
+	    STA TEXTbf,Y
 	    BNE loop
 
 +	      JMP SHIFT8	(RTS)
@@ -5397,7 +5397,7 @@ CHIF	DFB 0
 
 HATED	EQU $321		E: pointer
 HATKB	EQU $327		K: pointer
-TEXT	EQU $BE00
+TEXTbf	EQU $BE00
 NEWED	EQU $BE70
 NEWKB	EQU $BE78
 
@@ -5428,7 +5428,7 @@ SH1	LDA (EDADV),Y
 	RTS
 ***********************************************************
 EGTBYT	LDY TXPT
-	LDA TEXT,Y
+	LDA TEXTbf,Y
 	CPY MAX
 	BNE H2
 

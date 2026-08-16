@@ -27,7 +27,7 @@
 
 
 #define ROUND_TRIP_VERIFICATION 1
-
+#define LIS_TO_CONSOLE 0
 
 
 /**************************  define  *****************/
@@ -77,6 +77,7 @@ bool contains_word_icase(const char* list, const char* word);
 void emit_byte();
 void emit_word();
 void emit_ascii_string();
+void sourcgen_symtab();
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -192,7 +193,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 "DEY TXA TYA TXS TAY TAX CLV TSX INY DEX CLD INX NOP SED "
 "BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
 
-static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL ORG APPEND RMB INITRMB "
+static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
 #if !ATMAS_II_COMPATIBLE
 "ascii text db byte dw word fill = *= IN OF HX DA DAT ";
@@ -288,8 +289,7 @@ int main(int argc, char* argv[]) {
 		int operno = 0;
 		int i = 0, intval = 0, intval_sav = 0;
 		char label[MAX_LABEL_SIZE] = { 0 };
-		char labelstr[MAX_LABEL_SIZE] = { 0 };
-		char opcstr[MAX_LABEL_SIZE] = { 0 };
+		
 
 		//int temp = 0;
 		
@@ -578,7 +578,9 @@ int main(int argc, char* argv[]) {
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), prnlnbuf);
 
 						fprintf(stream2, "%s", prnlnbufbeg);	//print line to LIS file
-						
+#if LIS_TO_CONSOLE						
+						printf( "%s", prnlnbufbeg);	//print line of LIS file to console
+#endif
 						if (cpfflg)
 							if (mismatchln_flg[0])
 								fprintf(stream2, "%s\n", cmpflbytln[0]);
@@ -807,22 +809,31 @@ int main(int argc, char* argv[]) {
 
 					label[pos] = '\0';
 
-					sprintf_s(labelstr, MAX_LABEL_SIZE, " %s ", label);
-
-					if (strlen(label) == 3) {
-						if (contains_word_icase((const char*)opcds, labelstr))
-							error("You cannot have an opcode at the beginning of a line");
-					}
-					if (contains_word_icase(assdirecs, labelstr) || contains_word_icase(assdirecssolo, labelstr))
-						error("This is an assembler directive. It can't be at the beginning of a line");
 					break;
 				}
 
 
 				/*	********* find opcode ****************************/
 
-				while ((*txtptr == ' ') || (*txtptr == '\t'))
-					txtptr++;
+				
+				if (linnum == 53)
+					linnum = 53;
+
+
+				if (strlen(label) == 3) {
+					if (contains_word_icase(opcds, label))
+						error("You cannot have an opcode at the beginning of a line");
+				}
+				if (contains_word_icase(assdirecs, label) || 
+					contains_word_icase(assdirecssolo, label)) {
+
+					txtptr = linbegptr;	// label is actually an assembler directive, so reset txtptr to beginning of line
+					*label = '\0';	// clear label
+				}
+					
+				else
+					while ((*txtptr == ' ') || (*txtptr == '\t'))
+						txtptr++;
 #if !ATMAS_II_COMPATIBLE
 				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
 
@@ -832,6 +843,7 @@ int main(int argc, char* argv[]) {
 
 					continue;
 				}
+				
 				
 #endif
 				tpsav = txtptr;
@@ -925,8 +937,8 @@ int main(int argc, char* argv[]) {
 				}
 #endif
 				if (!(*txtptr == ' ') || txtptr[1] == ' ' || txtptr[1] == '\n' || txtptr[1] == '\t') {
-					sprintf_s(opcstr, MAX_LABEL_SIZE, " %s ", opcode);
-					if (contains_word_icase(assdirecs, opcstr))
+					
+					if (contains_word_icase(assdirecs, opcode))
 						error("Directive must be followed by a single space (not tab) and an operand");
 				}
 				
@@ -1804,7 +1816,14 @@ int main(int argc, char* argv[]) {
 
 				sectyp(';');
 
-				symval = expresstoi();
+				if (strcmp (operand,"A") ==0	)
+				{
+					*operand = '\0';
+					*txtptr = ' ';
+					symval = 0;
+				}
+				else
+					symval = expresstoi();
 
 				if (symval < 256)// txtptr -> first byte after expression
 				{
@@ -1901,7 +1920,7 @@ int main(int argc, char* argv[]) {
 				if (pass == 2)
 					if (*xlbfptr != (char)data[cnt][operno]) {
 						printf("\n\nOpcode mismatch %X <> %X", 0xff & (*xlbfptr), 0xff & data[cnt][operno]);
-						error("This zero-page label must be defined before present line.");
+						error("This zero-page label must be defined before the present line.");
 					}
 				if (cnt < 0 || operno < 0 || operno >= 13) {
 					error("Index out of bounds in data array");
@@ -2079,20 +2098,10 @@ int main(int argc, char* argv[]) {
 			}
 
 			/* SOURCGEN symbol table */
-			if (strpbrk(outflgs, "Tt")) {
-				if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n") < 0)
-					perror("Error writing to file");
-				for (i = 0; i < symnumext; i++) {
-					if (sss[i].symtyp)
-						fprintf(stream2, "%c ", sss[i].symtyp);
-					else fprintf(stream2, "  ");
-					fprintf(stream2, "%d ", sss[i].ofst);
-					//if (sss[i].comment[0])
-						//fprintf(stream2, "*** %s\n", sss[i].comment);
-					list_label_f2(i);
+						
+			if (strpbrk(outflgs, "Tt"))
+				sourcgen_symtab();
 
-				}
-			}
 			if (lstflg) fclose(stream2);
 
 
@@ -2756,6 +2765,11 @@ void error(char* errstr) {
 	size_t len;
 	char partstr[100];
 
+
+	if (strpbrk(outflgs, "Tt"))
+		sourcgen_symtab();
+	fclose(stream2);	// fclose(&stream2
+
 	printf("\n\nERROR --\n%s\nat ", errstr);
 	if (pc) printf("address $%X, ", pc);
 	printf("line %d\n\n\a", linnum);
@@ -3243,6 +3257,9 @@ char* stristr(const char* str, const char* search) {
 bool contains_word_icase(const char* list, const char* word) {
 	size_t len = strlen(word);
 
+	if (*word == '\0')
+		return false;
+
 	while (*list) {
 		while (*list == ' ')
 			list++;
@@ -3349,4 +3366,21 @@ void emit_word() {
 	symval = expresstoi_p2();
 	toxlbuf((char)symval);
 	toxlbuf((char)(symval >> 8));
+}
+
+void sourcgen_symtab(){
+
+	if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n") < 0)
+		perror("Error writing to file");
+	int i;
+	for (i = 0; i < symnumext; i++) {
+		if (sss[i].symtyp)
+			fprintf(stream2, "%c ", sss[i].symtyp);
+		else fprintf(stream2, "  ");
+		fprintf(stream2, "%d ", sss[i].ofst);
+		//if (sss[i].comment[0])
+			//fprintf(stream2, "*** %s\n", sss[i].comment);
+		list_label_f2(i);
+
+	}
 }
