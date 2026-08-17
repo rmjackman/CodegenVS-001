@@ -729,11 +729,20 @@ int main(int argc, char* argv[]) {
 				case '?':
 				case '\n':					// empty line
 				case '!':
+				case '=':
 				case ';':	continue;
 				case '*':	star_flg = 1;	// comment
 					continue;
 				case ' ':					// white space
-				case '\t':	break;
+				case '\t':	
+					ptr = txtptr;
+					while (*ptr == ' ' || *ptr == '\t')
+						ptr++;
+					if (*ptr == '\n' ||
+						*ptr == ';' )
+						continue;
+					else
+						break;
 				case '#':
 					// Skip block from this '#' to the next line that begins with '#',
 					// or to the end of the text if no second '#' exists.
@@ -840,6 +849,9 @@ int main(int argc, char* argv[]) {
 
 
 					strcpy_s(stand_alone_label, sizeof(stand_alone_label), label);
+					if (strpbrk(outflgs, "Ll")) {
+						fprintf(stream2, "%s\n", stand_alone_label);
+					}
 
 					continue;
 				}
@@ -1040,18 +1052,20 @@ int main(int argc, char* argv[]) {
 								sss[symnum].symadr = i;
 #if SORT_EQU_EPZ
 								if ((_stricmp(opcode, "EQU") == 0) && (i < 256))
-									sss[symnum].symtyp = ']';
-								else //if (_stricmp(opcode, "EPZ") == 0)
-#endif
+									sss[symnum].symtyp = ']'; // EQU denotes a non-address constant less than 256
+								else 
+#endif							
 									sss[symnum].symtyp = '#';
 
+								if ((_stricmp(opcode, "EPZ") == 0) && i >= 256)
+									error("EPZ must define a zero-page address.");
 
 #if COMMENTS2
 								i = 0;
 
 								ptr = txtptr;
 
-								while (*ptr && strchr(" \t*;", *ptr)) {
+								while (*ptr && strchr(" \t*;!=", *ptr)) {
 									ptr++;
 								}
 								while (*ptr != '\n' && i < COMMENT_LEN - 1) {
@@ -1361,6 +1375,7 @@ int main(int argc, char* argv[]) {
 						if (*outflgs && !lstflg) {
 							lstflg = 1;
 							if (fopen_s(&stream2, lstfilename, "w") != 0) file_err("Can't create LST file", lstfilename);
+							printf("Opening LST file %s\n", lstfilename);
 						}
 					}
 					continue;
@@ -2331,13 +2346,327 @@ int main(int argc, char* argv[]) {
 
 
 uint32_t expresstoi() {
+#define NEW_ETI_CODE 1
+
+#if NEW_ETI_CODE
+
+		char infix[50] = { 0 }, postfix[50] = { 0 };
+		char stack[30] = { 0 };
+		int intstack[30] = { 0 };
+		int symval_list[30] = { 0 };
+
+		char notfound = 0;
+		char symval_cnt = '\0';
+		unsigned int i = 0, j = 0, k = 0;
+		int tos = 0;
+		int aa, bb;
+		int result = 0;
+
+		size_t length;
+
+		char* tptrsv = txtptr;
+		char* ptr = infix;
+
+		/*
+		 * < = low byte of complete expression
+		 * > = high byte of complete expression
+		 *
+		 * The operator is removed before the expression is
+		 * tokenised, and applied only after the complete expression
+		 * has been evaluated.
+		 */
+		char byte_op = 0;
+
+
+		/* tokenise ************ */
+
+		if (*txtptr == '<' || *txtptr == '>') {
+			byte_op = *txtptr++;
+			tptrsv = txtptr;
+		}
+
+		if (*operand == '(')
+			*ptr++ = '(';
+
+		if ((*txtptr == '-') || (*txtptr == '+'))
+
+			if (isspace(txtptr[1]))
+				return (symtoi1());
+
+		do {
+			switch (*txtptr) {
+
+			case '+':
+			case '-':
+				if ((tptrsv == txtptr) || (*(txtptr - 1) == '(')) {
+					symval_list[symval_cnt] = 0;
+					*ptr++ = symval_cnt++ + 'A';
+				}
+
+			case '/':
+			case '*':
+			case ')':
+			case '(':
+				*ptr++ = *txtptr++;
+				break;
+
+			case '<':
+			case '>':
+				/*
+				 * < and > are only legal at the beginning
+				 * of the complete expression.
+				 */
+				error("Illegal use of < or >");
+				break;
+
+			case '\'':
+				/* Character constant */
+
+				txtptr++;
+
+				if (*txtptr == '\0')
+					error("Missing character after opening quote");
+
+				symval_list[symval_cnt] =
+					(unsigned char)*txtptr++;
+
+				if (*txtptr != '\'')
+					error("Missing closing quote");
+
+				txtptr++;
+
+				*ptr++ = symval_cnt++ + 'A';
+				break;
+
+			default:
+				if ((symval_list[symval_cnt] =
+					symtoi1()) == NOTFOUND)
+
+					notfound = 1;
+
+				*ptr++ = symval_cnt++ + 'A';
+				break;
+			}
+
+		} while (!(isspace(*txtptr) ||
+			(*txtptr == ',') ||
+			(*txtptr == ':')));
+
+		if (*txtptr == ',')
+			if (toupper(txtptr[1]) == 'X')
+				if (*(txtptr + 2) == ')')
+					if (isspace(*(txtptr + 3)))
+						*ptr++ = ')';
+
+		*ptr = '\0';
+
+
+		/* interpret '*'  ******* */
+
+		ptr = strchr(infix, '*');
+
+		while (ptr) {
+			if (!isalpha(*(ptr + 1)) &&
+				(*(ptr + 1) != '(')) {
+
+				symval_list[symval_cnt] = pc;
+				*ptr = symval_cnt++ + 'A';
+			}
+
+			ptr = strchr(++ptr, '*');
+		}
+
+
+		/* convert to postfix  ********* */
+
+		i = j = k = 0;
+		length = strlen(infix);
+
+		for (i = 0; i < length; i++) {
+
+			if (!strchr("+-*/()", infix[i]))
+
+				postfix[j++] = infix[i];
+
+			else {
+
+				if (tos == 0)
+
+					stack[tos++] = infix[i];
+
+				else {
+
+					if (infix[i] != ')' && infix[i] != '(') {
+
+						if (prec(infix[i]) <=
+							prec(stack[tos - 1]))
+
+							postfix[j++] =
+							stack[--tos];
+
+						stack[tos++] = infix[i];
+					}
+					else {
+
+						if (infix[i] == '(')
+							stack[tos++] = infix[i];
+
+						if (infix[i] == ')') {
+
+							char temp = stack[--tos];
+
+							while (temp != '(') {
+
+								postfix[j++] = temp;
+
+								if (tos == 0)
+									error("Missing opening parenthisis");
+
+								temp = stack[--tos];
+							}
+						}
+					}
+				}
+			}
+
+			postfix[j] = '\0';
+		}
+
+		while (tos != 0)
+			postfix[j++] = stack[--tos];
+
+		postfix[j] = '\0';
+
+
+		/* convert postfix to int *************** */
+
+		tos = 0;
+		ptr = postfix;
+
+		while (*ptr) {
+
+			if (isalpha(*ptr)) {
+
+				if ((*ptr - 'A') < 0) {
+					printf("Program error at codegen line %d "
+						"-- invalid negative argument--",
+						__LINE__ + 4);
+
+					error("invalid argument");
+				}
+
+				intstack[tos++] =
+					symval_list[*ptr - 'A'];
+			}
+			else {
+
+				if (tos <= 0) {
+					printf("Program error at codegen line %d "
+						"-- Buffer overrun due to negative argument",
+						__LINE__ + 4);
+
+					error("invalid argument");
+				}
+
+				bb = intstack[--tos];
+				aa = intstack[--tos];
+
+				switch (*ptr) {
+
+				case '+':
+					intstack[tos++] = aa + bb;
+					break;
+
+				case '-':
+					intstack[tos++] = aa - bb;
+					break;
+
+				case '*':
+					intstack[tos++] = aa * bb;
+					break;
+
+				case '/':
+					intstack[tos++] = aa / bb;
+					break;
+
+				default:
+					if (*ptr == '(')
+						error("Missing closing parenthisis");
+
+					printf("infix: %s   -Character '%c' in %s  "
+						"operand is %s",
+						infix, *ptr, postfix, operand);
+
+					error("Illegal character in postfix expression");
+					break;
+				}
+			}
+
+			ptr++;
+		}
+
+		if (stristr(opcode, "),Y"))
+			txtptr--;
+
+		if (tos <= 0) {
+			printf("Program error at line %d "
+				"-- Buffer overrun due to negative argument",
+				__LINE__ + 4);
+
+			error("invalid argument");
+		}
+
+		result = intstack[--tos];
+
+		if (tos) {
+			printf("\n\noperand: %s   infix: %s   postfix: %s",
+				operand, infix, postfix);
+
+			error("Illegal syntax. Can't resolve expression");
+		}
+
+
+		/*
+		 * Apply < or > AFTER the complete expression has
+		 * been evaluated.
+		 */
+		if (byte_op == '<')
+			result &= 0xFF;
+		else if (byte_op == '>')
+			result = (result >> 8) & 0xFF;
+
+
+		if (notfound)
+			result = NOTFOUND;
+
+#if SHOW_POSTFIX
+
+		if (pass == 2) {
+			if (linnum_sav2 != linnum)
+				printf("line %4d  ", linnum);
+			else
+				printf("           ");
+
+			printf("%s  %s  %d  $%x\n",
+				infix, postfix, result, result & 0xFFFF);
+
+			linnum_sav2 = linnum;
+		}
+
+#endif
+
+		return (result);
+
+
+#else	/* ORIGINAL CODE */
+
+
 	char infix[50] = { 0 }, postfix[50] = { 0 };
 	char stack[30] = { 0 };
 	int intstack[30] = { 0 };
 	int symval_list[30] = { 0 };
 
 	char notfound = 0;
-	//char temp = 0;
 	char symval_cnt = '\0';
 	unsigned int i = 0, j = 0, k = 0;
 	int tos = 0;
@@ -2349,66 +2678,83 @@ uint32_t expresstoi() {
 	char* tptrsv = txtptr;
 	char* ptr = infix;
 
-	// tokenise ************
+	/* tokenise ************ */
 
-	if (*operand == '(')      //because txtptr++ if beginning bracket (multiple beginning brackets?!!!!!!)
+	if (*operand == '(')
 		*ptr++ = '(';
 
-	if ((*txtptr == '-') || (*txtptr == '+'))	// "- " is DO, "+ " is CONT
+	if ((*txtptr == '-') || (*txtptr == '+'))
 
 		if (isspace(txtptr[1]))
 			return (symtoi1());
+
 	do {
 		switch (*txtptr) {
+
 		case '+':
 		case '-':
 			if ((tptrsv == txtptr) || (*(txtptr - 1) == '(')) {
 				symval_list[symval_cnt] = 0;
 				*ptr++ = symval_cnt++ + 'A';
 			}
+
 		case '/':
 		case '*':
 		case ')':
 		case '(':
 			*ptr++ = *txtptr++;
 			break;
-		case '\'':           /* Character constant */
 
-			txtptr++;        // skip opening quote
+		case '\'':
+
+			txtptr++;
 
 			if (*txtptr == '\0')
 				error("Missing character after opening quote");
 
-			symval_list[symval_cnt] = (unsigned char)*txtptr++;
+			symval_list[symval_cnt] =
+				(unsigned char)*txtptr++;
 
 			if (*txtptr != '\'')
 				error("Missing closing quote");
 
-			txtptr++;        // skip closing quote
+			txtptr++;
 
 			*ptr++ = symval_cnt++ + 'A';
 			break;
 
 		default:
-			if ((symval_list[symval_cnt] = symtoi1()) == NOTFOUND) notfound = 1;
+
+			if ((symval_list[symval_cnt] =
+				symtoi1()) == NOTFOUND)
+
+				notfound = 1;
+
 			*ptr++ = symval_cnt++ + 'A';
 		}
-	} while (!(isspace(*txtptr) || (*txtptr == ',') || (*txtptr == ':')));
 
-	if (*txtptr == ',')					//if ",X)"
+	} while (!(isspace(*txtptr) ||
+		(*txtptr == ',') ||
+		(*txtptr == ':')));
+
+	if (*txtptr == ',')
 		if (toupper(txtptr[1]) == 'X')
 			if (*(txtptr + 2) == ')')
 				if (isspace(*(txtptr + 3)))
-					*ptr++ = ')';			// add ')'
+					*ptr++ = ')';
 
 	*ptr = '\0';
 
 
-	// interpret '*'  *******
+	/* interpret '*'  ******* */
 
 	ptr = strchr(infix, '*');
+
 	while (ptr) {
-		if (!isalpha(*(ptr + 1)) && (*(ptr + 1) != '(')) {
+
+		if (!isalpha(*(ptr + 1)) &&
+			(*(ptr + 1) != '(')) {
+
 			symval_list[symval_cnt] = pc;
 			*ptr = symval_cnt++ + 'A';
 		}
@@ -2416,123 +2762,197 @@ uint32_t expresstoi() {
 		ptr = strchr(++ptr, '*');
 	}
 
-	//convert to postfix  *********
+
+	/* convert to postfix  ********* */
 
 	i = j = k = 0;
 	length = 0;
 
 	length = strlen(infix);
+
 	for (i = 0; i < length; i++) {
-		if (!strchr("+-*/()", infix[i]))		//Numbers are added to the postfix string
+
+		if (!strchr("+-*/()", infix[i]))
+
 			postfix[j++] = infix[i];
 
-		else//If an operator or a bracket is encountered...
-		{
-			if (tos == 0) //If the stack is empty, the operator is added to it
+		else {
+
+			if (tos == 0)
 
 				stack[tos++] = infix[i];
 
-			else //stack not empty
-			{       //Operators are pushed or popped based on the order of precedence
-				if (infix[i] != ')' && infix[i] != '(') {
-					if (prec(infix[i]) <= prec(stack[tos - 1]))
-						postfix[j++] = stack[--tos];
+			else {
+
+				if (infix[i] != ')' &&
+					infix[i] != '(') {
+
+					if (prec(infix[i]) <=
+						prec(stack[tos - 1]))
+
+						postfix[j++] =
+						stack[--tos];
+
 					stack[tos++] = infix[i];
 				}
 				else {
+
 					if (infix[i] == '(')
 						stack[tos++] = infix[i];
 
 					if (infix[i] == ')') {
+
 						char temp = stack[--tos];
+
 						while (temp != '(') {
+
 							postfix[j++] = temp;
-							if (tos == 0) error("Missing opening parenthisis");
+
+							if (tos == 0)
+								error("Missing opening parenthisis");
+
 							temp = stack[--tos];
 						}
 					}
 				}
-
 			}
-
 		}
+
 		postfix[j] = '\0';
-
 	}
 
-	while (tos != 0) {
+	while (tos != 0)
 		postfix[j++] = stack[--tos];
-	}
+
 	postfix[j] = '\0';
 
 
-	// convert postfix to int ***************
+	/* convert postfix to int *************** */
 
 	tos = 0;
 	ptr = postfix;
+
 	while (*ptr) {
+
 		if (isalpha(*ptr)) {
+
 			if ((*ptr - 'A') < 0) {
-				printf("Program error at codegen line %d -- invalid negative argument--", __LINE__ + 4);
+
+				printf("Program error at codegen line %d "
+					"-- invalid negative argument--",
+					__LINE__ + 4);
+
 				error("invalid argument");
 			}
-			intstack[tos++] = symval_list[*ptr - 'A'];
+
+			intstack[tos++] =
+				symval_list[*ptr - 'A'];
 		}
+
 		else {
+
 			if (tos <= 0) {
-				printf("Program error at codegen line %d -- Buffer overrun due to negative argument", __LINE__ + 4);
+
+				printf("Program error at codegen line %d "
+					"-- Buffer overrun due to negative argument",
+					__LINE__ + 4);
+
 				error("invalid argument");
 			}
+
 			bb = intstack[--tos];
 			aa = intstack[--tos];
 
 			switch (*ptr) {
-			case '+': intstack[tos++] = aa + bb; break;
-			case '-': intstack[tos++] = aa - bb; break;
-			case '*': intstack[tos++] = aa * bb; break;
-			case '/': intstack[tos++] = aa / bb; break;
+
+			case '+':
+				intstack[tos++] = aa + bb;
+				break;
+
+			case '-':
+				intstack[tos++] = aa - bb;
+				break;
+
+			case '*':
+				intstack[tos++] = aa * bb;
+				break;
+
+			case '/':
+				intstack[tos++] = aa / bb;
+				break;
+
 			default:
-				if (*ptr == '(') error("Missing closing parenthisis");
-				printf("infix: %s   -Character '%c' in %s  operand is %s", infix, *ptr, postfix, operand);
+
+				if (*ptr == '(')
+					error("Missing closing parenthisis");
+
+				printf("infix: %s   "
+					"-Character '%c' in %s  "
+					"operand is %s",
+					infix,
+					*ptr,
+					postfix,
+					operand);
+
 				error("Illegal character in postfix expression");
 				break;
 			}
 		}
+
 		ptr++;
 	}
 
-	if (stristr(opcode, "),Y")) txtptr--;
+	if (stristr(opcode, "),Y"))
+		txtptr--;
 
 	if (tos <= 0) {
-		printf("Program error at line %d -- Buffer overrun due to negative argument", __LINE__ + 4);
+
+		printf("Program error at line %d "
+			"-- Buffer overrun due to negative argument",
+			__LINE__ + 4);
+
 		error("invalid argument");
 	}
+
 	result = intstack[--tos];
 
-	//		if (tos) error ("Illegal syntax in expression");
 	if (tos) {
 
-		printf("\n\noperand: %s   infix: %s   postfix: %s", operand, infix, postfix);
+		printf("\n\noperand: %s   infix: %s   postfix: %s",
+			operand,
+			infix,
+			postfix);
+
 		error("Illegal syntax. Can't resolve expression");
 	}
 
-	if (notfound) result = NOTFOUND;
+	if (notfound)
+		result = NOTFOUND;
 
 #if SHOW_POSTFIX
+
 	if (pass == 2) {
+
 		if (linnum_sav2 != linnum)
 			printf("line %4d  ", linnum);
 		else
 			printf("           ");
-		printf("%s  %s  %d  $%x\n", infix, postfix, result, result & 0xFFFF);
+
+		printf("%s  %s  %d  $%x\n",
+			infix,
+			postfix,
+			result,
+			result & 0xFFFF);
 
 		linnum_sav2 = linnum;
 	}
+
 #endif
 
 	return (result);
-}
 
+#endif	/* NEW_ETI_CODE */
+}
 
 int prec(char symbol) {
 	if (symbol == '(')
@@ -2765,13 +3185,17 @@ void error(char* errstr) {
 	size_t len;
 	char partstr[100];
 
+	if (stream2 != NULL) {
+		if (strpbrk(outflgs, "Tt"))
+			sourcgen_symtab();
 
-	if (strpbrk(outflgs, "Tt"))
-		sourcgen_symtab();
-	fclose(stream2);	// fclose(&stream2
+		fclose(stream2);
+		stream2 = NULL;
+	}
 
 	printf("\n\nERROR --\n%s\nat ", errstr);
-	if (pc) printf("address $%X, ", pc);
+	if (pc)
+		printf("address $%X, ", pc);
 	printf("line %d\n\n\a", linnum);
 	print_visible(linbuf[0]);
 
@@ -2780,12 +3204,11 @@ void error(char* errstr) {
 		strcpy_s(partstr, sizeof(partstr), linbuf[0]);
 		partstr[len] = '\0';
 		printf("%s", partstr);
-		//printf(" txtptr = %x linbegptr = %x len = %i",txtptr,linbegptr,len);
-		//printf("\n%s",linbegptr);
 	}
 	else {
 		printf("Error in macro:\n%s", linbuf[maclevel]);
 	}
+
 	hit_Enter();
 	exit(linnum);
 }

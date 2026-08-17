@@ -218,7 +218,8 @@ DATA1
         DFB 0,1,2,3,$FE,$FF
         DFB 'A','A','B','C'
 
-
+LOWADR  EQU <DATA1
+HIGHADR EQU >DATA1
 
 
 ! ------------------------------------------------
