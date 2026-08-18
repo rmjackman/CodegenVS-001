@@ -355,6 +355,8 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	linebeg_lablen = 0;
 	offset_added = false;
 
+	while (sss[sno].symtyp == ']')
+		sno++;
 	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
 		linebeg_lablen = 0;
 		lnbfptr = beglabbuf;
@@ -564,7 +566,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 
 	default:
-		pts_p("The section type '%c' is not yet implemented\n", sctp);
+		pts_p("; The section type '%c' is not yet implemented\n", sctp);
 
 	}
 	offset = abofst[*codeptr];

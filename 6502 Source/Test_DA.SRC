@@ -4,7 +4,7 @@
 ! ================================================================
 ! CODEGEN EXTENSIVE TEST PROGRAM
 !
-! Atari XL / 6502
+! Atari XL / 6502>
 !
 ! Purpose:
 !   Exercise Codegen's parser, expression evaluator, symbol table,
@@ -45,7 +45,7 @@ VALUE4  EQU (VALUE3/2)+1
 LOWADR  EQU <DATA1
 HIGHADR EQU >DATA1
 
-
+ZUP     EPZ $87
 ! ----------------------------------------------------------------
 ! Zero-page workspace
 ! ----------------------------------------------------------------
@@ -65,6 +65,12 @@ RESULT  DFB 0
 ! ================================================================
 
 ORG $4000
+zzz        DFB #<DATA2
+PRINTTITLE LDY #0
+
+PTLOOP  STA TITLE,X
+
+        LDA ZUP
 
 START
 
@@ -540,11 +546,11 @@ TESTCPU
 ! Shift / rotate.
 
         LDA #1
-        ASL A
+        ASL 
         CMP #2
         BNE TCFAIL
 
-        LSR A
+        LSR 
         CMP #1
         BNE TCFAIL
 
@@ -587,19 +593,15 @@ TCFAIL
 ! PRINT TITLE
 ! ================================================================
 
-PRINTTITLE
 
-        LDX #0
 
-PTLOOP
 
-        LDA TITLE,X
         BEQ PTDONE
 
         JSR PUTCH
 
         INX
-        BNE PTLOOP
+*        BNE PTLOOP
 
 PTDONE
 
@@ -613,23 +615,21 @@ TITLE
 
         ASC 'CODEGEN TEST'
         DFB EOL
-        DFB 0
+PASS        DFB 0
 
 
 ! ================================================================
 ! PASS
 ! ================================================================
 
-PASS
 
-        LDX #0
 
-PASSLOOP
+        JMP $1122
 
         LDA PASSMSG,X
         BEQ PASSDONE
 
-        JSR PUTCH
+PASSLOOP        JSR PUTCH
 
         INX
         BNE PASSLOOP

@@ -1,0 +1,1291 @@
+﻿/************************** include *****************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+
+#include "cdgn_global.h"
+
+#define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
+#define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
+#define MAX_SEGMENTS 256
+#define LINE_BUFFER_SIZE 1000
+
+#define LIST_TO_CONSOLE 0
+#define SHOW_SECTYP_AND_ADDRESS 0
+
+
+#define ASC_STRING_LENGTH 21 //23
+#define DFB_BYTES_PER_LINE 6 //8
+#define SHOW_LO 0 // Show ':L'
+
+//The following switches 1,2,3,5,6,7 correspond aproximately to the output menu switches in SOURCGEN
+#define PRINT_DISS_LINNUM 1		// 0. Set to 1 for correct line numbering in DBG and in MADS.LST files
+#define ADDR_LEFT_COMMENT 0		// 1.
+#define SHOW_LEFT_COMMENT 0		// 2.
+#define PRINT_PCADDRESS_BYTES  1		// 3. Set to 1 for correct line numbering in DBG and in MADS.LST files
+		// COMMAND				// 4. 
+#define SKA_AS_COMMENT    0		// 5. Set to 1 to show SKA as a comment
+#define SHOW_RH_COMMENT   0		// 6. Set to 1 to show right-hand comment
+#define SHOW_JSR          1		// 7. 
+#define PRINT_OPC_BYTES   0		// 8.
+
+#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
+
+uint16_t seg_start_address;
+uint8_t* opcodeptr;
+char line_buffer[LINE_BUFFER_SIZE] = ""; // Global buffer
+uint16_t disassln(DbgContext* ctx, uint16_t ska);
+void phb(uint8_t* ptr);
+uint16_t adnmb(uint8_t* ptr);
+uint16_t adnmw(uint8_t* ptr);
+void adnmw2(uint16_t ska);
+char intern_to_atascii(char ch);
+void pts(const char* str);
+void pts_p(const char* format, ...);
+void ptc(char c);
+char ptb(unsigned char num);
+uint8_t read_loadfile(const char filename[FILENAME_MAX]);
+void pt_ska_comment(uint16_t adr);
+void print_line();
+
+bool offset_added = false; // offset_added
+bool flag[9] = {false};
+uint16_t sno;
+char sctp;
+uint16_t ska_sav, lo_hi_operand; 
+char lo_hi_task;
+uint8_t segment = 0;
+uint8_t number_of_segments;
+uint16_t start_address[MAX_SEGMENTS];
+uint16_t end_address[MAX_SEGMENTS];
+uint16_t pc, pcsav,adr;
+char comment_string[10] = "";
+int symtab_epz = 0;
+int symtab_init = 0;
+bool epz_flg = 0;
+uint16_t isav = 0;
+int diss_linnum = 0;
+int line_skip = 0;
+uint8_t linebeg_lablen = 0;
+char output_filename[FILENAME_MAX];
+FILE* outputfile;
+FILE* madslstfile;
+
+void disassemble(const char* filename) {
+
+
+
+
+	char ch;
+	int i = 0;
+	char* extension_pos = strrchr(filename, '.'); // Find the last occurrence of '.'
+
+	//#if CREATE_DBG	ctx is needed in disassln() and dbg_sym() to pass the context to those functions. It is declared here as a stack variable, so it will be automatically cleaned up when disassemble() returns. This avoids the need for global variables and makes the code cleaner and more maintainable.
+
+	DbgContext ctx;   // ← HERE (stack-owned, clean, no globals)
+
+	typedef struct DbgContext {
+		FILE* fp;
+
+		unsigned next_file_id;
+		unsigned next_seg_id;
+		unsigned next_span_id;
+		unsigned next_line_id;
+		unsigned next_sym_id;
+
+	} DbgContext;
+
+	int span_id = 0;
+//#endif
+
+
+	if (extension_pos == NULL) {
+		fprintf(stderr, "Error: File has no extension.\n");
+		return;
+	}
+
+	size_t base_filename_len = extension_pos - filename; // Calculate the length of the base filename
+	snprintf(output_filename, FILENAME_MAX, "%.*s.SRC", (int)base_filename_len, filename); // Create new filename
+
+	
+	if (fopen_s(&outputfile, output_filename, "w") != 0) {
+		perror("Error opening output file");
+		return;
+	}
+	printf("Create %s with Symbolic Disassembler\n", output_filename);
+
+	if (fopen_s(&madslstfile, "MADS.LST", "w") != 0) {
+		perror("Error opening MADS.LST");
+		return;
+	}
+	fprintf(madslstfile, "mads 2\nSource: %s\n", output_filename);
+
+#if CREATE_DBG
+
+	char dbg_filename[260];
+	strcpy_s(dbg_filename, sizeof(dbg_filename), output_filename);
+	strcpy_s(dbg_filename + strlen(dbg_filename) - 4, sizeof(".DBG"), ".DBG");
+	printf("Create %s\n", dbg_filename);
+	if (!dbg_init(&ctx, dbg_filename, output_filename)) {
+		printf("Cannot create DBG file\n");
+		return;
+	}
+
+#endif
+
+	number_of_segments = read_loadfile(filename); //loafilename
+
+
+
+
+#if PRINT_DISS_LINNUM
+	flag[0] = 1;
+#endif
+#if ADDR_LEFT_COMMENT
+	flag[1] = 1;
+#endif
+#if SHOW_LEFT_COMMENT
+	flag[2] = 1;
+#endif
+#if PRINT_PCADDRESS_BYTES
+	flag[3] = 1;
+#endif
+#if SKA_AS_COMMENT
+	flag[5] = 1;
+#endif
+#if SHOW_RH_COMMENT
+	flag[6] = 1;
+#endif
+#if SHOW_JSR
+	flag[7] = 1;
+#endif
+//#if PRINT_OPC_BYTES
+//	flag[8] = 1;
+//#endif
+
+/********      Init symtab_epz  *******/
+
+	symtab_epz = 0;
+	while (sss[symtab_epz].symtyp==']')
+		symtab_epz++;
+//	printf("symtab_epz = %d\n", symtab_epz);
+
+/********      Write header                  ********/
+	
+	printf ("Writing header\n");
+	bool found = 0;
+	
+	//printf("symnum = %d\n\n", symnum);
+	for (i = 0; i < symnum; i++) {
+		found = 0;
+		if (sss[i].symbol) {
+			//printf("i = %d",i);
+			for (segment = 1; segment <= number_of_segments; segment++) {
+				if ((sss[i].symadr >= start_address[segment]
+					&& sss[i].symadr <= end_address[segment]) // Check if symbol is in segment
+					|| sss[i].symtyp == '*') {  // Check if ORG
+					found = 1;
+					break;
+				}
+				
+			}
+			//printf("    Segment = %d\n", segment-1);
+		}
+		if (found == 0) {
+			
+			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == ']')) {
+				if (epz_flg == 0) {
+					print_line();//empty line
+					epz_flg = 1;
+				}
+				pts_p("%s\tEPZ ", sss[i].symbol);
+	
+			}
+			else {
+				epz_flg = 0;
+				pts_p("%s\tEQU ", sss[i].symbol);
+			}
+			if (sss[i].symadr  > 9) ptc ('$');
+			pts_p("%X", sss[i].symadr);
+
+#if CREATE_DBG
+
+			if (!(sss[i].symtyp == ']')) {
+				dbg_sym(&ctx, ctx.next_sym_id++, sss[i].symbol, sss[i].symadr);
+			}
+#endif
+
+#if SHOW_B_W_FREQUENCY
+
+			if (sss[i].ofst) {
+				pts(" w");
+			}
+			else {
+				pts(" b");
+			}
+			pts_p("%i", sss[i].frequency); 
+#endif // 
+			
+			if (sss[i].comment[0])
+				pts_p(" %s", sss[i].comment);
+			
+			print_line();
+		}
+	}
+
+	
+	for (segment = 1; segment <= number_of_segments; segment++) {
+
+		printf("Writing segment %d\n", segment);
+		pc = start_address[segment];
+
+
+
+		pcsav = 0;
+		print_line();  print_line();
+		pts_p("\tORG $%X", pc); print_line();
+		print_line();
+		
+#if CREATE_DBG
+		seg_start_address = pc;
+		dbg_seg(&ctx, segment, pc);
+#endif
+		
+		sno = 0;
+		while (sss[sno].symadr < pc) {
+			sno++;
+			if (sno == symnum) {
+				sno--;
+				break;				//symbol list ended. Go back one
+			}
+		}
+		if (sss[sno].symadr > pc) sno--;//symbol not found. Go back one
+										//If address in symbol table, stay there
+#define PRINT_COMMENTS 0
+#if PRINT_COMMENTS
+
+		//for (i = 0; i < symnumext; i++) {
+
+			//if (sss[i].comment[0])
+				//printf("*** %s ***\n", sss[i].comment);
+
+		//}
+#endif
+
+		ch = 0;
+		while (1) {
+			pcsav = pc;
+
+			if (pc == 0x8572) 
+				pc=pc;	//breakpoint
+
+			pc = disassln(&ctx, pc);// D I S A S S   L I N E
+
+#if CREATE_DBG
+			if (!((lo_hi_task == 1) || (lo_hi_task == 2))){
+				dbg_span(&ctx, ++ctx.next_span_id, segment, pcsav - seg_start_address, pc - pcsav);
+				dbg_line(&ctx, ctx.next_line_id++, 0, diss_linnum+1, ctx.next_span_id);
+	
+		}
+#endif
+
+			if (pc == 0x94a9)
+				pc=pc;	//breakpoint
+
+
+			print_line();
+
+
+#define TEST_CODE 1
+
+#if TEST_CODE
+// This code eliminates error in Test_DA and label-not-found error in T31
+			if (pc < pcsav && (lo_hi_task == 0)) { // if pc is lower than the previous pc, something is wrong e.g. overflow
+				
+				
+				printf("\nPC < PCSAV: PC = $%X, PCSAV = $%X\n", pc, pcsav);
+				printf("%s\n", line_buffer);
+				break;
+
+			}
+#endif
+
+			if (pc == end_address[segment] + 1)
+				break;
+			if (pc > end_address[segment] + 1) {
+				printf("\aEnd of segment not recognised\n");
+				break;
+			}
+		}
+	}
+	fclose(outputfile); // Close the file
+	fclose(madslstfile); // Close the file
+#if CREATE_DBG
+	dbg_close(&ctx);
+#endif
+	printf("Done writing %s\n", output_filename);
+	return;
+}
+
+/****************** disassln  ********************/
+
+uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- taken from pc
+	uint8_t offset;
+	char* ptr;
+	uint8_t* codeptr;
+
+	char cnt;
+	unsigned int temp;
+	char beglabbuf[64] = { 0 };
+
+	char* lnbfptr = beglabbuf;
+	//char* lnbfptrsv;
+	char ch;
+	uint8_t apparent_line_length = 0;
+
+/***********      Init line_buffer  **************/
+
+	opcodeptr = NULL;
+	line_buffer[0] = '\0';
+	linebeg_lablen = 0;
+	offset_added = false;
+
+	while (sss[sno].symtyp == ']')
+		sno++;
+	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
+		linebeg_lablen = 0;
+		lnbfptr = beglabbuf;
+		if (sss[sno].symbol)
+			while (sss[sno].symbol[linebeg_lablen])
+				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
+	}
+
+	if ((sss[sno + 1].symadr == ska) && (sno < symnum - 1)) {// needed for everything else
+		sno++;
+		linebeg_lablen = 0;
+		lnbfptr = beglabbuf;
+		if (sss[sno].symbol)
+			while (sss[sno].symbol[linebeg_lablen])//label at line beginning
+				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
+
+	}
+
+	*lnbfptr = '\0';
+	sctp = sss[sno].symtyp;
+
+
+#if SHOW_SECTYP_AND_ADDRESS
+	if (sss[sno].symadr == ska) {
+		if (sctp)
+			printf("%c ", sctp);
+		else
+			printf("  ");
+	}
+	else
+		printf("  ");
+	printf("$%X ", ska);
+#endif
+
+
+	if (sss[sno].symadr == pc) {
+		pts("*");					//Change this back to pts("* ");
+		if (flag[1]) //ADDR_LEFT_COMMENT
+			pts_p("%X", pc);
+
+		if (flag[2]) // SHOW_LEFT_COMMENT
+			if (sss[sno].comment[0])
+				pts_p(" %s", sss[sno].comment);
+
+		print_line();
+	}
+
+
+	if (linebeg_lablen){
+		pts_p("%s", beglabbuf); // Label at line beginning
+		
+#if CREATE_DBG
+		dbg_sym(ctx, ctx->next_sym_id++, beglabbuf, pc);
+#endif
+	}
+	ptc('\t');
+	symtab_init = symtab_epz;
+
+	codeptr = xlram + ska;
+	//printf("%c ", sctp);
+	switch (sctp) {
+	case '\0':
+	case ' ':
+	case ';':
+	case '\'':
+	case '!':
+	case '&':
+	case '@':
+	case '(':
+	case '['://(EQU CONSTANT <= $FF)
+	case '<':	break; //normal opcodes
+	//case ']'://This is a temporary solution
+	case '#':
+		cnt = DFB_BYTES_PER_LINE - 1;
+		pts("DFB ");
+		while (1) {
+			if (*codeptr > 9) ptc('$'); // only if $ is needed
+			pts_p("%X", *codeptr++);
+			ska++;
+			if (ska == 0) break;// prevention of overflow
+			if (ska > end_address[segment]) return(ska);
+			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
+			if (cnt-- == 0) break;
+			ptc(',');
+		}
+		return(ska);
+
+	case ',':		//'?' changed to ','
+		cnt = DFB_BYTES_PER_LINE - 1;
+		pts("DFB ");
+		while (1) {
+			symtab_init = 0;
+			if (isprint(codeptr[0]) && (strchr("~{}", codeptr[0]) == 0))
+				pts_p("'%c'", codeptr++[0]);
+			else
+				adr = adnmb(codeptr++);
+
+			ska++;
+			if (ska == 0) break; // prevention of overflow
+			if (ska > end_address[segment]) return(ska);
+			if (sss[sno + 1].symadr == ska) break; //symbol found: New line
+			if (cnt-- == 0) break;
+			ptc(',');
+		}
+		return(ska);
+
+		//if(  memchr(esc_ch_tab, codeptr[0], sizeof(esc_ch_tab)))
+
+	case '%':
+		pts("DFB ");
+		ptc('%');
+		ptb(*codeptr);
+		return(++ska);
+	case '=':
+	case '|':
+		pts("DFW ");
+		if (pc == 0x492c) // 0x492c (4742)
+			adr = adr;
+		adr = adnmw(codeptr);
+		pt_ska_comment(adr);
+		return (ska + 2);
+	case '-':
+	case '_':
+		pts("DFW ");
+		adr = adnmw(codeptr);
+		pts("-1");
+		pt_ska_comment(adr);
+		return (ska + 2);
+
+	case '\\':// last character of string inverted
+		pts("ASC ");
+		ptc('\\');
+		while (!((*codeptr) & 128)) {// until end of original string
+			ptc(*codeptr++);
+			ska++;
+			if (ska == 0) break; // prevention of overflow
+		}
+		ptc((*codeptr) & 127);
+		ptc('\\');
+		return(++ska);
+
+	case '"':// normal or invertedASC string
+		cnt = ASC_STRING_LENGTH;
+		pts("ASC ");
+		if (*codeptr & 128) {
+			ptc('/');// invertedASC string
+			while (*codeptr & 128) {
+				ptc(127 & *codeptr++);
+				ska++;
+				if (ska == 0) break; // prevention of overflow
+				if (sss[sno + 1].symadr == ska) break;
+				if (--cnt == 0) break;
+			}
+			ptc('/');
+			return(ska);
+		}
+		else {
+			ptc('"');// normal ASC string
+			while (!(*codeptr & 128)) {
+				ptc(*codeptr++);
+				ska++;
+				if (ska == 0) break; // prevention of overflow
+				if (sss[sno + 1].symadr == ska) break;
+				if (--cnt == 0) break;
+			}
+			ptc('"');
+			return(ska);
+		}
+	case '$':// normal or inverted screen-code string
+		cnt = ASC_STRING_LENGTH;
+
+		pts("ASC ");
+		if (*codeptr & 128) {// inverted screen-code string
+			ptc('$');
+			while (*codeptr & 128) {
+				ch = intern_to_atascii(*codeptr);
+				ptc(127 & ch);
+				codeptr++;
+				ska++;
+				if (ska == 0) break; // prevention of overflow
+				if (sss[sno + 1].symadr == ska) break;
+				if (--cnt == 0) break;
+			}
+			ptc('$');
+			return(ska);
+		}
+		else {
+			ptc('%');
+			while (!(*codeptr & 128)) {// normal screen-code string
+				ch = intern_to_atascii(*codeptr);
+				ptc(ch);
+				codeptr++;
+				ska++;
+				if (ska == 0) break; // prevention of overflow
+				if (sss[sno + 1].symadr == ska) break;
+				if (--cnt == 0) break;
+			}
+			ptc('%');
+			return(ska);
+		}
+	case '*':
+
+		ska = (sss[sno + 1].symadr);//next symbol-table entry
+		pts_p("\n\tORG $%X\n", ska);
+
+		return(ska);
+
+
+	default:
+		pts_p("; The section type '%c' is not yet implemented\n", sctp);
+
+	}
+	offset = abofst[*codeptr];
+	ptr = abtab + offset;
+	opcodeptr = codeptr;
+
+	//if (flag[8] == 1) { //SHOW_OPCODES
+	//	pts_p(" %X ", *codeptr);
+	//}
+
+
+
+
+	if (flag[7] != 1) { //SHOW_JSR
+
+		if (offset == 0x54) { //JSR
+			size_t current_length_sv = strlen(line_buffer);
+
+			adr = adnmw(++codeptr);
+			pt_ska_comment(adr);
+
+			if (isalpha(line_buffer[current_length_sv]))
+				return(ska + 3);
+			else {
+				line_buffer[current_length_sv] = 0;
+				codeptr--;
+			}
+		}
+	}
+
+	ptc(*ptr++);// Print the opcode except JSR
+	ptc(*ptr++);
+	ptc(*ptr);
+
+	if (offset == 0x7e) { //RTS
+
+		line_skip++;
+	}
+
+	
+
+	switch (opertytb[*codeptr++]) {
+	case OPC:		
+		return(ska + 1);
+
+	case NN:
+		symtab_init = 0;
+		if (sctp == '\'') {
+			if (isprint(*codeptr)) {
+				pts_p(" '%c'", *codeptr);
+				pt_ska_comment((uint16_t)*codeptr);
+			}
+			else {
+				pts(" #");
+				if (*codeptr > 9) ptc('$'); // only if $ is needed
+				pts_p("%X", *codeptr);
+			}
+			return(ska + 2);
+		}
+		else {
+
+			pts(" #");
+
+			if (sctp == '!') {
+				ptc('%');
+				ptb(*codeptr);
+				pt_ska_comment((uint16_t)*codeptr);
+				return(ska + 2);
+			}
+			else if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '(')) {//this address is in the symbol table
+				symtab_init = symtab_epz;
+				adr = adnmb(codeptr);
+				pt_ska_comment(adr);
+				return(ska + 2);
+			}
+			else if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '[')) {//this address is in the symbol table
+				symtab_init = 0;
+				adr = adnmb(codeptr);
+				pt_ska_comment(adr);
+				return(ska + 2);
+			}
+			else if (sctp == '&') {
+				if (lo_hi_task == 0) {				// :L
+					if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '&')) {//this address is in the symbol table
+						lo_hi_task = 1;
+						ska_sav = ska;
+						return(ska + 2);
+					}
+					else {//treat as sctp == ';'
+						phb(codeptr);
+						return(ska + 2);
+					}
+				}
+				else if (lo_hi_task == 1) {				// :H
+					line_skip = 0;
+					lo_hi_operand = *codeptr << 8;
+					lo_hi_task = 2;
+					return(ska_sav);
+				}
+				else if (lo_hi_task == 2) {				// :L
+					lo_hi_operand += *codeptr;
+					adnmw2(lo_hi_operand);
+#if SHOW_LO
+					pts(":L");
+#endif
+					pt_ska_comment(lo_hi_operand);
+					lo_hi_task = 3;
+					return(ska + 2);
+				}
+				else if (lo_hi_task == 3) {					//:L
+					lo_hi_task = 0;
+					adnmw2(lo_hi_operand);
+					pts(":H");
+					pt_ska_comment(lo_hi_operand);
+					//lo_hi_operand = *codeptr << 8;
+
+					return(ska + 2);					// :H
+				}
+			}
+			else if (sctp == '@') {
+				if (lo_hi_task == 0) {				// :H
+					if ((ska == sss[sno].symadr) && (sss[sno].symtyp == '@')) {//this address is in the symbol table
+						lo_hi_task = 1;
+						ska_sav = ska;
+						lo_hi_operand = *codeptr << 8;
+						return(ska + 2);
+					}
+					else {//treat as sctp == ';'
+						phb(codeptr);
+						return(ska + 2);
+					}
+				}
+				else if (lo_hi_task == 1) {				// :L
+					line_skip = 0;
+					lo_hi_operand += *codeptr;
+					lo_hi_task = 2;
+					return(ska_sav);
+				}
+				else if (lo_hi_task == 2) {				// :H
+
+					adnmw2(lo_hi_operand);
+					pts(":H");
+					pt_ska_comment(lo_hi_operand);
+					lo_hi_task = 3;
+					return(ska + 2);
+				}
+				else if (lo_hi_task == 3) {					//:L
+					lo_hi_task = 0;
+					adnmw2(lo_hi_operand);
+#if SHOW_LO
+					pts(":L");
+#endif
+					pt_ska_comment(lo_hi_operand);
+					//lo_hi_operand = *codeptr << 8;
+
+					return(ska + 2);					// :H
+				}
+			}
+			else {//treat as sctp == ';'
+				uint8_t opcode = (uint8_t) * (codeptr - 1);
+				if ((opcode == 9) || (opcode == 41) || (opcode == 73)) {//AND, EOR, ORA
+					ptc('%');
+					ptb(*codeptr);// binary number
+				}
+				else
+					phb(codeptr);
+				return(ska + 2);
+			}
+		}//end case NN
+		
+	case AA:
+		ptc(' ');
+		adr = adnmb(codeptr);
+		pt_ska_comment(adr);
+		return(ska + 2);
+	case AAX:
+		ptc(' ');
+		adr = adnmb(codeptr);
+		pts(",X");
+		pt_ska_comment(adr);
+		return(ska + 2);
+	case AAY:
+		ptc(' ');
+		adr = adnmb(codeptr);
+		pts(",Y");
+		pt_ska_comment(adr);
+		return(ska + 2);
+	case BAABY:
+		pts(" (");
+		adr = adnmb(codeptr);
+		pts("),Y");
+		pt_ska_comment(adr);
+		return(ska + 2);
+	case BAAXB:
+		pts(" (");
+		adr = adnmb(codeptr);
+		pts(",X)");
+		pt_ska_comment(adr);
+		return(ska + 2);
+	case AAAA:
+		ptc(' ');
+		adr = adnmw(codeptr);
+		pt_ska_comment(adr);
+		if (offset == 0x51) { //JMP
+
+			line_skip++;
+		}
+		return(ska + 3);
+	case AAAAX:
+		ptc(' ');
+		adr = adnmw(codeptr);
+		pts(",X");
+		pt_ska_comment(adr);
+		return(ska + 3);
+	case AAAAY:
+		ptc(' ');
+		adr = adnmw(codeptr);
+		pts(",Y");
+		pt_ska_comment(adr);
+		return(ska + 3);
+	case BAAAAB: //JMP
+		pts(" (");
+		adr = adnmw(codeptr);
+		ptc(')');
+		pt_ska_comment(adr);
+		line_skip++;
+		return(ska + 3);
+	case BRA:
+		temp = ska + 2;
+		ska += 2 + (signed char)*codeptr;
+		ptc(' ');
+		adnmw2(ska);
+		pt_ska_comment(ska);
+
+			line_skip++;
+		return(temp);
+
+	default:
+		pts("  Disassembly not possible");
+		ptc('?');
+		return(ska + 1);
+	}
+}
+
+/************** adnmw returns address to be printed *****************/
+uint16_t adnmw(uint8_t* ptr) {
+	uint16_t ska;
+
+	uint8_t low_bite = *ptr++;
+	uint8_t high_bite = *ptr;
+	ska = (uint16_t)low_bite + 256 * ((uint16_t)high_bite);
+	if ((sctp == '-') || (sctp == '_'))
+		ska++;
+	adnmw2(ska);
+	return(ska);
+}
+
+void adnmw2(uint16_t ska) {
+
+	uint16_t i=0;
+	uint16_t offset=0;
+
+	isav = i = symtab_init;
+
+	//printf("i = %d, ska = %04X symnum = %d\n", i, ska, symnum);
+
+	while (i <= symnum && sss[i].symadr <= ska) {
+		if (sss[i].symbol[0]) {         // symbol exists at this i
+			isav = i;
+			if (sss[i].symadr == ska) {     // symbol found at this address?
+				pts(sss[i].symbol);         // symbol to string
+				
+				return;
+			}
+		}
+		i++;
+	}
+
+	if (i == 0) {							// no symbols at all??????????????????
+		if (ska > 9) ptc('$'); // only if $ is needed
+		pts_p("%X", ska);
+		return;
+	}
+
+	while (sss[i].symbol[0] == 0) i++;	// find first symbol after ska
+	
+
+
+#if USE_SYMTAB_OFFSET
+
+	if (sss[isav].ofst > 0 &&
+		ska >= sss[isav].symadr &&
+		ska - sss[isav].symadr <= (uint8_t)sss[isav].ofst) {
+
+		/* Positive offset: SYMBOL+1 ... SYMBOL+ofst */
+
+		offset = ska - sss[isav].symadr;
+
+		pts_p("%s+", sss[isav].symbol);
+
+		if (offset > 9)
+			ptc('$');
+
+		pts_p("%X", offset);
+	}
+
+	else if (sss[i].ofst < 0 &&
+		ska <= sss[i].symadr &&
+		sss[i].symadr - ska <= -(int)sss[i].ofst & 127) {
+
+		/* Negative offset: SYMBOL-1 ... SYMBOL-n */
+
+		offset = sss[i].symadr - ska;
+
+		pts_p("%s-", sss[i].symbol);
+
+		if (offset > 9)
+			ptc('$');
+
+		pts_p("%X", offset);
+	}
+
+	else {
+		/* No applicable symbol offset */
+		if (ska > 9)
+			ptc('$');
+
+		pts_p("%X", ska);
+	}
+
+#else
+
+	offset = ska - sss[isav].symadr;
+
+	if (offset <= SYMBOL_OFFSET) {
+
+		pts_p("%s", sss[isav].symbol);
+		pts_p("+%d", offset);
+	}
+
+	else if ((sss[i].symadr - ska == 1) && (sss[i].symbol[0])) {
+
+		pts_p("%s", sss[i].symbol);
+		pts("-1");
+	}
+
+	else {
+
+		if (ska > 9)
+			ptc('$');
+
+		pts_p("%X", ska);
+	}
+
+#endif
+
+
+#define TEST 0
+#if TEST
+		if (pc >= 0x600) {
+			printf("\npc = $%x\n", pc);
+			printf("i = %d\n", i);
+			printf("ska = $%x\n", ska);
+			printf("isav = %d\n", isav);
+			printf("sss[i].symadr = $%x\n", sss[i].symadr);
+			printf("sss[isav].symadr = $%x\n", sss[isav].symadr);
+			printf("sss[i].ofst = $%x\n", sss[i].ofst);
+			printf("sss[isav].ofst = $%x\n", sss[isav].ofst);
+			printf("sss[i].symbol = %s\n", sss[i].symbol);
+			printf("sss[isav].symbol = %s\n", sss[isav].symbol);
+			printf("%s\n\n", line_buffer);
+
+			printf("ska       = $%04X\n", ska);
+			printf("isav      = %u\n", isav);
+			printf("isav addr = $%04X\n", sss[isav].symadr);
+			printf("isav ofst = %d ($%02X)\n",
+				sss[isav].ofst, (uint8_t)sss[isav].ofst);
+			printf("i         = %u\n", i);
+			printf("i addr    = $%04X\n", sss[i].symadr);
+			printf("i ofst    = %d ($%02X)\n",
+				sss[i].ofst, (uint8_t)sss[i].ofst);
+			printf("i symbol  = %s\n", sss[i].symbol);
+}
+#endif // TEST
+
+	return;
+}
+
+
+uint16_t adnmb(uint8_t* ptr) {
+	uint8_t byte;
+
+	byte = *ptr++;
+	adnmw2((uint16_t)byte);
+	return(byte);
+}
+
+void phb(uint8_t* ptr) {
+	if (*ptr > 9) 
+		ptc('$');
+	pts_p("%X", *ptr);
+	return;
+}
+//32,32,-64,0,32,32,-64,0
+//1, 1,-2, 0, 1, 1, -2 ,0
+
+char intern_to_atascii(char ch) {
+	char chmasked = ch & 0b01111111;
+	if (chmasked < 64)
+		ch += 32;
+	else if (chmasked < 96)
+		ch -= 64;
+	return(ch);
+}
+
+void pts(const char* str) {
+	size_t current_length = strlen(line_buffer);
+	snprintf(line_buffer + current_length, LINE_BUFFER_SIZE - current_length, "%s", str);
+}
+
+void pts_p(const char* format, ...) {
+	size_t current_length = strlen(line_buffer);
+	char temp_buffer[LINE_BUFFER_SIZE];
+	va_list args;
+	va_start(args, format);
+	vsnprintf(temp_buffer, sizeof(temp_buffer), format, args);
+	va_end(args);
+	strncat_s(line_buffer, LINE_BUFFER_SIZE, temp_buffer, LINE_BUFFER_SIZE - current_length - 1);
+}
+
+void ptc(char c) {
+	size_t current_length = strlen(line_buffer);
+	if (current_length < LINE_BUFFER_SIZE - 1) { // Ensure there's space for the character and null terminator
+		line_buffer[current_length] = c;
+		line_buffer[current_length + 1] = '\0';
+	}
+}
+
+char ptb(unsigned char num) {
+	// Determine the number of bits needed to represent the integer
+	uint8_t numBits = 8;
+	uint8_t bit_val;
+	uint8_t nr_of_1s = 0;
+	// Print binary string with leading zeros
+	for (int i = numBits - 1; i >= 0; i--) {
+		bit_val = (num >> i) & 1;
+		nr_of_1s += bit_val;
+		pts_p("%d", bit_val);
+	}
+	return (nr_of_1s);
+
+}
+
+
+
+uint8_t read_loadfile(const char filename[FILENAME_MAX]) {
+	FILE* file;
+	uint8_t segment = 1;
+
+	// Open binary file for reading
+	printf("\nReading from %s\n\n", filename	);
+	if (fopen_s(&file, filename, "rb") != 0) {
+		perror("Error opening file");
+		return(1);
+	}
+
+	printf("Segment\tfrom\t to\n");
+
+	while (!feof(file)) {
+
+		uint8_t start_high, start_low, end_high, end_low;
+
+		fread(&start_low, sizeof(uint8_t), 1, file); // Read start address LOW
+
+		if (feof(file)) {
+			fprintf(stderr, "End of file reached as expected.\n\n");
+			break; // Exit the loop
+		}
+		fread(&start_high, sizeof(uint8_t), 1, file);	// Read start address HIGH
+
+		if (segment == 1) {
+			if (!(start_low == 0xFF && start_high == 0xFF)) // Check for mandatory 0xFF bytes on first iteration
+				fprintf(stderr, "Error: This is not a load-file.\n");
+		}
+		if (start_low == 0xFF && start_high == 0xFF) { // Ignore 0xFF bytes
+			fread(&start_low, sizeof(uint8_t), 1, file); // Read start address LOW again.
+			fread(&start_high, sizeof(uint8_t), 1, file);// Read start address HIGH again.
+		}
+		start_address[segment] = (start_high << 8) | start_low;
+
+		fread(&end_low, sizeof(uint8_t), 1, file);
+		fread(&end_high, sizeof(uint8_t), 1, file);
+
+		end_address[segment] = (end_high << 8) | end_low;
+
+		uint16_t segment_length = end_address[segment] - start_address[segment] + 1;
+		uint16_t xlram_start = start_address[segment];
+
+		fread(&xlram[xlram_start], sizeof(uint8_t), segment_length, file);
+
+		if (feof(file)) {
+			fprintf(stderr, "Error: End of file reached prematurely.\n");
+			break;
+		}
+		// Print the table for the current segment
+		printf("   %d\t%X\t%X\n", segment, start_address[segment], end_address[segment]);
+
+		segment++;
+	}
+	return(segment-1);
+}
+
+void pt_ska_comment(uint16_t ska) {
+
+#if SHOW_B_W_FREQUENCY
+	if (sss[isav].symtyp != ']') {
+		if (sss[isav].symadr < 256) {
+			if (sss[isav].ofst)
+				pts(" ;w");
+			else
+				pts(" ;b");
+			pts_p("%i", sss[isav].frequency);
+		}
+	}
+	//else // if (sss[isav].symtyp == ']')
+		//if (sss[isav].symbol && sss[isav].symadr <= 256)
+			//pts("  ;[");
+
+#endif // 
+
+
+	if (flag[5]) { // SKA_AS_COMMENT
+
+		if (sss[isav].symadr == ska || offset_added) {
+			ptc('\t');
+			if (strlen(line_buffer) - linebeg_lablen <= 10)
+				ptc('\t');
+			pts_p(";%X", ska);
+		}
+	}
+
+	if (flag[6]) { // SHOW_RH_COMMENT
+
+		if (sss[isav].comment[0] && sss[isav].symadr == ska) {
+			if (flag[5])
+				pts(" ");
+			else {
+				ptc('\t');
+				if (strlen(line_buffer) - linebeg_lablen <= 10)
+					ptc('\t');
+			}
+			pts(";");
+			pts(sss[isav].comment);
+		}
+	}
+}
+
+void print_line() {
+	if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
+		if (diss_linnum == 2607)
+			pc = pc;	//breakpoint
+		diss_linnum++;
+
+		if (flag[0]) // PRINT_DISS_LINNUM
+			fprintf(madslstfile, "%i  ", diss_linnum);
+
+
+		if (flag[3]) { // PRINT_PCADDRESS_BYTES
+			if (sss[sno].symadr != pc) { // if not left comment
+				if (pcsav != 0){
+					fprintf(madslstfile, "%04X", pcsav);
+
+					if (opcodeptr) {             // address is not null
+						switch (oprndlen[*opcodeptr]) {
+
+						case 1:
+							fprintf(madslstfile, " %02X      ", opcodeptr[0]);
+							break;
+
+						case 2:
+							fprintf(madslstfile, " %02X %02X   ",
+								opcodeptr[0], opcodeptr[1]);
+							break;
+
+						case 3:
+							fprintf(madslstfile, " %02X %02X %02X",
+								opcodeptr[0], opcodeptr[1], opcodeptr[2]);
+							break;
+
+						default:
+							fprintf(madslstfile, "         ");
+							break;
+						}
+									
+					}
+					else
+						fprintf(madslstfile, "         ");
+				}
+				fprintf(madslstfile, "\t");
+			}
+		}
+
+		fprintf(outputfile, "%s\n", line_buffer);
+
+		fprintf(madslstfile, "%s\n", line_buffer);
+#if LIST_TO_CONSOLE
+	printf("%s\n", line_buffer); // Print the line to the console-- TEMPORARY debug
+#endif
+		if (line_skip) {
+
+			diss_linnum++;
+
+			if (flag[0])  // PRINT_DISS_LINNUM
+				fprintf(madslstfile, "%i", diss_linnum);
+
+			fprintf(outputfile, "\n");
+			fprintf(madslstfile, "\n");
+
+			line_skip = 0;
+		}
+
+	}
+	*line_buffer = '\0'; // Reset line_buffer
+}
+
+
+
+#if CREATE_DBG
+
+void dbg_file(DbgContext* ctx, unsigned id, const char* name) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"file\tid=%u,name=\"%s\"\n\n",
+		id, name);
+}
+
+void dbg_seg(DbgContext* ctx, unsigned id, unsigned start) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"seg\tid=%u,start=0x%X,addrsize=absolute\n\n",
+		id, start);
+}
+
+void dbg_span(DbgContext* ctx,
+	unsigned id,
+	unsigned seg,
+	unsigned start,
+	unsigned size) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"span\tid=%u,seg=%u,start=0x%X,size=%u\n",
+		id, seg, start, size);
+}
+
+void dbg_line(DbgContext* ctx,
+	unsigned id,
+	unsigned file,
+	unsigned line,
+	unsigned span) {
+	if (!ctx || !ctx->fp) return;
+
+	fprintf(ctx->fp,
+		"line\tid=%u,file=%u,line=%u,span=%u,type=1\n\n",
+		id, file, line, span);
+}
+
+void dbg_sym(DbgContext* ctx,
+	unsigned id,
+	const char* name,
+	unsigned value) {
+	if (!ctx || !ctx->fp) return;
+
+	if(value <= 0xFF){
+	fprintf(ctx->fp,
+		"sym\tid=%u,name=\"%s\",addrsize=zeropage,val=0x%02X\n",
+		id, name, value);
+	}
+	else{
+	fprintf(ctx->fp,
+		"sym\tid=%u,name=\"%s\",addrsize=absolute,val=0x%04X\n",
+		id, name, value);
+	}
+}
+
+
+
+int dbg_init(DbgContext* ctx, const char* dbg_filename, const char* src_filename) {
+	if (!ctx)
+		return 0;
+
+	memset(ctx, 0, sizeof(*ctx));
+
+	ctx->next_file_id = 0;
+	ctx->next_seg_id = 0;
+	ctx->next_span_id = 0;
+	ctx->next_line_id = 0;
+	ctx->next_sym_id = 0;
+
+	if (fopen_s(&ctx->fp, dbg_filename, "w") != 0 || !ctx->fp)
+		return 0;
+
+	/*
+		CC65 DBG expects a "file" record first
+		This establishes file id 0 = main source file
+	*/
+	fprintf(ctx->fp,
+		"file\tid=0,name=\"%s\"\n",
+		src_filename ? src_filename : "");
+
+	return 1;
+}
+
+void dbg_close(DbgContext* dbg) {
+	if (dbg && dbg->fp) {
+		fclose(dbg->fp);
+		dbg->fp = NULL;
+	}
+}
+#endif

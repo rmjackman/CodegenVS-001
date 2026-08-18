@@ -903,8 +903,15 @@ int main(int argc, char* argv[]) {
 				*ptr = 0; //opcode finalised
 
 
+				/***  Check for A after ASL ROL LSR ROR  ***/
 				
+				if (contains_word_icase(" ASL ROL LSR ROR ", opcode)
+					&& txtptr[0] == ' '
+					&& txtptr[1] == 'A'
+					&& isspace(txtptr[2])) {
 
+					txtptr[1] = ' ';
+				}
 
 				/*  Check opcode for directives   */
 
@@ -1827,18 +1834,14 @@ int main(int argc, char* argv[]) {
 
 				/***********  Commands in data block  ***************/
 
+
+
+
 				operno = ERROR;
 
 				sectyp(';');
 
-				if (strcmp (operand,"A") ==0	)
-				{
-					*operand = '\0';
-					*txtptr = ' ';
-					symval = 0;
-				}
-				else
-					symval = expresstoi();
+				symval = expresstoi();
 
 				if (symval < 256)// txtptr -> first byte after expression
 				{
@@ -1929,7 +1932,9 @@ int main(int argc, char* argv[]) {
 				}
 
 
-
+				if (cnt < 0 || cnt >= 21 || operno < 0 || operno >= 13)
+					error("Index out of bounds in data array");
+			
 				if (operno == ERROR)
 					error("Illegal addressing");
 				if (pass == 2)
@@ -1937,10 +1942,9 @@ int main(int argc, char* argv[]) {
 						printf("\n\nOpcode mismatch %X <> %X", 0xff & (*xlbfptr), 0xff & data[cnt][operno]);
 						error("This zero-page label must be defined before the present line.");
 					}
-				if (cnt < 0 || operno < 0 || operno >= 13) {
-					error("Index out of bounds in data array");
 				}
-				else if (data[cnt][operno] == 0) error("This addressing is not possible with this opcode");
+				else if (data[cnt][operno] == 0) 
+					error("This addressing is not possible with this opcode");
 				toxlbuf((char)data[cnt][operno]);		// opcode command
 				toxlbuf((char)symval);					// address low byte
 
@@ -2025,26 +2029,28 @@ int main(int argc, char* argv[]) {
 			int lastzp = 0;
 			ssstype ssstemp;
 
-			while (sss[lastzp].symadr <= 0xFF)
+			while (lastzp < symnum && sss[lastzp].symadr <= 0xFF)
 				lastzp++;
 
-			if (lastzp > 0)
-				lastzp--;
+			lastzp--;
 
-			for (scan = 0; scan <= lastzp; scan++) {
+			if (lastzp >= 0) {
 
-				if (sss[scan].symtyp == ']') {
+				for (scan = 0; scan <= lastzp; scan++) {
 
-					ssstemp = sss[scan];
+					if (sss[scan].symtyp == ']') {
 
-					for (i = scan; i > insert; i--)
-						sss[i] = sss[i - 1];
+						ssstemp = sss[scan];
 
-					sss[insert++] = ssstemp;
+						for (i = scan; i > insert; i--)
+							sss[i] = sss[i - 1];
+
+						sss[insert++] = ssstemp;
+					}
 				}
 			}
 
-#endif // 
+#endif // SORT_EQU_EPZ
 
 			/* Remove unneeded symbols */
 
