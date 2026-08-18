@@ -1942,6 +1942,8 @@ int main(int argc, char* argv[]) {
 						printf("\n\nOpcode mismatch %X <> %X", 0xff & (*xlbfptr), 0xff & data[cnt][operno]);
 						error("This zero-page label must be defined before the present line.");
 					}
+				if (cnt < 0 || operno < 0 || operno >= 13) {
+					error("Index out of bounds in data array");
 				}
 				else if (data[cnt][operno] == 0) 
 					error("This addressing is not possible with this opcode");
