@@ -337,11 +337,11 @@ TESTEXPR
 
 ! High and low byte operators.
 
-        LDA #<DATA1
+        LDA #DATA1:L     #<DATA1
         CMP #LOWADR
         BNE TEFAIL
 
-        LDA #>DATA1
+        LDA #DATA1:H
         CMP #HIGHADR
         BNE TEFAIL
 

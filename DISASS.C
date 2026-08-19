@@ -294,7 +294,7 @@ void disassemble(const char* filename) {
 		}
 #endif
 
-			if (pc == 0x94a9)
+			if (pc == 0x40c7)
 				pc=pc;	//breakpoint
 
 
@@ -355,6 +355,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	linebeg_lablen = 0;
 	offset_added = false;
 
+
 	while (sss[sno].symtyp == ']')
 		sno++;
 	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
@@ -365,7 +366,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
 	}
 
-	if ((sss[sno + 1].symadr == ska) && (sno < symnum - 1)) {// needed for everything else
+	if ((sno < symnum - 1) && (sss[sno + 1].symadr == ska)) {// needed for everything else
 		sno++;
 		linebeg_lablen = 0;
 		lnbfptr = beglabbuf;
