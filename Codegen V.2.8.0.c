@@ -29,6 +29,7 @@
 #define ROUND_TRIP_VERIFICATION 1
 #define LIS_TO_CONSOLE 0
 #define NEW_DIRECT_ADDRESSING 1
+#define E_5A_5B 0
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -334,6 +335,7 @@ int main(int argc, char* argv[]) {
 		unsigned int nn_adr = 0;
 		bool nn_high = false;
 		char nn_symbol[MAX_LABEL_SIZE] = "";
+		bool nn_skip_section = false;
 #endif
 		if (verif_flg == 0) {
 
@@ -1754,8 +1756,6 @@ int main(int argc, char* argv[]) {
 
 #if NEW_DIRECT_ADDRESSING
 
-				/* opc #nn */
-
 
 				else if (operand[0] == '#') {
 					syms_in_expr = 0;
@@ -1767,9 +1767,6 @@ int main(int argc, char* argv[]) {
 						txtptr++;
 #endif
 					intval = expresstoi_p2();
-
-					//if (pc == 0x3165) //0x4946
-					//	i = 99;
 
 					if ((operand[1] == '\'') && strlen(operand) == 4)	// e.g. LDA #'A'
 						sectyp('\'');
@@ -1783,171 +1780,33 @@ int main(int argc, char* argv[]) {
 					{
 
 						if (pass == 2) {
+
+							if (intval < 256 && symfg && syms_in_expr == 1) {			// zero page
+								for (i = 0; i < symnum; i++) {
+									if (sss[i].symadr == intval && sss[i].symtyp == ']') {
+										sectyp('[');
+										break;
+									}
+								}
+								if (sss[i].symtyp != ']') { //zero-page address
+									sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
+								}
+							}
+
 							intval_sav = intval;
 							lo_fg = 1;				// default is to use low byte of value
 
-							if (*txtptr == ':')							// e.g. LDA #OKTXT:H
-							{											// where OKTXT is any address
-								txtptr++;
-								if (toupper(*txtptr) == 'H') {
-									intval >>= 8;
-									lo_fg = 0;						// use high byte of value
-								}
-							}
-#if !ATMAS_II_COMPATIBLE
-							else if (operand[1] == '>') {				// e.g. LDA #>OKTXT
+							if ((*txtptr == ':' && txtptr[1] == 'H')	// e.g. LDA #OKTXT:H
+								|| (operand[1] == '>')) {				// e.g. LDA #>OKTXT
+							
 								intval >>= 8;
-								lo_fg = 0;							// use high byte of value
+								lo_fg = 0;							// high byte line will be used
 							}
-#endif
-
-							/*
-							 * -------------------------------------------------
-							 * 5a/5b alternative symbol-table entries
-							 *
-							 * First #LABEL byte
-							 *     |
-							 *     +-- remember pc+1, byte, label
-							 *
-							 * Next immediate instruction
-							 *     |
-							 *     +-- same LABEL --> existing &/@ mechanism
-							 *     |
-							 *     +-- different LABEL --> break &/@ pairing
-							 *                                  |
-							 *                                  v
-							 *                         retain first-byte info
-							 *                                  |
-							 *                                  v
-							 *                    later same LABEL encountered
-							 *                                  |
-							 *                                  v
-							 *                         create ADR/BYTE
-							 *                         or ADR/BYTE:
-							 * -------------------------------------------------
-							 *
-							 * This code does NOT alter the existing &/@
-							 * processing below.
-							 */
-
-							if (symfg && syms_in_expr == 1) {
-
-								char current_label[MAX_LABEL_SIZE];
-								char* q = current_label;
-								char* p = operand + 1;
-
-#if !ATMAS_II_COMPATIBLE
-								if (*p == '<' || *p == '>')
-									p++;
-#endif
-
-								/*
-								 * Extract the label from the operand.
-								 *
-								 * A label begins with a letter, '_' or '.'
-								 * and may contain letters, digits, '_' and '.'.
-								 */
-								while (isalnum((unsigned char)*p) ||
-									*p == '_' || *p == '.')
-									*q++ = *p++;
-
-								*q = '\0';
+#if E_5A_5B
 
 
-								if (!nn_pending) {
 
-									/*
-									 * First #LABEL byte:
-									 *
-									 * Remember the address of the constant,
-									 * not the opcode.
-									 */
-									nn_pending = true;
-									nn_broken = false;
-									nn_adr = pc + 1;
-
-									/*
-									 * Remember whether the first byte is
-									 * the high byte.
-									 *
-									 * false = low byte  -> ADR/BYTE
-									 * true  = high byte -> ADR/BYTE:
-									 */
-									nn_high = !lo_fg;
-
-									strcpy_s(nn_symbol,
-										sizeof(nn_symbol),
-										current_label);
-								}
-
-								else if (_stricmp(nn_symbol, current_label) != 0) {
-
-									/*
-									 * The next immediate instruction contains
-									 * a DIFFERENT LABEL.
-									 *
-									 * The normal &/@ relationship is therefore
-									 * broken. Keep the information about the
-									 * first byte.
-									 */
-									nn_broken = true;
-								}
-
-								else if (nn_broken) {
-
-									/*
-									 * The same LABEL has appeared again after
-									 * an intervening immediate instruction.
-									 *
-									 * Create the alternative symbol-table entry.
-									 *
-									 * 5a: ADR/BYTE
-									 * 5b: ADR/BYTE:
-									 */
-									if (nn_high)
-										sprintf_s(label, sizeof(label),
-											"%04X/%02X:",
-											nn_adr,
-											(unsigned char)(intval_sav & 0xFF));
-									else
-										sprintf_s(label, sizeof(label),
-											"%04X/%02X",
-											nn_adr,
-											(unsigned char)(intval_sav >> 8));
-
-									/*
-									 * The address is the address of the FIRST
-									 * constant, i.e. pc+1 at the first command.
-									 */
-									strcpy_s(sss[symnum].symbol,
-										sizeof(sss[symnum].symbol),
-										label);
-
-									sss[symnum++].symadr = nn_adr;
-
-									nn_pending = false;
-									nn_broken = false;
-								}
-							}
-							else if (nn_pending) {
-
-								/*
-								 * The next immediate instruction does not
-								 * contain exactly one symbol.
-								 *
-								 * Therefore the normal &/@ relationship is
-								 * broken. Retain the first-byte information.
-								 */
-								nn_broken = true;
-							}
-
-
-							/*
-							 * -------------------------------------------------
-							 * ORIGINAL CODE -- unchanged
-							 * -------------------------------------------------
-							 */
-
+#else
 							if (lo_fg) {
 								if (intval > 255) {	// e.g. LDA #OKTXT:L
 									if (first_NNsymbol) {
@@ -1957,20 +1816,8 @@ int main(int argc, char* argv[]) {
 									else
 										first_NNsymbol = true;
 								}
-
-								else if (symfg && syms_in_expr == 1) {			// zero page
-									for (i = 0; i < symnum; i++) {
-										if (sss[i].symadr == intval && sss[i].symtyp == ']') {
-											sectyp('[');
-											break;
-										}
-									}
-									if (sss[i].symtyp != ']') { //zero-page address
-										sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
-									}
-								}
 							}
-							else //if lo_fg == 0
+							else {//if lo_fg == 0
 								if (intval_sav > 255) {	// e.g. LDA #OKTXT:L
 									if (first_NNsymbol) {
 										sectyp('@');
@@ -1979,12 +1826,13 @@ int main(int argc, char* argv[]) {
 									else
 										first_NNsymbol = true;
 								}
+							}
+#endif
 						}
 					}
 
 					if (strchr("!&@([", section_type) == 0) //if not one of these
 						sectyp(';');//The above affect only single lines
-
 					toxlbuf((char)data[cnt][NN]);
 					toxlbuf((char)intval);
 					continue;

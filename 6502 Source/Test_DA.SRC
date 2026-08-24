@@ -1,18 +1,14 @@
 
         verify
         out lt
-        ORG $2800
+                 ORG $2800
 
 START
         LDA #LABEL1
-        LDX #LABEL2
-        LDY #LABEL1
+        LDX #LABEL1:H
 
-        LDA #LABEL3
-        LDX #LABEL4
-        LDY #>LABEL3
+        LDA #LABEL2:H
+        LDX #LABEL2
 
 LABEL1  EQU $2AFE
-LABEL2  EQU $1234
-LABEL3  EQU $FE2A
-LABEL4  EQU $5678
+LABEL2  EQU $FE2A
