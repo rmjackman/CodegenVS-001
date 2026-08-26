@@ -355,7 +355,26 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	linebeg_lablen = 0;
 	offset_added = false;
 
+#if E_5A_5B
 
+	while (sno < symnum - 1 && sss[sno + 1].symadr <= ska)
+		sno++;
+
+	while (sno < symnum && sss[sno].symtyp == ']')
+		sno++;
+
+	linebeg_lablen = 0;
+	lnbfptr = beglabbuf;
+
+	if (sss[sno].symadr == ska && sss[sno].symbol) {
+		while (sss[sno].symbol[linebeg_lablen])
+			*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
+	}
+
+	*lnbfptr = '\0';
+	sctp = sss[sno].symtyp;
+
+#else
 	while (sss[sno].symtyp == ']')
 		sno++;
 	if ((sss[sno].symadr == ska) && (sno < symnum - 1)) {// needed for & and first address in segment
@@ -378,7 +397,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 	*lnbfptr = '\0';
 	sctp = sss[sno].symtyp;
-
+#endif
 
 #if SHOW_SECTYP_AND_ADDRESS
 	if (sss[sno].symadr == ska) {
@@ -631,6 +650,39 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 			pts(" #");
 
+#if E_5A_5B
+			if ((sno < symnum - 1) &&
+				(ska == sss[sno + 1].symadr - 1)) {
+
+				sno++;
+
+				if (sss[sno].symbol &&
+					isxdigit((unsigned char)sss[sno].symbol[0]) &&
+					isxdigit((unsigned char)sss[sno].symbol[1]) &&
+					(sss[sno].symbol[2] == '\0' ||
+						sss[sno].symbol[2] == ':')) {
+
+					unsigned int value;
+
+					sscanf_s(sss[sno].symbol, "%2X", &value);
+
+					if (sss[sno].symbol[2] == ':') {
+						/* 5B: low byte is in the symbol */
+						value = ((unsigned int)*codeptr << 8) | value;
+						adnmw2((uint16_t)value);
+						pts(":H");
+					}
+					else {
+						/* 5A: high byte is in the symbol */
+						value = (value << 8) | *codeptr;
+						adnmw2((uint16_t)value);
+					}
+
+					pt_ska_comment((uint16_t)value);
+					return(ska + 2);
+				}
+			}
+#endif
 			if (sctp == '!') {
 				ptc('%');
 				ptb(*codeptr);

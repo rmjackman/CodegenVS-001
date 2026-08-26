@@ -29,7 +29,7 @@
 #define ROUND_TRIP_VERIFICATION 1
 #define LIS_TO_CONSOLE 0
 #define NEW_DIRECT_ADDRESSING 1
-#define E_5A_5B 1
+
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -1802,33 +1802,32 @@ int main(int argc, char* argv[]) {
 								intval >>= 8;
 								lo_fg = 0;							// high byte line will be used
 							}
+
 #if E_5A_5B
+
 							if (lo_fg) {
-								if (intval > 255) {		// e.g. LDA #OKTXT:L
+								if (intval > 255) {	/* e.g. LDA #LABEL:L */
+
+									sss[symnumext].symadr = pc + 1;
 
 									sprintf_s(sss[symnumext].symbol,
 										sizeof(sss[symnumext].symbol),
-										"%04X/%02X",
-										pc + 1,
+										"%02X",
 										(unsigned char)(intval_sav >> 8));
 
-									sss[symnumext].symtyp = 0;
-									sss[symnumext].symadr = pc + 1;
 									symnumext++;
 								}
 							}
-							else {	// lo_fg == 0
+							else {
+								if (intval_sav > 255) {	/* e.g. LDA #LABEL:H */
 
-								if (intval_sav > 255) {	// e.g. LDA #OKTXT:H
+									sss[symnumext].symadr = pc + 1;
 
 									sprintf_s(sss[symnumext].symbol,
 										sizeof(sss[symnumext].symbol),
-										"%04X/%02X:",
-										pc + 1,
+										"%02X:",
 										(unsigned char)(intval_sav & 0xFF));
 
-									sss[symnumext].symtyp = 0;
-									sss[symnumext].symadr = pc + 1;
 									symnumext++;
 								}
 							}

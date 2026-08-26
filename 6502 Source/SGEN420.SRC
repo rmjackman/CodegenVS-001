@@ -59,7 +59,7 @@
 *            N: Symbol table will be listed.
 *            T: SOURCGEN symbol table will be listed.
 * OUT can be placed anywhere in the source code. OUT with no parameters terminates the listing.
-	OUT T
+	OUT LT
 
 	INCLUDE if_while_macros.src
 	INCLUDE Macros.SRC
