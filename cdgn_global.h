@@ -42,7 +42,7 @@
 #define MAXSYMS 2500
 #define COMMENT_LEN 60
 
-#define E_5A_5B 1
+#define E_5A_5B 0
 // Change color from green to violet
 #define uint8_t uint8_t
 #define uint16_t uint16_t

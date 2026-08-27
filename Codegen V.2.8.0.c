@@ -1798,66 +1798,45 @@ int main(int argc, char* argv[]) {
 
 							if ((*txtptr == ':' && txtptr[1] == 'H')	// e.g. LDA #OKTXT:H
 								|| (operand[1] == '>')) {				// e.g. LDA #>OKTXT
-							
+
 								intval >>= 8;
 								lo_fg = 0;							// high byte line will be used
 							}
-
+							if (intval_sav > 255) {
 #if E_5A_5B
+								sss[symnumext].symadr = pc + 1;
 
-							if (lo_fg) {
-								if (intval > 255) {	/* e.g. LDA #LABEL:L */
-
-									sss[symnumext].symadr = pc + 1;
+								if (lo_fg) {/* e.g. LDA #LABEL:L */
 
 									sprintf_s(sss[symnumext].symbol,
 										sizeof(sss[symnumext].symbol),
 										"%02X",
 										(unsigned char)(intval_sav >> 8));
-
-									symnumext++;
 								}
-							}
-							else {
-								if (intval_sav > 255) {	/* e.g. LDA #LABEL:H */
-
-									sss[symnumext].symadr = pc + 1;
+								else {	/* e.g. LDA #LABEL:H */
 
 									sprintf_s(sss[symnumext].symbol,
 										sizeof(sss[symnumext].symbol),
 										"%02X:",
 										(unsigned char)(intval_sav & 0xFF));
 
-									symnumext++;
 								}
-							}
 
+								symnumext++;
 
 #else
-							if (lo_fg) {
-								if (intval > 255) {	// e.g. LDA #OKTXT:L
-									if (first_NNsymbol) {
-										sectyp('&');
-										first_NNsymbol = false;
-									}
-									else
-										first_NNsymbol = true;
+
+								char tp = (lo_fg) ? '&' : '@';
+
+								if (first_NNsymbol) {
+									sectyp(tp);
 								}
-							}
-							else {//if lo_fg == 0
-								if (intval_sav > 255) {	// e.g. LDA #OKTXT:L
-									if (first_NNsymbol) {
-										sectyp('@');
-										first_NNsymbol = false;
-									}
-									else
-										first_NNsymbol = true;
-								}
-							}
+								first_NNsymbol = !first_NNsymbol;
+
 #endif
+							}
 						}
 					}
-
 					if (strchr("!&@([", section_type) == 0) //if not one of these
 						sectyp(';');//The above affect only single lines
 					toxlbuf((char)data[cnt][NN]);
