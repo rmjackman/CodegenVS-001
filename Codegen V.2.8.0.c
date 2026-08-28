@@ -1751,14 +1751,13 @@ int main(int argc, char* argv[]) {
 
 				/* opc #nn */
 
-				/* opc #nn */
-
+/* opc #nn */
 #if NEW_DIRECT_ADDRESSING
 
 				else if (operand[0] == '#') {
-					uint8_t nn_byte = 0;
 
 					syms_in_expr = 0;
+
 					if (data[cnt][NN] == 0)
 						error("direct addressing (#) cannot be used with this opcode");
 
@@ -1770,124 +1769,102 @@ int main(int argc, char* argv[]) {
 #endif
 
 					intval = expresstoi_p2();
-					nn_byte = (uint8_t)intval;
+					uint8_t nn_byte = (uint8_t)intval;
 
-					if ((operand[1] == '\'') && strlen(operand) == 4)
+					if (operand[1] == '\'' && strlen(operand) == 4)
 						sectyp('\'');
 
 					if (operand[1] == '%')
 						sectyp('!');
 
-					else {
+					else if (pass == 2) {
 
-						if (pass == 2) {
+						if (intval < 256 && symfg && syms_in_expr == 1) {
 
-							if (intval < 256 && symfg && syms_in_expr == 1) {
-
-								for (i = 0; i < symnum; i++) {
-									if (sss[i].symadr == intval &&
-										sss[i].symtyp == ']') {
-										sectyp('[');
-										break;
-									}
+							for (i = 0; i < symnum; i++) {
+								if (sss[i].symadr == intval &&
+									sss[i].symtyp == ']') {
+									sectyp('[');
+									break;
 								}
-
-								if (sss[i].symtyp != ']')
-									sectyp('(');
 							}
 
-							lo_fg = 1;
+							/* No matching constant was found. */
+							if (i == symnum)
+								sectyp('(');
+						}
 
-							if ((*txtptr == ':' && txtptr[1] == 'H') ||
-								(operand[1] == '>')) {
+						lo_fg = 1;
 
-								nn_byte = (uint8_t)(intval >> 8);
-								lo_fg = 0;
+						if ((*txtptr == ':' && txtptr[1] == 'H') ||
+							operand[1] == '>') {
+
+							nn_byte = (uint8_t)(intval >> 8);
+							lo_fg = 0;
+						}
+
+						if (intval > 255) {
+
+							if (first_NNsymbol_flg) {
+
+								/* Save this 16-bit operand. */
+								intval_sav = intval;
+								pc_sav1 = pc;
+								lo_fg_sav = lo_fg;
+
+								first_NNsymbol_flg = false;
 							}
+							else {
 
-							if (intval > 255) {
+								/* Compare with the previous 16-bit operand. */
+								if (intval_sav == intval) {
 
-								if (first_NNsymbol_flg) {
+									/* Same value: mark the PREVIOUS line. */
+									if (lo_fg_sav)
+										sectyp_at(pc_sav1, '&');
+									else
+										sectyp_at(pc_sav1, '@');
 
-									/*
-									 * Save this 16-bit operand.
-									 */
+									/* Pair is complete. */
+									first_NNsymbol_flg = true;
+								}
+								else {
+
+									/* Different value: create 5A/5B information
+									   for the previous line. */
+									if (symnumext >= MAXSYMS)
+										error("Too many symbols");
+
+									else {
+
+										sss[symnumext].symadr = pc_sav1 + 1;
+
+										if (lo_fg_sav) {
+
+											sprintf_s(
+												sss[symnumext].symbol,
+												sizeof(sss[symnumext].symbol),
+												"%02X",
+												(unsigned int)((intval_sav >> 8) & 0xFF));
+										}
+										else {
+
+											sprintf_s(
+												sss[symnumext].symbol,
+												sizeof(sss[symnumext].symbol),
+												"%02X:",
+												(unsigned int)(intval_sav & 0xFF));
+										}
+
+										symnumext++;
+									}
+
+									/* Current operand becomes the new pending operand. */
 									intval_sav = intval;
 									pc_sav1 = pc;
 									lo_fg_sav = lo_fg;
 
 									first_NNsymbol_flg = false;
-								}
-								else {
-
-									/*
-									 * Compare with the previous
-									 * 16-bit operand.
-									 */
-									if (intval_sav == intval) {
-
-										/*
-										 * Same value:
-										 * mark the PREVIOUS line.
-										 */
-										if (lo_fg_sav)
-											sectyp_at(pc_sav1, '&');
-										else
-											sectyp_at(pc_sav1, '@');
-
-										/*
-										 * Pair is complete.
-										 */
-										first_NNsymbol_flg = true;
-									}
-									else {
-
-										/*
-										 * Different value:
-										 * create 5A/5B information
-										 * for the previous line.
-										 */
-										if (symnumext >= MAXSYMS)
-											error("Too many symbols");
-
-										else {
-
-											sss[symnumext].symadr =
-												pc_sav1 + 1;
-
-											if (lo_fg_sav) {
-
-												sprintf_s(
-													sss[symnumext].symbol,
-													sizeof(sss[symnumext].symbol),
-													"%02X",
-													(unsigned char)
-													(intval_sav >> 8));
-											}
-											else {
-
-												sprintf_s(
-													sss[symnumext].symbol,
-													sizeof(sss[symnumext].symbol),
-													"%02X:",
-													(unsigned char)
-													(intval_sav & 0xFF));
-											}
-
-											//sss[symnumext].symtyp = ';';
-											symnumext++;
-										}
-
-										/*
-										 * Current operand becomes
-										 * the new pending operand.
-										 */
-										intval_sav = intval;
-										pc_sav1 = pc;
-										lo_fg_sav = lo_fg;
-
-										first_NNsymbol_flg = false;
-									}
 								}
 							}
 						}
