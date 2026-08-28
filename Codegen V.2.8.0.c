@@ -79,6 +79,7 @@ void emit_byte();
 void emit_word();
 void emit_ascii_string();
 void sourcgen_symtab();
+void sectyp_at(uint16_t address, char line_type);
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -328,14 +329,10 @@ int main(int argc, char* argv[]) {
 		char tmptyp;
 		fpos_t pos1;
 		bool star_flg = 0;
-		bool first_NNsymbol = 1;
+		bool first_NNsymbol_flg = 1;
 #if NEW_DIRECT_ADDRESSING		
-		bool nn_pending = false;
-		bool nn_broken = false;
-		unsigned int nn_adr = 0;
-		bool nn_high = false;
-		char nn_symbol[MAX_LABEL_SIZE] = "";
-		bool nn_skip_section = false;
+		int16_t pc_sav1 = 0;
+		bool lo_fg_sav = 0;
 #endif
 		if (verif_flg == 0) {
 
@@ -1754,8 +1751,158 @@ int main(int argc, char* argv[]) {
 
 				/* opc #nn */
 
+				/* opc #nn */
+
 #if NEW_DIRECT_ADDRESSING
 
+				else if (operand[0] == '#') {
+					uint8_t nn_byte = 0;
+
+					syms_in_expr = 0;
+					if (data[cnt][NN] == 0)
+						error("direct addressing (#) cannot be used with this opcode");
+
+					txtptr++;
+
+#if !ATMAS_II_COMPATIBLE
+					if (operand[1] == '>' || operand[1] == '<')
+						txtptr++;
+#endif
+
+					intval = expresstoi_p2();
+					nn_byte = (uint8_t)intval;
+
+					if ((operand[1] == '\'') && strlen(operand) == 4)
+						sectyp('\'');
+
+					if (operand[1] == '%')
+						sectyp('!');
+
+					else {
+
+						if (pass == 2) {
+
+							if (intval < 256 && symfg && syms_in_expr == 1) {
+
+								for (i = 0; i < symnum; i++) {
+									if (sss[i].symadr == intval &&
+										sss[i].symtyp == ']') {
+										sectyp('[');
+										break;
+									}
+								}
+
+								if (sss[i].symtyp != ']')
+									sectyp('(');
+							}
+
+							lo_fg = 1;
+
+							if ((*txtptr == ':' && txtptr[1] == 'H') ||
+								(operand[1] == '>')) {
+
+								nn_byte = (uint8_t)(intval >> 8);
+								lo_fg = 0;
+							}
+
+							if (intval > 255) {
+
+								if (first_NNsymbol_flg) {
+
+									/*
+									 * Save this 16-bit operand.
+									 */
+									intval_sav = intval;
+									pc_sav1 = pc;
+									lo_fg_sav = lo_fg;
+
+									first_NNsymbol_flg = false;
+								}
+								else {
+
+									/*
+									 * Compare with the previous
+									 * 16-bit operand.
+									 */
+									if (intval_sav == intval) {
+
+										/*
+										 * Same value:
+										 * mark the PREVIOUS line.
+										 */
+										if (lo_fg_sav)
+											sectyp_at(pc_sav1, '&');
+										else
+											sectyp_at(pc_sav1, '@');
+
+										/*
+										 * Pair is complete.
+										 */
+										first_NNsymbol_flg = true;
+									}
+									else {
+
+										/*
+										 * Different value:
+										 * create 5A/5B information
+										 * for the previous line.
+										 */
+										if (symnumext >= MAXSYMS)
+											error("Too many symbols");
+
+										else {
+
+											sss[symnumext].symadr =
+												pc_sav1 + 1;
+
+											if (lo_fg_sav) {
+
+												sprintf_s(
+													sss[symnumext].symbol,
+													sizeof(sss[symnumext].symbol),
+													"%02X",
+													(unsigned char)
+													(intval_sav >> 8));
+											}
+											else {
+
+												sprintf_s(
+													sss[symnumext].symbol,
+													sizeof(sss[symnumext].symbol),
+													"%02X:",
+													(unsigned char)
+													(intval_sav & 0xFF));
+											}
+
+											//sss[symnumext].symtyp = ';';
+											symnumext++;
+										}
+
+										/*
+										 * Current operand becomes
+										 * the new pending operand.
+										 */
+										intval_sav = intval;
+										pc_sav1 = pc;
+										lo_fg_sav = lo_fg;
+
+										first_NNsymbol_flg = false;
+									}
+								}
+							}
+						}
+					}
+
+					if (strchr("!&@([", section_type) == 0)
+						sectyp(';');
+
+					toxlbuf((char)data[cnt][NN]);
+					toxlbuf(nn_byte);
+
+					continue;
+				}
+
+#else // NEW_DIRECT_ADDRESSING begin old routine
 
 				else if (operand[0] == '#') {
 					syms_in_expr = 0;
@@ -1828,10 +1975,10 @@ int main(int argc, char* argv[]) {
 
 								char tp = (lo_fg) ? '&' : '@';
 
-								if (first_NNsymbol) {
+								if (first_NNsymbol_flg) {
 									sectyp(tp);
 								}
-								first_NNsymbol = !first_NNsymbol;
+								first_NNsymbol_flg = !first_NNsymbol_flg;
 
 #endif
 							}
@@ -1842,93 +1989,7 @@ int main(int argc, char* argv[]) {
 					toxlbuf((char)data[cnt][NN]);
 					toxlbuf((char)intval);
 					continue;
-				}
-
-#else // NEW_DIRECT_ADDRESSING begin old routine
-
-				else if (operand[0] == '#') {
-					syms_in_expr = 0;
-					if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
-
-					txtptr++;
-#if !ATMAS_II_COMPATIBLE
-					if (operand[1] == '>' || operand[1] == '<')
-						txtptr++;
-#endif
-					intval = expresstoi_p2();
-
-					//if (pc == 0x3165) //0x4946
-					//	i = 99;
-
-					if ((operand[1] == '\'') && strlen(operand) == 4)	// e.g. LDA #'A'
-						sectyp('\'');
-
-
-					if (operand[1] == '%')							// e.g. LDA #%11000000
-						sectyp('!');
-
-					else // all other possibilities
-
-					{
-
-						if (pass == 2) {
-							intval_sav = intval;
-							lo_fg = 1;				// default is to use low byte of value
-
-							if (*txtptr == ':')							// e.g. LDA #OKTXT:H
-							{											// where OKTXT is any address
-								txtptr++;
-								if (toupper(*txtptr) == 'H') {
-									intval >>= 8;
-									lo_fg = 0;						// use high byte of value
-								}
-							}
-#if !ATMAS_II_COMPATIBLE
-							else if (operand[1] == '>') {				// e.g. LDA #>OKTXT
-								intval >>= 8;
-								lo_fg = 0;							// use high byte of value
-							}
-#endif
-							if (lo_fg) {
-								if (intval > 255) {	// e.g. LDA #OKTXT:L
-									if (first_NNsymbol) {
-										sectyp('&');
-										first_NNsymbol = false;
-									}
-									else
-										first_NNsymbol = true;
-								}
-
-								else if (symfg && syms_in_expr == 1) {			// zero page
-									for (i = 0; i < symnum; i++) {
-										if (sss[i].symadr == intval && sss[i].symtyp == ']') {
-											sectyp('[');
-											break;
-										}
-									}
-									if (sss[i].symtyp != ']') { //zero-page address
-										sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
-									}
-								}
-							}
-							else //if lo_fg == 0
-								if (intval_sav > 255) {	// e.g. LDA #OKTXT:L
-									if (first_NNsymbol) {
-										sectyp('@');
-										first_NNsymbol = false;
-									}
-									else
-										first_NNsymbol = true;
-								}
-						}
 					}
-
-					if (strchr("!&@([", section_type) == 0) //if not one of these
-						sectyp(';');//The above affect only single lines
-					toxlbuf((char)data[cnt][NN]);
-					toxlbuf((char)intval);
-					continue;
-				}
 #endif // NEW_DIRECT_ADDRESSING
 
 
@@ -3607,15 +3668,11 @@ void sectyp(char line_type) {
 					sss[symnum - 1].symtyp = 0;	// label is enough, so no entry
 				else sss[symnum - 1].symtyp = line_type; // else make entry
 			}
-			if ((pass == 2) && (line_type == '&')) /**/
-			{
-				sss[symnum - 1].symtyp = '&';
+			else { // pass == 2
+				if (line_type == '&' || line_type == '@')	//if label is in & or @ section, make entry
+				
+					sss[symnum - 1].symtyp = line_type;
 			}
-			if ((pass == 2) && (line_type == '@')) /**/
-			{
-				sss[symnum - 1].symtyp = '@';
-			}
-
 		}
 		else /* no label */
 			if ((pass == 2) && (pc > 0xff)) {
@@ -3913,5 +3970,26 @@ void sourcgen_symtab(){
 			//fprintf(stream2, "*** %s\n", sss[i].comment);
 		list_label_f2(i);
 
+	}
+}
+
+void sectyp_at(uint16_t address, char line_type)
+{
+	if (pass != 2)
+		return;
+
+	for (int i = 0; i < symnum; i++) {
+		if (sss[i].symadr == address) {
+			sss[i].symtyp = line_type;
+			return;
+		}
+	}
+
+	if (symnumext >= MAXSYMS)
+		error("Too many symbols");
+	else {
+		sss[symnumext].symtyp = line_type;
+		sss[symnumext].symadr = address;
+		symnumext++;
 	}
 }
