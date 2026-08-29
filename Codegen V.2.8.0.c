@@ -1057,33 +1057,25 @@ int main(int argc, char* argv[]) {
 					if ((_stricmp(opcode, "EQU") == 0) || (_stricmp(opcode, "EPZ") == 0)) {
 						txtptr++;
 						i = expresstoi();
+
 						if (pass == 1) {
 							if (i != NOTFOUND) {
-								strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
+								strcpy_s(sss[symnum].symbol,
+									sizeof(sss[symnum].symbol), label);
+
 								sss[symnum].symadr = i;
-#if SORT_EQU_EPZ
-								if ((_stricmp(opcode, "EQU") == 0) && (i < 256))
-									sss[symnum].symtyp = ']'; // EQU denotes a non-address constant less than 256
-								else 
-#endif							
+
+								if (_stricmp(opcode, "EQU") == 0) {
+									if (i < 256)
+										sss[symnum].symtyp = ']';
+								}
+								else {                         /* EPZ */
+									if (i >= 256)
+										error("EPZ must define a zero-page address.");
+
 									sss[symnum].symtyp = '#';
-
-								if ((_stricmp(opcode, "EPZ") == 0) && i >= 256)
-									error("EPZ must define a zero-page address.");
-
-#if COMMENTS2
-								i = 0;
-
-								ptr = txtptr;
-
-								while (*ptr && strchr(" \t*;!=", *ptr)) {
-									ptr++;
 								}
-								while (*ptr != '\n' && i < COMMENT_LEN - 1) {
-									sss[symnum].comment[i++] = *ptr++;
-								}
-								sss[symnum].comment[i] = 0;
-#endif
+
 								symnum++;
 							}
 						}
@@ -2197,6 +2189,7 @@ int main(int argc, char* argv[]) {
 			puts("");
 			symnum = 0;
 			for (i = 0; i < symnumext; i++) {
+
 				if (sss[i].macf == MACRO) continue;
 				if (symnum > 0) tmptyp = sss[symnum - 1].symtyp;
 				if (((sss[i].macf == UNUSED) || (sss[i].macf == MACRO_UNUSED)) && sss[i].symbol[0])
@@ -2359,7 +2352,7 @@ int main(int argc, char* argv[]) {
 			fputc(0, stream);
 			secsiz = 0;
 			fgetpos(stream, &pos2);
-			for (i = 0; i < symnumext; i++) {
+			for (i = 0; i < symnum; i++) {
 				lensv = fptsmb(i);
 				secsiz += lensv;
 			}
@@ -3468,28 +3461,39 @@ void find_operand(void) {
 			if (*txtptr == '(') 
 				txtptr++; // skip "(" -- potential BUG!!! e.g. (label + 1)*2
 
-			//******************if " #<" or ",#>" in operand, change to " <#" or ",>#"****************
+			/* If "#<" or ",#<" or "#>" or ",#>" occurs in the operand,
+			   change it to "<#" or ",<#" or ">#" or ",>#" respectively. */
 			if (reverse_unary_ch_flg && pass == 1) {
-				while (!(strchr(" \t\n", *linptr2))) {
-					if (linptr2[-1] == ' ' || linptr2[-1] == ',') {
-						char* ch_ptr = strchr(DA_QUOTATION_MARKS, *linptr2);
-						if (ch_ptr) {
-							do {
+
+				while (!strchr(" \t\n", *linptr2)) {
+
+					if (linptr2 > operand && strchr(" ,", linptr2[-1])) {
+
+						char* quote = strchr(DA_QUOTATION_MARKS, *linptr2);
+
+						if (quote) {
+							/* Skip quoted string. */
+							while (linptr2[1] != '\0' &&
+								linptr2[1] != '\n' &&
+								linptr2[1] != *quote)
 								linptr2++;
-							} while (*linptr2 != *ch_ptr
-								&& *linptr2 != '\n'
-								&& *linptr2 != '\0');
+
 						}
-						else if (linptr2[1] == '#' && (linptr2[0] == '<' || linptr2[0] == '>')) {  // if " #<" or ",#<" or " #>" or ",#>".
-							linptr2[1] = linptr2[0];										// change to "<#" to "#<" or ",#>" to "#>"
+						else if ((linptr2[0] == '<' || linptr2[0] == '>') &&
+							linptr2[1] == '#') {
+
+							/* Change "#<" to "<#" and "#>" to ">#". */
+							linptr2[1] = linptr2[0];
 							linptr2[0] = '#';
 						}
 					}
+
 					linptr2++;
-					reverse_unary_ch_flg = 0;	//will remain 0 for all following find_operand calls for present line.
 				}
+
+				/* Do not perform this conversion again for this line. */
+				reverse_unary_ch_flg = 0;
 			}
-			//**************************************************************************************
 			while (!(strchr(" \t\n", *linptr)))									// create operand[]
 			{
 				if ((*linptr == '\'') && (*(linptr + 1) == ' ') && (*(linptr + 2) == '\'')) {	// test for ' '
@@ -3938,7 +3942,7 @@ void sourcgen_symtab(){
 	if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n") < 0)
 		perror("Error writing to file");
 	int i;
-	for (i = 0; i < symnumext; i++) {
+	for (i = 0; i < symnum; i++) {
 		if (sss[i].symtyp)
 			fprintf(stream2, "%c ", sss[i].symtyp);
 		else fprintf(stream2, "  ");
