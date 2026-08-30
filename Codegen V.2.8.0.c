@@ -29,7 +29,7 @@
 #define ROUND_TRIP_VERIFICATION 1
 #define LIS_TO_CONSOLE 0
 #define NEW_DIRECT_ADDRESSING 1
-
+#define ALLOW_OPCODE_AT_LINE_BEGIN 1
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -834,8 +834,15 @@ int main(int argc, char* argv[]) {
 
 
 				if (strlen(label) == 3) {
-					if (contains_word_icase(opcds, label))
+					if (contains_word_icase(opcds, label)) {
+#if ALLOW_OPCODE_AT_LINE_BEGIN
+						txtptr = linbegptr;	// label is actually an opcode, so reset txtptr to beginning of line
+						*label = '\0';	// clear label
+					}
+#else
 						error("You cannot have an opcode at the beginning of a line");
+					}
+#endif
 				}
 				if (contains_word_icase(assdirecs, label) || 
 					contains_word_icase(assdirecssolo, label)) {

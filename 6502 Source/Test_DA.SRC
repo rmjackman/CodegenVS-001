@@ -1,514 +1,398 @@
+verify
+ out lt
 
-        verify
-        out lt
-CONST0	EQU $00
+CONST0	EQU 0
 CONST1	EQU $20
-CONST2	EQU $FF
-CONST3	EQU $100
-CONST4	EQU $1234
-CONST5	EQU $FFFF
+CONST2	EQU $7F
+CONST3	EQU $FF
 
-ZP1	EPZ $40
-ZP2	EPZ $80
-ZP3	EPZ $FF
+ZP1	EPZ $20
+ZP2	EPZ $40
+ZP3	EPZ $80
 
-LABEL1	EQU $2AFE
+BUFFER	EQU $3000
+SCREEN	EQU $4000
 LABEL2	EQU $3344
 LABEL3	EQU $5678
 LABEL4	EQU $ABCD
-LABEL5	EQU $0100
-LABEL6	EQU $FFFF
-
 NMIST	EQU $D40F
 
+ 
+ORG $2800
+ 
 
-	ORG $2800
-
-
-* ============================================================
-* IMPLIED / ACCUMULATOR
-* ============================================================
-
+*
 START	NOP
-	CLC
-	SEC
-	CLD
-	SED
-	CLI
-	SEI
-	CLV
-	CLD
-	TAX
-	TAY
-	TXA
-	TYA
-	TSX
-	TXS
-	INX
-	DEX
-	INY
-	DEY
-	ASL
-	ROL
-	LSR
-	ROR
+CLC
+SEC
+CLI
+SEI
+CLD
+SED
+CLV
+TAX
+TAY
+TXA
+TYA
+TSX
+TXS
+INX
+DEX
+INY
+DEY
+ASL
+LSR
+ROL
+ROR
+
+*
+
+; Immediate constants
+
+ 
+LDA #0
+LDX #1
+LDY #2
+
+LDA #$0A
+LDX #$7F
+LDY #$FF
+
+LDA #CONST0
+LDX #CONST1
+LDY #CONST2
+LDA #CONST3
+ 
+
+*
+; Character and binary constants
+
+ 
+LDA 'A'
+LDX 'B'
+LDY 'C'
+
+LDA #%00001111
+LDX #%10101010
+LDY #%11111111
+ 
+
+*
+; Immediate address values
+
+ 
+LDA #LABEL2
+LDX #LABEL2:H
+
+LDA #LABEL3
+LDX #LABEL3:H
+
+LDA #LABEL4
+LDX #LABEL4:H
+ 
+
+*
+; Low/high bytes used independently
+
+ 
+LDA #LABEL2
+LDX #LABEL2:H
+
+LDY #LABEL3:H
+LDA #LABEL3
+
+LDX #LABEL4
+LDA #LABEL4:H
+ 
+
+*
+; Address expressions
+
+ 
+LDA #LABEL2+1
+LDX #LABEL2+2
+LDY #LABEL3-1
+
+LDA #$12FE
+LDX #$12FE:H
+ 
+
+*
+; Store immediate values and use zero-page variables
+
+ 
+LDA #$55
+STA ZP1
+
+LDX #LABEL2:H
+STX ZP2
+
+LDY #LABEL3:H
+STY ZP3
+ 
+
+*
+; Zero-page addressing
+
+ 
+LDA ZP1
+LDX ZP2
+LDY ZP3
+
+STA ZP1
+STX ZP2
+STY ZP3
+
+LDA ZP1,X
+LDY ZP3,X
+LDX ZP1,Y
+ 
+
+*
+; Absolute addressing
+
+ 
+LDA LABEL2
+LDX LABEL3
+LDY LABEL4
+
+STA LABEL2
+STX LABEL3
+STY LABEL4
+
+LDA LABEL2,X
+LDA LABEL3,Y
+LDX LABEL4,Y
+LDY LABEL2,X
+
+STA LABEL2,X
+STA LABEL3,Y
+ 
+
+*
+; Indirect addressing
+
+ 
+LDA (ZP1,X)
+LDA (ZP2),Y
+STA (ZP3,X)
+STA (ZP1),Y
+ 
+
+*
+; Arithmetic and logical instructions
+
+ 
+LDA #CONST1
+ADC #1
+ADC #$7F
+ADC #CONST1
+
+SEC
+SBC #1
+SBC #CONST1
+
+AND #%00001111
+ORA #%10000000
+EOR #%01010101
+
+CMP #0
+CMP #$FF
+CPX #CONST1
+CPY #CONST2
+ 
+
+*
+; Memory arithmetic
+
+ 
+ADC ZP1
+ADC ZP2,X
+SBC ZP3
+SBC ZP1,X
+
+AND ZP1
+ORA ZP2
+EOR ZP3
+
+ADC LABEL2
+ADC LABEL3,X
+ADC LABEL4,Y
+
+SBC LABEL2
+SBC LABEL3,X
+SBC LABEL4,Y
+
+CMP ZP1
+CPX ZP2
+CPY ZP3
+
+CMP LABEL2
+CPX LABEL3
+CPY LABEL4
+ 
 
+*
+; Bit and shift instructions
 
-* ============================================================
-* IMMEDIATE DECIMAL
-* ============================================================
+ 
+BIT ZP1
+BIT LABEL2
 
-	LDA #0
-	LDX #0
-	LDY #0
+INC ZP1
+DEC ZP2
+INC ZP3,X
+DEC ZP1,X
 
-	LDA #1
-	LDX #9
-	LDY #10
+ASL ZP1
+LSR ZP2
+ROL ZP3
+ROR ZP1
 
-	LDA #127
-	LDX #128
-	LDY #255
+ASL ZP1,X
+LSR ZP2,X
+ROL ZP3,X
+ROR ZP1,X
 
+ASL LABEL2
+LSR LABEL3
+ROL LABEL4
+ROR LABEL2
+ 
 
-* ============================================================
-* IMMEDIATE HEX
-* ============================================================
+*
+; Stack
 
-	LDA #$00
-	LDX #$01
-	LDY #$7F
+ 
+PHA
+PHP
+PLA
+PLP
+ 
 
-	LDA #$80
-	LDX #$FE
-	LDY #$FF
+*
+; Branches
 
+ 
+LDA #0
+BEQ BR1
 
-* ============================================================
-* IMMEDIATE BINARY
-* ============================================================
+NOP
+ 
 
-	LDA #%00000000
-	LDX #%00000001
-	LDY #%01111111
+BR1	LDA #1
+BNE BR2
 
-	LDA #%10000000
-	LDX #%10101010
-	LDY #%11111111
+ 
+NOP
+ 
 
+BR2	LDA #$80
+BMI BR3
 
-* ============================================================
-* CHARACTER WITHOUT #
-* ============================================================
+ 
+NOP
+ 
 
-	LDA 'A'
-	LDX 'B'
-	LDY 'C'
+BR3	LDA #1
+BPL BR4
 
-	LDA ' '
-	LDX '0'
-	LDY '9'
+ 
+NOP
+ 
 
+BR4	CLV
+BVC BR5
 
-* ============================================================
-* CHARACTER WITH #
-* ============================================================
+ 
+NOP
+ 
 
-	LDA #'A'
-	LDX #'B'
-	LDY #'C'
+BR5	BIT BITDATA
+BVS BR6
 
-	LDA #' '
-	LDX #'0'
-	LDY #'9'
+ 
+NOP
+ 
 
+BR6	CLC
+BCC BR7
 
-* ============================================================
-* EQU VALUES <= $FF
-* ============================================================
+ 
+NOP
+ 
 
-	LDA #CONST0
-	LDX #CONST1
-	LDY #CONST2
+BR7	SEC
+BCS BR8
 
-	LDA #CONST0+1
-	LDX #CONST1+1
-	LDY #CONST2-1
+ 
+NOP
+ 
 
+BR8	NOP
 
-* ============================================================
-* EPZ / ZERO-PAGE SYMBOLS
-* ============================================================
+*
 
-	LDA #ZP1
-	LDX #ZP2
-	LDY #ZP3
+; Subroutine and jump
 
-	LDA #ZP1+1
-	LDX #ZP2-1
+ 
+JSR SUB1
+JMP JMP1
+ 
 
+*
+SUB1	PHA
+LDA #$55
+PLA
+RTS
 
-* ============================================================
-* ZERO-PAGE LITERAL VALUES
-* ============================================================
+*
 
-	LDA #$01
-	LDX #$40
-	LDY #$80
+JMP1	NOP
+JMP (JMPVEC)
 
-	LDA #$FE
-	LDX #$FF
+*
 
+; Data
 
-* ============================================================
-* 16-BIT EQU VALUE - LOW BYTE
-* ============================================================
+BITDATA	DFB $40
 
-	LDA #LABEL1
-	LDX #LABEL2
-	LDY #LABEL3
-	LDA #LABEL4
+DATA1	DFB 0,1,$7F,$80,$FE,$FF
 
+DATA2	DFB 'A','B','C',' '
 
-* ============================================================
-* 16-BIT EQU VALUE - HIGH BYTE
-* ============================================================
+DATA3	DFW CONST1
+DFW LABEL2
+DFW LABEL3
+DFW LABEL4
 
-	LDA #LABEL1:H
-	LDX #LABEL2:H
-	LDY #LABEL3:H
-	LDA #LABEL4:H
+JMPVEC	DFW JMP2
 
+*
 
-* ============================================================
-* SAME VALUE - LO THEN HI
-* Should produce &
-* ============================================================
+JMP2	NOP
+LDA #8
+LDX #8
+LDY #$18
 
-	LDA #LABEL1
-	LDX #LABEL1:H
+ 
+LDA LABEL2
+LDX LABEL3
+LDY LABEL4
 
-	LDA #LABEL2
-	LDX #LABEL2:H
+LDA #LABEL2
+LDX #LABEL2:H
 
-	LDA #LABEL3
-	LDX #LABEL3:H
+LDA #$FE
+LDX #$FF
 
-	LDA #LABEL4
-	LDX #LABEL4:H
+STA ZP1
 
+LDX #CONST0
+STX ZP2
 
-* ============================================================
-* SAME VALUE - HI THEN LO
-* Should produce @
-* ============================================================
+LDY #$FF
+STY ZP3
 
-	LDY #LABEL1:H
-	LDA #LABEL1
-
-	LDY #LABEL2:H
-	LDA #LABEL2
-
-	LDY #LABEL3:H
-	LDA #LABEL3
-
-	LDY #LABEL4:H
-	LDA #LABEL4
-
-
-* ============================================================
-* EXPLICIT LOW AND HIGH BYTE OPERATORS
-* ============================================================
-
-	LDA #<LABEL1
-	LDX #>LABEL1
-
-	LDA #<LABEL2
-	LDX #>LABEL2
-
-	LDA #<LABEL3
-	LDX #>LABEL3
-
-	LDA #<LABEL4
-	LDX #>LABEL4
-
-
-* ============================================================
-* EXPRESSIONS - LOW BYTE
-* ============================================================
-
-	LDA #LABEL1+1
-	LDX #LABEL2+1
-	LDY #LABEL3+1
-
-	LDA #LABEL4-1
-	LDX #LABEL1-1
-	LDY #LABEL2-1
-
-
-* ============================================================
-* EXPRESSIONS - HIGH BYTE
-* ============================================================
-
-	LDA #LABEL1+1:H
-	LDX #LABEL2+1:H
-	LDY #LABEL3+1:H
-
-	LDA #LABEL4-1:H
-	LDX #LABEL1-1:H
-	LDY #LABEL2-1:H
-
-
-* ============================================================
-* 16-BIT LITERALS
-* ============================================================
-
-	LDA #$100
-	LDX #$1234
-	LDY #$5678
-	LDA #$ABCD
-	LDX #$FFFF
-
-
-* ============================================================
-* 16-BIT LITERALS - HIGH BYTE
-* ============================================================
-
-	LDA #$100:H
-	LDX #$1234:H
-	LDY #$5678:H
-	LDA #$ABCD:H
-	LDX #$FFFF:H
-
-
-* ============================================================
-* SAME LITERAL - LO / HI
-* ============================================================
-
-	LDA #$1234
-	LDX #$1234:H
-
-	LDA #$ABCD
-	LDX #$ABCD:H
-
-	LDA #$FFFF
-	LDX #$FFFF:H
-
-
-* ============================================================
-* DIFFERENT VALUES - 5A/5B
-* ============================================================
-
-	LDA #LABEL1
-	LDX #LABEL2
-
-	LDA #LABEL2
-	LDX #LABEL3
-
-	LDA #LABEL3
-	LDX #LABEL4
-
-
-* ============================================================
-* DIFFERENT VALUES - HIGH/LOW
-* ============================================================
-
-	LDA #LABEL1:H
-	LDX #LABEL2
-
-	LDA #LABEL2:H
-	LDX #LABEL3
-
-	LDA #LABEL3:H
-	LDX #LABEL4
-
-
-* ============================================================
-* NON-IMMEDIATE INSTRUCTION BETWEEN SAME VALUE
-* ============================================================
-
-	LDA #LABEL1
-	STA ZP1
-	LDX #LABEL1:H
-
-	LDY #LABEL2:H
-	STX ZP2
-	LDA #LABEL2
-
-
-* ============================================================
-* SEVERAL NON-IMMEDIATE INSTRUCTIONS BETWEEN
-* ============================================================
-
-	LDA #LABEL3
-	STA ZP1
-	INX
-	INY
-	DEX
-	LDX #LABEL3:H
-
-	LDY #LABEL4:H
-	STA ZP2
-	INX
-	DEY
-	LDA #LABEL4
-
-
-* ============================================================
-* NON-IMMEDIATE INSTRUCTIONS - DIFFERENT VALUES
-* ============================================================
-
-	LDA #LABEL1
-	STA ZP1
-	INX
-	LDX #LABEL2
-
-	LDA #LABEL3:H
-	STX ZP2
-	INY
-	LDY #LABEL4
-
-
-* ============================================================
-* MIXED ADDRESSING BETWEEN PAIRS
-* ============================================================
-
-	LDA #LABEL1
-	STA ZP1
-	LDA #$12
-	STX ZP2
-	LDX #LABEL1:H
-
-	LDA #LABEL2
-	LDY #$34
-	LDX #LABEL2:H
-
-
-* ============================================================
-* 16-BIT VALUES AROUND $FF / $100 BOUNDARY
-* ============================================================
-
-	LDA #$FE
-	LDX #$FF
-	LDY #$100
-
-	LDA #$FF
-	LDX #$100
-	LDY #$101
-
-	LDA #$1FF
-	LDX #$200
-
-
-* ============================================================
-* HIGH BYTE BOUNDARIES
-* ============================================================
-
-	LDA #$FF00:H
-	LDX #$FFFF:H
-
-	LDA #$100:H
-	LDX #$1FF:H
-
-	LDA #$200:H
-	LDX #$2FF:H
-
-
-* ============================================================
-* EQU 16-BIT CONSTANTS
-* ============================================================
-
-	LDA #CONST4
-	LDX #CONST5
-
-	LDA #CONST4:H
-	LDX #CONST5:H
-
-
-* ============================================================
-* MIX EQU / LABEL
-* ============================================================
-
-	LDA #CONST4
-	LDX #LABEL1
-
-	LDA #LABEL2
-	LDX #CONST4:H
-
-	LDA #CONST5:H
-	LDX #LABEL4
-
-
-* ============================================================
-* SAME VALUE USING DIFFERENT EXPRESSIONS
-* ============================================================
-
-	LDA #LABEL1
-	LDX #$2AFE:H
-
-	LDA #LABEL2+0
-	LDX #$3344:H
-
-	LDA #LABEL3-0
-	LDX #$5678:H
-
-
-* ============================================================
-* IMMEDIATE OPERATORS + AND -
-* ============================================================
-
-	LDA #5+3
-	LDX #10-2
-	LDY #5-2
-
-	LDA #LABEL1+2
-	LDX #LABEL2-2
-
-
-* ============================================================
-* ZERO-PAGE ADDRESSING OUTSIDE #
-* ============================================================
-
-	LDA ZP1
-	LDX ZP2
-	LDY ZP3
-
-	STA ZP1
-	STX ZP2
-	STY ZP3
-
-
-* ============================================================
-* DIRECT ADDRESSING WITH MEMORY OPERANDS
-* ============================================================
-
-	LDA $40
-	LDX $80
-	LDY $FF
-
-	LDA $40,X
-	LDA $80,X
-	LDX $40,Y
-	LDY $80,X
-
-
-* ============================================================
-* OTHER DIRECT ADDRESSING MODES
-* ============================================================
-
-	LDA LABEL1
-	LDX LABEL2
-	LDY LABEL3
-
-	LDA LABEL1,X
-	LDX LABEL2,Y
-	LDY LABEL3,X
-
-
-* ============================================================
-* FINAL UNPAIRED 16-BIT IMMEDIATE
-* ============================================================
-
-	LDA #LABEL6
-
-	RTS
+RTS
+ 
