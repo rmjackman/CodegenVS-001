@@ -159,6 +159,7 @@ char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
 char src_filename[MAX_FILENAME_LEN + 1] = { 0 };
 char opcode[MAX_LABEL_SIZE + 1] = { 0 }, operand[MAX_FILENAME_LEN + 1] = { 0 };
+char line_beg_opc[MAX_LABEL_SIZE + 1] = { 0 };
 char outflgs[MAX_LABEL_SIZE + 1] = { 0 };
 char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
 char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
@@ -832,11 +833,12 @@ int main(int argc, char* argv[]) {
 				if (linnum == 53)
 					linnum = 53;
 
-
+				*line_beg_opc = 0;
 				if (strlen(label) == 3) {
 					if (contains_word_icase(opcds, label)) {
 #if ALLOW_OPCODE_AT_LINE_BEGIN
 						txtptr = linbegptr;	// label is actually an opcode, so reset txtptr to beginning of line
+						*line_beg_opc = 1;
 						*label = '\0';	// clear label
 					}
 #else
@@ -997,6 +999,10 @@ int main(int argc, char* argv[]) {
 							size_t len = strlen(prnlnbuf);
 							size_t rem = sizeof(prnlnbuf) - len;
 
+							/*if (line_beg_opc) {
+								strcpy_s(prnlnbuf, sizeof(prnlnbuf), line_beg_opc);
+								*line_beg_opc = '\0';
+							}*/
 							if (*label) {
 								if (_stricmp(label, "minus") == 0) {
 									len += snprintf(prnlnbuf + len, rem, "-");
@@ -1019,15 +1025,27 @@ int main(int argc, char* argv[]) {
 								len += snprintf(prnlnbuf + len, rem, ": ");
 								rem = sizeof(prnlnbuf) - len;
 							}
+							char* p = linbuf[maclevel];
 
-							// skip leading whitespace / label and append the rest of the line
-							char* p = strpbrk(linbuf[maclevel], " \t");
-							if (p) {
-								p += strspn(p, " \t");          // skip the whitespace itself
-								if (*p)
-									snprintf(prnlnbuf + len, rem, "%s", p);
+							if (*line_beg_opc) {
+								p += strspn(p, " \t");
+
+								if (*label) {
+									/* Skip the label */
+									p += strcspn(p, " \t");
+									p += strspn(p, " \t");
+								}
 							}
-							// if there is no whitespace at all, we simply add nothing more
+							else {
+								/* Skip leading whitespace / label */
+								p = strpbrk(p, " \t");
+
+								if (p)
+									p += strspn(p, " \t");
+							}
+
+							if (p && *p)
+								snprintf(prnlnbuf + len, rem, "%s", p);
 						}
 					}
 				}
