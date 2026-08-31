@@ -159,7 +159,7 @@ char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
 char src_filename[MAX_FILENAME_LEN + 1] = { 0 };
 char opcode[MAX_LABEL_SIZE + 1] = { 0 }, operand[MAX_FILENAME_LEN + 1] = { 0 };
-char line_beg_opc[MAX_LABEL_SIZE + 1] = { 0 };
+bool line_beg_opc_flg = 0;
 char outflgs[MAX_LABEL_SIZE + 1] = { 0 };
 char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
 char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
@@ -230,6 +230,7 @@ static char cmp_file[MAX_FILENAME_LEN + 1] = { 0 };
 char current_global[MAX_LABEL_SIZE] = "";
 char stand_alone_label[MAX_LABEL_SIZE] = "";
 bool pc_overflow_flg = false;
+bool force_pc_listing_flg = 0;
 
 /****************************    main()     ****************/
 
@@ -833,12 +834,12 @@ int main(int argc, char* argv[]) {
 				if (linnum == 53)
 					linnum = 53;
 
-				*line_beg_opc = 0;
+				line_beg_opc_flg = 0;
 				if (strlen(label) == 3) {
 					if (contains_word_icase(opcds, label)) {
 #if ALLOW_OPCODE_AT_LINE_BEGIN
 						txtptr = linbegptr;	// label is actually an opcode, so reset txtptr to beginning of line
-						*line_beg_opc = 1;
+						line_beg_opc_flg = 1;
 						*label = '\0';	// clear label
 					}
 #else
@@ -986,12 +987,14 @@ int main(int argc, char* argv[]) {
 						{
 
 							if (   (!contains_word_icase("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))  ) {//regular opcode
-								if (pc != pc_sav) {
-
-									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);	// PC ADDRESS
+								if (force_pc_listing_flg || pc != pc_sav) {
+									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);
+									force_pc_listing_flg = 0;
 								}
-								else
+								else {
 									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "    :");
+								}
+
 								pc_sav = pc;
 							}
 							else sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
@@ -999,10 +1002,6 @@ int main(int argc, char* argv[]) {
 							size_t len = strlen(prnlnbuf);
 							size_t rem = sizeof(prnlnbuf) - len;
 
-							/*if (line_beg_opc) {
-								strcpy_s(prnlnbuf, sizeof(prnlnbuf), line_beg_opc);
-								*line_beg_opc = '\0';
-							}*/
 							if (*label) {
 								if (_stricmp(label, "minus") == 0) {
 									len += snprintf(prnlnbuf + len, rem, "-");
@@ -1027,24 +1026,15 @@ int main(int argc, char* argv[]) {
 							}
 							char* p = linbuf[maclevel];
 
-							if (*line_beg_opc) {
+							p += strspn(p, " \t");
+
+							if (!line_beg_opc_flg && *label) {
+								/* First token is a label; skip it */
+								p += strcspn(p, " \t");
 								p += strspn(p, " \t");
-
-								if (*label) {
-									/* Skip the label */
-									p += strcspn(p, " \t");
-									p += strspn(p, " \t");
-								}
-							}
-							else {
-								/* Skip leading whitespace / label */
-								p = strpbrk(p, " \t");
-
-								if (p)
-									p += strspn(p, " \t");
 							}
 
-							if (p && *p)
+							if (*p)
 								snprintf(prnlnbuf + len, rem, "%s", p);
 						}
 					}
@@ -1451,6 +1441,7 @@ int main(int argc, char* argv[]) {
 						sectyp('*');
 						pc = expresstoi();
 						pc_overflow_flg = false;
+						force_pc_listing_flg = 1;
 						pc_sav = pc;
 #if ATARI800
 						if (!objfile_flag)	// If not an oject file,
