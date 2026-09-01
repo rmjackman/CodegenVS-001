@@ -1762,7 +1762,7 @@ int main(int argc, char* argv[]) {
 /* opc #nn */
 #if NEW_DIRECT_ADDRESSING
 
-				else if (operand[0] == '#') {
+				else if (operand[0] == '#' || operand[0] == '/') {
 
 					syms_in_expr = 0;
 
@@ -1772,22 +1772,22 @@ int main(int argc, char* argv[]) {
 					txtptr++;
 
 #if !ATMAS_II_COMPATIBLE
-					if (operand[1] == '>' || operand[1] == '<')
+					if (operand[0] == '#' && (operand[1] == '>' || operand[1] == '<'))
 						txtptr++;
 #endif
 
 					intval = expresstoi_p2();
 					uint8_t nn_byte = (uint8_t)intval;
 
-					if (operand[1] == '\'' && strlen(operand) == 4)
+					if (operand[0] == '#' && operand[1] == '\'' && strlen(operand) == 4)
 						sectyp('\'');
 
-					if (operand[1] == '%')
+					if (operand[0] == '#' && operand[1] == '%')
 						sectyp('!');
 
-					else if (pass == 2) {
+					if (pass == 2) {
 
-						if (intval < 256 && symfg && syms_in_expr == 1) {
+						if (operand[0] == '#' && intval < 256 && symfg && syms_in_expr == 1) {
 
 							for (i = 0; i < symnum; i++) {
 								if (sss[i].symadr == intval &&
@@ -1805,7 +1805,7 @@ int main(int argc, char* argv[]) {
 						lo_fg = 1;
 
 						if ((*txtptr == ':' && txtptr[1] == 'H') ||
-							operand[1] == '>') {
+							operand[1] == '>' || operand[0] == '/') {
 
 							nn_byte = (uint8_t)(intval >> 8);
 							lo_fg = 0;
