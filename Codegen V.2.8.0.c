@@ -332,9 +332,11 @@ int main(int argc, char* argv[]) {
 		fpos_t pos1;
 		bool star_flg = 0;
 		bool first_NNsymbol_flg = 1;
+		bool skip_line_numbers_flg = 0;
 #if NEW_DIRECT_ADDRESSING		
 		int16_t pc_sav1 = 0;
 		bool lo_fg_sav = 0;
+		
 #endif
 		if (verif_flg == 0) {
 
@@ -554,26 +556,34 @@ int main(int argc, char* argv[]) {
 
 			symnumext = symnum;
 			include_flg = 0;
+			{
+				char* tmp_txtptr = txtbuf;
 
-			
+				while (isspace((unsigned char)*tmp_txtptr))
+					tmp_txtptr++;
+
+				if (tmp_txtptr > txtbuf && tmp_txtptr[-1] == '\n') {	/* line number is at beginning of line */
+					if (isdigit((unsigned char)*tmp_txtptr) || *tmp_txtptr == ':')
+						skip_line_numbers_flg = 1;
+				}
+			}
 
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
 
-
 				/* skip line number */
-				if (isdigit(*txtptr) || *txtptr == ':') {
+				if (skip_line_numbers_flg) {
 
 					if (*txtptr == ':')
 						txtptr++;
 
-					while (isdigit(*txtptr))
+					while (isdigit((unsigned char)*txtptr))
 						txtptr++;
 
-					if (!isspace(*txtptr)) {
+					if (!isspace((unsigned char)*txtptr)) {
 						printf("%c is not valid", *txtptr);
-						error("Label cannot begin with a number");
+						error("This is not a valid line number");
 					}
-					
+
 					txtptr++;
 				}
 				/////////////////////////////////////////////////////
