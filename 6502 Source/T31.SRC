@@ -949,11 +949,11 @@ SCTL0	RTS	illegal for emulators
 SCTLRET	LDA #cTXAD
 	STA XA
 	STA WA
-	LDA /cTXAD
+	LDA /cTXAD	:H
 	STA XA+1
 	STA WA+1
 	PTRTEOP
-	RTS
+123	RTS
 
 
 I	LDA #1

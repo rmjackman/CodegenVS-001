@@ -559,6 +559,25 @@ int main(int argc, char* argv[]) {
 
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
 
+
+				/* skip line number */
+				if (isdigit(*txtptr) || *txtptr == ':') {
+
+					if (*txtptr == ':')
+						txtptr++;
+
+					while (isdigit(*txtptr))
+						txtptr++;
+
+					if (!isspace(*txtptr)) {
+						printf("%c is not valid", *txtptr);
+						error("Label cannot begin with a number");
+					}
+					
+					txtptr++;
+				}
+				/////////////////////////////////////////////////////
+
 				reverse_unary_ch_flg = 1;	// reset for each line
 				
 				if ((*txtptr == 0) && (include_flg)) {
@@ -801,6 +820,7 @@ int main(int argc, char* argv[]) {
 						label[pos++] = (char)(*txtptr++);
 					}
 #else  // !ATMAS_II_COMPATIBLE
+
 					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character or '.' or '_'");
@@ -888,8 +908,8 @@ int main(int argc, char* argv[]) {
 					*ptr++ = (char)(*txtptr++);	//opcode is upper case
 
 #else  // !ATMAS_II_COMPATIBLE
-				if (isalpha(*txtptr) == 0 && strchr("._*=", *txtptr) == NULL)
-					error("Alphabetic character or '.' or '_' or '*' or '=' expected");
+				if (isalnum(*txtptr) == 0 && strchr("._*=", *txtptr) == NULL)
+					error("Illegal character at line begin.");
 
 				if (*txtptr == '*') {
 					*ptr++ = *txtptr++;
@@ -1767,31 +1787,31 @@ int main(int argc, char* argv[]) {
 					syms_in_expr = 0;
 
 					if (data[cnt][NN] == 0)
-						error("direct addressing (#) cannot be used with this opcode");
+						error("direct addressing cannot be used with this opcode");
 
 					txtptr++;
 
 #if !ATMAS_II_COMPATIBLE
-					if (operand[0] == '#' && (operand[1] == '>' || operand[1] == '<'))
+					if (operand[0] == '#' && (operand[1] == '>' || operand[1] == '<')) // e.g. LDA #>OKTXT
 						txtptr++;
 #endif
 
 					intval = expresstoi_p2();
 					uint8_t nn_byte = (uint8_t)intval;
 
-					if (operand[0] == '#' && operand[1] == '\'' && strlen(operand) == 4)
+					if (operand[0] == '#' && operand[1] == '\'' && strlen(operand) == 4) // e.g. LDA #'A'
 						sectyp('\'');
 
-					if (operand[0] == '#' && operand[1] == '%')
+					if (operand[0] == '#' && operand[1] == '%')							// e.g. LDA #%11000000
 						sectyp('!');
 
 					if (pass == 2) {
 
-						if (operand[0] == '#' && intval < 256 && symfg && syms_in_expr == 1) {
+						if (operand[0] == '#' && intval < 256 && symfg && syms_in_expr == 1) { // constants and zero page
 
 							for (i = 0; i < symnum; i++) {
 								if (sss[i].symadr == intval &&
-									sss[i].symtyp == ']') {
+									sss[i].symtyp == ']') { // constants
 									sectyp('[');
 									break;
 								}
@@ -1799,7 +1819,7 @@ int main(int argc, char* argv[]) {
 
 							/* No matching constant was found. */
 							if (i == symnum)
-								sectyp('(');
+								sectyp('('); // zero-page address
 						}
 
 						lo_fg = 1;
@@ -3758,7 +3778,7 @@ uint16_t parseNumber(char* txtptr) {
 			// Handle hexadecimal number
 			number = strtol(txtptr + 1, &endptr, 16);
 		}
-		else if (isdigit(*txtptr)) {
+		else if (isdigit((unsigned char)*txtptr)) {
 			// Handle decimal number
 			number = strtol(txtptr, &endptr, 10);
 		}
