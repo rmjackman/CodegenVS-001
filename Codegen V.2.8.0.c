@@ -908,8 +908,8 @@ int main(int argc, char* argv[]) {
 					*ptr++ = (char)(*txtptr++);	//opcode is upper case
 
 #else  // !ATMAS_II_COMPATIBLE
-				if (isalnum(*txtptr) == 0 && strchr("._*=", *txtptr) == NULL)
-					error("Illegal character at line begin.");
+				if (isalpha(*txtptr) == 0 && strchr("._*=", *txtptr) == NULL)
+					error("Alphabetic character or '.' or '_' or '*' or '=' expected");
 
 				if (*txtptr == '*') {
 					*ptr++ = *txtptr++;
