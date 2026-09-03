@@ -27,7 +27,7 @@
 
 
 #define ROUND_TRIP_VERIFICATION 1
-#define LIS_TO_CONSOLE 0
+#define LIS_TO_CONSOLE 1
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 
@@ -197,7 +197,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 "BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
 
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL APPEND RMB INITRMB "
-"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE "
+"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE LI "
 #if !ATMAS_II_COMPATIBLE
 "ascii text db byte dw word fill = *= IN OF HX DA DAT ";
 #endif
@@ -272,6 +272,7 @@ int main(int argc, char* argv[]) {
 	char* lnbfptr;
 	char* labptr;
 
+
 	short verif_flg = 0; // 0 = no verification, 1 = verification, 2 = round trip verification
 	uint16_t seg_beg_sav = 0;
 
@@ -333,6 +334,7 @@ int main(int argc, char* argv[]) {
 		bool star_flg = 0;
 		bool first_NNsymbol_flg = 1;
 		bool skip_line_numbers_flg = 0;
+		bool li_flg = 0;
 #if NEW_DIRECT_ADDRESSING		
 		int16_t pc_sav1 = 0;
 		bool lo_fg_sav = 0;
@@ -556,6 +558,8 @@ int main(int argc, char* argv[]) {
 
 			symnumext = symnum;
 			include_flg = 0;
+
+			/* Are there line numbers in the source code? */
 			{
 				char* tmp_txtptr = txtbuf;
 
@@ -614,7 +618,8 @@ int main(int argc, char* argv[]) {
 
 						fprintf(stream2, "%s", prnlnbufbeg);	//print line to LIS file
 #if LIS_TO_CONSOLE						
-						printf( "%s", prnlnbufbeg);	//print line of LIS file to console
+						if (li_flg)
+							printf( "%s", prnlnbufbeg);	//print line of LIS file to console
 #endif
 						if (cpfflg)
 							if (mismatchln_flg[0])
@@ -1282,6 +1287,17 @@ int main(int argc, char* argv[]) {
 							} while (*operptr);
 						}
 					}
+					continue;
+				}
+				/* LI */
+
+				if (_stricmp(opcode, "LI") == 0) {
+					if (_stricmp(operand, "ON") == 0)
+						li_flg = 1;
+					else if (_stricmp(operand, "OFF") == 0)
+						li_flg = 0;
+					else
+						error("Invalid operand");
 					continue;
 				}
 
