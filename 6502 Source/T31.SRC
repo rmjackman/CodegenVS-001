@@ -13,7 +13,7 @@
 *	OUT T		SOURCGEN symbol table
 EOL     EQU $9B
 -----------------------------------------------------------------------
-ICCOM	= $342
+ICCOM	=$342
 ICBAL	EQU $344
 ICBAH	EQU $345
 ICBLL	EQU $348

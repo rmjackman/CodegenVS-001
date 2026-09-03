@@ -836,25 +836,44 @@ int main(int argc, char* argv[]) {
 					}
 #else  // !ATMAS_II_COMPATIBLE
 
+					
+
+
+					/* ******************** find label ****************************/
+
 					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character or '.' or '_'");
 					}
+
 					while (isalnum(*txtptr) || strchr("._", *txtptr)) {
 						label[pos++] = (char)(*txtptr++);
 					}
+
 					if ((label[0] == '.' || label[0] == '_') && pos == 1) {
 						error("Label cannot be just a '.' or a '_'");
 					}
+
 					if (*txtptr == ':') {
 						*txtptr = ' ';
 					}
 #endif
 					if (pos > MAX_SYMBOL_SIZE)
 						error("Label is too long");
+
 					if (*txtptr == '@')
 						label[pos++] = *txtptr++;
-					if (!isspace(*txtptr))
+
+					/*
+					 * '=' is allowed immediately after a label.
+					 *
+					 * Examples:
+					 *     ICCOM=$342
+					 *     ICCOM =$342
+					 *     ICCOM= $342
+					 *     ICCOM = $342
+					 */
+					if (!isspace(*txtptr) && *txtptr != '=')
 						error("Illegal character at end of label");
 
 					label[pos] = '\0';
@@ -865,95 +884,144 @@ int main(int argc, char* argv[]) {
 
 				/*	********* find opcode ****************************/
 
-				
-				if (linnum == 53)
-					linnum = 53;
-
 				line_beg_opc_flg = 0;
+
 				if (strlen(label) == 3) {
 					if (contains_word_icase(opcds, label)) {
 #if ALLOW_OPCODE_AT_LINE_BEGIN
 						txtptr = linbegptr;	// label is actually an opcode, so reset txtptr to beginning of line
 						line_beg_opc_flg = 1;
 						*label = '\0';	// clear label
-					}
 #else
 						error("You cannot have an opcode at the beginning of a line");
-					}
 #endif
+					}
 				}
-				if (contains_word_icase(assdirecs, label) || 
+
+				if (contains_word_icase(assdirecs, label) ||
 					contains_word_icase(assdirecssolo, label)) {
 
-					txtptr = linbegptr;	// label is actually an assembler directive, so reset txtptr to beginning of line
+					txtptr = linbegptr;	// label is actually an assembler directive
 					*label = '\0';	// clear label
 				}
-					
-				else
-					while ((*txtptr == ' ') || (*txtptr == '\t'))
+
+				else {
+					/*
+					 * Skip spaces/tabs between label and opcode.
+					 *
+					 * Do NOT skip '=' here.  It is handled below.
+					 */
+					while (*txtptr == ' ' || *txtptr == '\t')
 						txtptr++;
+				}
+
 #if !ATMAS_II_COMPATIBLE
-				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {// label on empty line
-
-
+				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {	// label on empty line
 
 					strcpy_s(stand_alone_label, sizeof(stand_alone_label), label);
+
 					if (strpbrk(outflgs, "Ll")) {
 						fprintf(stream2, "%s\n", stand_alone_label);
 					}
 
 					continue;
 				}
-				
-				
 #endif
+
 				tpsav = txtptr;
-				if (*txtptr == '\n') continue;
+
+				if (*txtptr == '\n')
+					continue;
 
 #if !ATMAS_II_COMPATIBLE
-				if (*txtptr == ';') continue;	// comment (ATMAS-II incompatibility)
+				if (*txtptr == ';')
+					continue;	// comment (ATMAS-II incompatibility)
 #endif
+
+				/*
+				 * '=' is an alias for EQU.
+				 *
+				 * equ_alias_flg is needed because there is no actual
+				 * whitespace between '=' and the operand in forms such as:
+				 *
+				 *     ICCOM=$342
+				 *     ICCOM =$342
+				 */
+				int equ_alias_flg = 0;
 
 				ptr = opcode;
+
+				/*
+				 * '=' is an alias for EQU.
+				 *
+				 * Accept:
+				 *
+				 *     LABEL = $123
+				 *     LABEL= $123
+				 *     LABEL =$123
+				 *     LABEL=$123
+				 */
+				if (*txtptr == '=') {
+
+					strcpy_s(opcode, sizeof(opcode), "EQU");
+					equ_alias_flg = 1;
+
+					txtptr++;			/* skip '=' */
+
+				}
+				else {
+
 #if ATMAS_II_COMPATIBLE
-				if (isalpha(*txtptr) == 0)
-					error("Alphabetic character expected");
 
-				while (isalnum(*txtptr))
-					*ptr++ = (char)(*txtptr++);	//opcode is upper case
+					if (!isalpha(*txtptr))
+						error("Alphabetic character expected");
 
-#else  // !ATMAS_II_COMPATIBLE
-				if (isalpha(*txtptr) == 0 && strchr("._*=", *txtptr) == NULL)
-					error("Alphabetic character or '.' or '_' or '*' or '=' expected");
-
-				if (*txtptr == '*') {
-					*ptr++ = *txtptr++;
-					if (*txtptr != '=')
-						error("You need *= or ORG to set the program counter");
-					*ptr++ = *txtptr++;
-					if (!isspace(*txtptr))
-						error("Space expected after *=");
-				}
-				else if (*txtptr == '=') {
-					*ptr++ = *txtptr++;
-					if (!isspace(*txtptr))
-						error("Space expected after '='");
-				}
-				else
-
-					while (isalnum(*txtptr) || strchr("._", *txtptr))
+					while (isalnum(*txtptr))
 						*ptr++ = (char)(*txtptr++);
-#endif
-				if (!isspace(*txtptr)) {
+
+#else	/* !ATMAS_II_COMPATIBLE */
+
+					if (isalpha(*txtptr) == 0 && strchr("._*", *txtptr) == NULL)
+						error("Alphabetic character or '.' or '_' or '*' expected");
+
+					if (*txtptr == '*') {
+
+						*ptr++ = *txtptr++;
+
+						if (*txtptr != '=')
+							error("You need *= or ORG to set the program counter");
+
+						*ptr++ = *txtptr++;
+
+						if (!isspace(*txtptr))
+							error("Space expected after *=");
+					}
+					else {
+
+						while (isalnum(*txtptr) || strchr("._", *txtptr))
+							*ptr++ = (char)(*txtptr++);
+					}
+
+#endif	/* ATMAS_II_COMPATIBLE */
+
+					* ptr = '\0';
+				}
+
+
+				/*
+				 * For a normal opcode, a space must follow it.
+				 *
+				 * For the '=' EQU alias, the operand may immediately
+				 * follow '='.
+				 */
+				if (!equ_alias_flg && !isspace(*txtptr)) {
 					printf("Illegal character '%c' in symbol", *txtptr);
 					error("Space expected");
 				}
 
-				*ptr = 0; //opcode finalised
-
 
 				/***  Check for A after ASL ROL LSR ROR  ***/
-				
+
 				if (contains_word_icase(" ASL ROL LSR ROR ", opcode)
 					&& txtptr[0] == ' '
 					&& txtptr[1] == 'A'
@@ -962,66 +1030,101 @@ int main(int argc, char* argv[]) {
 					txtptr[1] = ' ';
 				}
 
+
 				/*  Check opcode for directives   */
 
-				if (opcode[0] == '.' && (contains_word_icase(assdirecs, (opcode + 1))|| contains_word_icase(assdirecssolo, (opcode + 1)))) 
+				if (opcode[0] == '.' &&
+					(contains_word_icase(assdirecs, (opcode + 1)) ||
+						contains_word_icase(assdirecssolo, (opcode + 1)))) {
+
 					memmove(opcode, opcode + 1, strlen(opcode));
+				}
+
 
 				/*  Check opcode for alias directives   */
+
 #if !ATMAS_II_COMPATIBLE
 
-				if (contains_word_icase(" MAC ",opcode)) {
+				if (contains_word_icase(" MAC ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "MACRO");
 				}
+
 				if (contains_word_icase(" ENDM ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "MEND");
 				}
-				if (contains_word_icase(" *= ",opcode)) {
+
+				if (contains_word_icase(" *= ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "ORG");
 				}
-				if (contains_word_icase(" = ", opcode)) {
-					strcpy_s(opcode, sizeof(opcode), "EQU");
-				}
+
 				if (contains_word_icase(" BYTE DB ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "DFB");
 				}
+
 				if (contains_word_icase(" WORD DW ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "DFW");
 				}
+
 				if (contains_word_icase(" ASCII TEXT ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "ASC");
 				}
+
 				if (contains_word_icase(" FILL ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "FILLMEM");
 				}
+
 				if (contains_word_icase(" OF ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "SAVEAS");
 				}
+
 				if (contains_word_icase(" IN ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "INCLUDE");
 				}
+
 				if (contains_word_icase(" DA ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "DAT");
 				}
+
 #endif
-				if (!(*txtptr == ' ') || txtptr[1] == ' ' || txtptr[1] == '\n' || txtptr[1] == '\t') {
-					
+
+
+				/*
+				 * Check directive spacing.
+				 *
+				 * The '=' EQU alias is exempt because forms such as
+				 *
+				 *     ICCOM =$342
+				 *
+				 * legitimately have no space after '='.
+				 */
+				if (!equ_alias_flg &&
+					(!(*txtptr == ' ') ||
+						txtptr[1] == ' ' ||
+						txtptr[1] == '\n' ||
+						txtptr[1] == '\t')) {
+
 					if (contains_word_icase(assdirecs, opcode))
 						error("Directive must be followed by a single space (not tab) and an operand");
 				}
-				
-				if (pc < pc_sav && orgflg) // if pc is lower than the previous pc, something is wrong e.g. overflow
+
+
+				if (pc < pc_sav && orgflg)	// if pc is lower than the previous pc, something is wrong e.g. overflow
 					error("Program counter overflow");
-				
+
+
 				*prnlnbuf = '\0';
 				*prnlnbufbeg = '\0';
+
 				if ((pass == 2) && strpbrk(outflgs, "Ll")) {
+
 					if (_stricmp(opcode, "MACRO") && _stricmp(opcode, "MEND") && !macroflg) /* Not in macro */
 					{
 						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
 						{
 
-							if (   (!contains_word_icase("EQU EPZ ORG", opcode) && (strlen(opcode) == 3))  ) {//regular opcode
+							if ((!contains_word_icase("EQU EPZ ORG", opcode) &&
+								(strlen(opcode) == 3))) {	// regular opcode
+
 								if (force_pc_listing_flg || pc != pc_sav) {
 									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);
 									force_pc_listing_flg = 0;
@@ -1032,12 +1135,15 @@ int main(int argc, char* argv[]) {
 
 								pc_sav = pc;
 							}
-							else sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
+							else {
+								sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
+							}
 
 							size_t len = strlen(prnlnbuf);
 							size_t rem = sizeof(prnlnbuf) - len;
 
 							if (*label) {
+
 								if (_stricmp(label, "minus") == 0) {
 									len += snprintf(prnlnbuf + len, rem, "-");
 								}
@@ -1047,6 +1153,7 @@ int main(int argc, char* argv[]) {
 								else {
 									len += snprintf(prnlnbuf + len, rem, "%s", label);
 								}
+
 								rem = sizeof(prnlnbuf) - len;
 							}
 
@@ -1059,6 +1166,7 @@ int main(int argc, char* argv[]) {
 								len += snprintf(prnlnbuf + len, rem, ": ");
 								rem = sizeof(prnlnbuf) - len;
 							}
+
 							char* p = linbuf[maclevel];
 
 							p += strspn(p, " \t");
@@ -1074,7 +1182,6 @@ int main(int argc, char* argv[]) {
 						}
 					}
 				}
-
 				/* LABEL AT LINE BEGIN  LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
 
 				if (*stand_alone_label) {
@@ -1105,7 +1212,8 @@ int main(int argc, char* argv[]) {
 						//strcpy_s(opcode, sizeof(opcode), "EQU");
 
 					if ((_stricmp(opcode, "EQU") == 0) || (_stricmp(opcode, "EPZ") == 0)) {
-						txtptr++;
+						if (*txtptr == ' ' || *txtptr == '\t') // not for '='
+							txtptr++;
 						i = expresstoi();
 
 						if (pass == 1) {
