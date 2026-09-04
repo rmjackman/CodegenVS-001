@@ -916,15 +916,17 @@ int main(int argc, char* argv[]) {
 				}
 
 #if !ATMAS_II_COMPATIBLE
-				if (*label && ((*txtptr == '\n') || (*txtptr == ';'))) {	// label on empty line
+				if (*label && (*txtptr == '\n' || *txtptr == ';')) {		// stand-alone label
 
-					strcpy_s(stand_alone_label, sizeof(stand_alone_label), label);
-
-					if (strpbrk(outflgs, "Ll")) {
-						fprintf(stream2, "%s\n", stand_alone_label);
+					if (strpbrk(outflgs, "Ll"))
+						fprintf(stream2, "%s\n", label);
+					if (pass == 1) {
+						sss[symnum].symadr = pc;
+						strcpy_s(sss[symnum].symbol,sizeof(sss[symnum].symbol), label);
+						symnum++;
 					}
-
 					continue;
+
 				}
 #endif
 
@@ -1185,18 +1187,7 @@ int main(int argc, char* argv[]) {
 				}
 				/* LABEL AT LINE BEGIN  LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
 
-				if (*stand_alone_label) {
-					if (*label) {
-						if (_stricmp(opcode, "EQU") && _stricmp(opcode, "EPZ")){// not EQU and not EPZ
-							error("A stand-alone label is already associated with this line.");
-						}
-					}
-					else
-					{
-						strcpy_s(label, sizeof(label), stand_alone_label);
-						*stand_alone_label = 0;
-					}
-				}
+				
 
 				if (*label) {
 					
@@ -1576,8 +1567,7 @@ int main(int argc, char* argv[]) {
 
 				if ( _stricmp(opcode, "ORG") == 0) {
 					pc_overflow_flg = false;
-					if (*stand_alone_label)
-						error("ORG cannot be used with a stand-alone label");
+					
 					txtptr++;
 					{
 						if (!orgflg)											/* first ORG */

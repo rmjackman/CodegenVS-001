@@ -667,7 +667,8 @@ INVTEST	ORA INVFG
 	JMP LPBG
 	
 *
-CmpTeaXA	CmpaW TEA,XA
+CmpTeaXA	
+	CmpaW TEA,XA
 	BNE +
 	  FREELINE	;TEA = XA
 	  JMP .end
