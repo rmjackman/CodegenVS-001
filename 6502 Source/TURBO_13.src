@@ -1,0 +1,534 @@
+
+00010          .LI ON
+00020 ------------------------------
+00030 ; TURBO-BASIC TEIL 13
+00040 ------------------------------
+00050          .LI OFF
+00060 ------------------------------
+00070 ***          RUN          ***
+00080 RUN_BEF INY
+00090         CPY STATE_LEN
+00100         BCS RUN_1
+00110         JSR RUN_LOAD_BAS
+00120 RUN_1   LDA STMTAB
+00130         STA STMCUR
+00140         LDA STMTAB+1
+00150         STA STMCUR+1
+00160         LDA #$00
+00170         STA FOR_CTRL_FLAG
+00180         STA BRK_FLAG
+00190         LDY #$03
+00200         STY STATE_LEN
+00210         DEY
+00220         LDA (STMCUR),Y
+00230         STA ZEIL_LEN
+00240         DEY
+00250         LDA (STMCUR),Y
+00260         BMI NO_PRG
+00270         JSR CLR_DIV_PTR
+00280 ------------------------------
+00290 ***         CLR          ***
+00300 CLR_BEF
+00310 CLR_1  JSR CLR_VAR
+00320        JSR CLR_DIM_PTR
+00330        LDA #$00
+00340        STA DATAZ_PTR
+00350        STA DATAZ_PTR+1
+00360        STA DATA_PTR
+00370        RTS
+00380 ------------------------------
+00390 ***         END          ***
+00400 END_BEF JSR STORE_STOPLN
+00410 NO_PRG  JMP L0579
+00420 ------------------------------
+00430 ***         IF           ***
+00440 IF_BEF JSR LET_BEF
+00450        LDX ZP0AA
+00460        LDA XTAB1_40,X  
+00470        BEQ .1
+00480        LDX STATE_PTR
+00490        INX
+00500        CPX STATE_LEN
+00510        BCS ENDIF_BEF
+00520        JMP GOTO_BEF
+00530 .1     LDY STATE_PTR
+00540        DEY
+00550        LDA (STMCUR),Y
+00560        CMP #$1B
+00570        BEQ ELSE_1
+00580 ------------------------------
+00590 ***         ELSE         ***
+00600 ELSE_BEF  LDA #$07
+00610           LDX #$41
+00620           LDY #$40
+00630           JMP Y1126
+00640 ELSE_1    LDA ZEIL_LEN
+00650           STA STATE_LEN
+00660 ------------------------------
+00670 ***         ENDIF         ***
+00680 ENDIF_BEF RTS
+00690 ------------------------------
+00700 ***         *B            ***
+00710 BRK_CTRL_BEF
+00720        LDA (STMCUR),Y
+00730        EOR #$26
+00740        STA BRK_FLAG
+00750        RTS
+00760 ------------------------------
+00770 BRK_FLAG  .HX 00
+00780 ------------------------------
+00790 BRK_BAS_V LDA #$80
+00800           STA BRKKEY
+00810           LDY BRK_FLAG
+00820           BEQ STOP_BEF
+00830           JMP ERROR_ROUT
+00840 ------------------------------
+00850 ***         STOP         ***
+00860 STOP_BEF JSR STORE_STOPLN
+00870          JSR WRITE_EOL
+00880          LDA #STOP_TEXT
+00890          STA ZP095
+00900          LDA /STOP_TEXT
+00910          STA ZP096
+00920          JSR Y1052
+00930          JMP PRT_AT_LINE
+00940 ------------------------------
+00950 STORE_STOPLN LDY #$01
+00960              LDA (STMCUR),Y
+00970              BMI L0620
+00980              STA STOPLN+1
+00990              DEY
+01000              LDA (STMCUR),Y
+01010              STA STOPLN
+01020 L0620        LDA #$00
+01030              STA ZP0B4
+01040              STA ZP0B5
+01050              RTS
+01060 ------------------------------
+01070 STOP_TEXT    .DA "STOPPED "
+01080 ------------------------------
+01090 ***         CONT         ***
+01100 CONT_BEF LDY #$01
+01110          LDA (STMCUR),Y
+01120          BPL L0620
+01130          LDA STOPLN
+01140          STA ZP0A0
+01150          LDA STOPLN+1
+01160          STA ZP0A1
+01170          JSR L0402
+01180          LDY #$02
+01190          LDA (STMCUR),Y
+01200          STA ZEIL_LEN
+01210          PLA
+01220          PLA
+01230          JMP ZEILEN_INC
+01240 ------------------------------
+01250 ***         TRAP          ***
+01260 TRAP_BEF JSR L0728
+01270          STA TRAPLN
+01280          STY TRAPLN+1
+01290          RTS
+01300 ------------------------------
+01310 ***         ON            ***
+01320 ON_BEF STY ZP0B3
+01330        JSR L0644  
+01340        JSR L0431  
+01350        BCS .2
+01360        LDA FR0+1
+01370        BNE .2
+01380        LDA FR0
+01390        BEQ .2
+01400        STA ZP0B9
+01410        LDY STATE_PTR
+01420        DEY
+01430        LDA (STMCUR),Y
+01440        PHA
+01450 .1     DEC ZP0B9
+01460        BEQ .3
+01470        JSR L0429  
+01480        CPX #$12
+01490        BEQ .1
+01500        PLA
+01510 .2     RTS
+01520 .3     PLA
+01530        CMP #$62
+01540        BEQ .5
+01550        CMP #$6A
+01560        BEQ .6
+01570        PHA
+01580        JSR L0490  
+01590        PLA
+01600        CMP #$17
+01610        BEQ .4
+01620        LDA #$1E
+01630        JSR Y1101
+01640 .4     LDA FR0
+01650        LDY FR0+1
+01660        JMP Y1136
+01670 .5     LDA #$51
+01680        JSR Y1101
+01690        JMP Y1137
+01700 .6     JMP GO_NR_BEF
+01710 Y1094  STA ZP0A4
+01720        CLC
+01730        LDA BASMEMTOP
+01740        STA ZP0C4
+01750        ADC ZP0A4
+01760        TAY
+01770        LDA BASMEMTOP+1
+01780        STA ZP0C5
+01790        ADC #$00
+01800        CMP MEMTOP+1  
+01810        BCC .1
+01820        BNE ERROR2_2  
+01830        CPY MEMTOP  
+01840        BCC .1
+01850        BNE ERROR2_2  
+01860 .1     STA BASMEMTOP+1
+01870        STA APPMHI+1  
+01880        STY BASMEMTOP
+01890        STY APPMHI  
+01900        RTS
+01910 ------------------------------
+01920 ERROR2_2  LDA #$02
+01930           JMP ERROR_ROUT
+01940 ------------------------------
+01950 Y1095  LDA FR0
+01960        STA (ZP0C4),Y
+01970        INY
+01980        LDA FR0+1
+01990        STA (ZP0C4),Y
+02000        INY
+02010        LDA FR0+2
+02020        STA (ZP0C4),Y
+02030        INY
+02040        LDA FR0+3
+02050        STA (ZP0C4),Y
+02060        INY
+02070        LDA FR0+4
+02080        STA (ZP0C4),Y
+02090        INY
+02100        LDA FR0+5
+02110        STA (ZP0C4),Y
+02120        RTS
+02130 ------------------------------
+02140 CLR_DIM_PTR LDA STARP
+02150             STA RUNSTK
+02160             STA BASMEMTOP
+02170             STA APPMHI
+02180             LDA STARP+1
+02190             STA RUNSTK+1
+02200             STA BASMEMTOP+1
+02210             STA APPMHI+1
+02220             RTS
+02230 ------------------------------
+02240 CLR_VAR LDX VVTP
+02250         STX ZP0F5
+02260         LDY VVTP+1
+02270         STY ZP0F6
+02280 .1      LDX ZP0F5
+02290         CPX STMTAB
+02300         LDA ZP0F6
+02310         SBC STMTAB+1
+02320         BCS .3
+02330         LDY #$00
+02340         LDA (ZP0F5),Y
+02350         AND #$FC
+02360         STA (ZP0F5),Y
+02370         LDY #$02
+02380         LDX #$06
+02390         LDA #$00
+02400 .2      STA (ZP0F5),Y
+02410         INY
+02420         DEX
+02430         BNE .2
+02440         LDA ZP0F5
+02450         CLC
+02460         ADC #$08
+02470         STA ZP0F5
+02480         LDA ZP0F6
+02490         ADC #$00
+02500         STA ZP0F6
+02510         BNE .1
+02520 .3      JMP L0421
+02530 ------------------------------
+02540 CLR_DIV_PTR LDY #$00
+02550             STY STOPLN
+02560             STY STOPLN+1
+02570             STY ZP0B9
+02580             STY RADFLG
+02590             STY DATA_PTR
+02600             STY DATAZ_PTR
+02610             STY DATAZ_PTR+1
+02620             DEY
+02630             STY TRAPLN+1
+02640             STY BRKKEY
+02650             JMP IO_CL_ALL
+02660 ------------------------------
+02670 ***         *F          ***
+02680 FOR_CTRL_BEF
+02690        LDA (STMCUR),Y
+02700        EOR #$26
+02710        STA FOR_CTRL_FLAG
+02720        RTS
+02730 ------------------------------
+02740 FOR_CTRL_FLAG  .HX 00
+02750 ------------------------------
+02760 Y1103     LDY #$FF
+02770 Y1126     STX Y1143+1
+02780           STA Y1144+1
+02790           STY Y1145+1
+02800           LDA #$00
+02810           STA FR0+3
+02820           LDA STMCUR
+02830           STA ZP0BE
+02840           LDA STMCUR+1
+02850           STA ZP0BF
+02860 Y1149     LDY STATE_LEN
+02870           CPY ZEIL_LEN
+02880           BCS Y1146
+02890           LDA (STMCUR),Y
+02900           STA STATE_LEN
+02910           INY
+02920           LDA (STMCUR),Y
+02930           INY
+02940           STY STATE_PTR
+02950 Y1143     CMP #$00
+02960           BEQ Y1147
+02970 Y1144     CMP #$00
+02980           BEQ Y1148
+02990 Y1145     CMP #$00
+03000           BNE Y1149
+03010           LDA FR0+3
+03020           BNE Y1149
+03030 Y1150     RTS
+03040 Y1147     LDA FR0+3
+03050           BEQ Y1150
+03060           DEC FR0+3
+03070           JMP Y1149
+03080 Y1148     CMP #$07
+03090           BNE .1
+03100           LDY STATE_LEN
+03110           DEY
+03120           LDA (STMCUR),Y
+03130           CMP #$1B
+03140           BEQ Y1149
+03150 .1        INC FR0+3
+03160           BNE Y1149
+03170 Y1106     JSR Y1152
+03180 ERROR22_1 LDA #$16
+03190           JMP ERROR_ROUT
+03200 Y1146     LDY #$01
+03210           LDA (STMCUR),Y
+03220           BMI Y1106
+03230           CLC
+03240           LDA ZEIL_LEN
+03250           ADC STMCUR
+03260           STA STMCUR
+03270           BCC .1
+03280           INC STMCUR+1
+03290 .1        LDY #$01
+03300           LDA (STMCUR),Y
+03310           BMI Y1106
+03320           INY
+03330           LDA (STMCUR),Y
+03340           STA ZEIL_LEN
+03350           INY
+03360           STY STATE_LEN
+03370           JMP Y1149
+03380 ------------------------------
+03390 ***       WHILE         ***
+03400 WHILE_BEF JSR LOOP_BEGIN
+03410           JSR LET_BEF
+03420           LDX ZP0AA
+03430           LDA XTAB1_40,X
+03440           BNE Y1155
+03450           JSR POP_1
+03460           LDA #$3E
+03470           LDX #$3F
+03480           JMP Y1103
+03490 ------------------------------
+03500 ***       UNTIL          ***
+03510 UNTIL_BEF JSR LET_BEF
+03520           JSR POP_1
+03530           BCS ERROR23_1
+03540           CMP #$3C
+03550           BNE ERROR22_1
+03560           LDX ZP0AA
+03570           LDY XTAB1_40,X
+03580           BNE Y1155
+03590           LDA #$04
+03600           JSR Y1112
+03610           LDA #$3C
+03620           JMP Y1043
+03630 Y1155     RTS
+03640 ------------------------------
+03650 ***       WEND           ***
+03660 WEND_BEF JSR POP_1
+03670          BCS ERROR24_1
+03680          CMP #$3E
+03690          BNE ERROR22_1
+03700          JSR Y1043
+03710          LDY ZP0B2
+03720          DEY
+03730          STY STATE_LEN
+03740          RTS
+03750 ------------------------------
+03760 ERROR23_1 LDA #$17
+03770           .HX 2C
+03780 ERROR24_1 LDA #$18
+03790           JMP ERROR_ROUT
+03800 ------------------------------
+03810 ***       POP            ***
+03820 POP_BEF
+03830 POP_1  LDA RUNSTK+1
+03840        CMP BASMEMTOP+1
+03850        BCC .1
+03860        LDA RUNSTK
+03870        CMP BASMEMTOP
+03880        BCS .5
+03890 .1     SEC
+03900        LDA BASMEMTOP
+03910        SBC #$04
+03920        STA BASMEMTOP
+03930        STA APPMHI  
+03940        BCS .2
+03950        DEC BASMEMTOP+1
+03960        DEC APPMHI+1  
+03970 .2     LDY #$03
+03980        LDA (BASMEMTOP),Y
+03990        STA ZP0B2
+04000        DEY
+04010        LDA (BASMEMTOP),Y
+04020        STA ZP0A1
+04030        DEY
+04040        LDA (BASMEMTOP),Y
+04050        STA ZP0A0
+04060        DEY
+04070        LDA (BASMEMTOP),Y
+04080        BNE .4
+04090        TAY
+04100        SEC
+04110        LDA BASMEMTOP
+04120        SBC #$0D
+04130        STA BASMEMTOP
+04140        STA APPMHI  
+04150        BCS .3
+04160        DEC BASMEMTOP+1
+04170        DEC APPMHI+1  
+04180 .3     TYA
+04190 .4     CLC
+04200        RTS
+04210 .5     SEC
+04220        RTS
+04230 ------------------------------
+04240 ***       RETURN         ***
+04250 RETURN_BEF JSR POP_1
+04260            BCS ERROR16_1
+04270            CMP #$0C
+04280            BEQ Y1043
+04290            CMP #$1E
+04300            BEQ Y1043
+04310            CMP #$50
+04320            BNE RETURN_BEF
+04330            BEQ ERROR16_1
+04340 Y1043      LDY ZP0B2
+04350            CMP (ZP0A0),Y
+04360            BNE ERROR15_1
+04370            LDA ZP0A1
+04380            BEQ ERROR15_1
+04390            STA STMCUR+1
+04400            LDA ZP0A0
+04410            STA STMCUR
+04420            DEY
+04430            LDA (STMCUR),Y
+04440            STA STATE_LEN
+04450            LDY #$02
+04460            LDA (STMCUR),Y
+04470            STA ZEIL_LEN
+04480            RTS
+04490 ------------------------------
+04500 ERROR15_1 LDA #$0F
+04510           .HX 2C
+04520 ERROR16_1 LDA #$10
+04530           .HX 2C
+04540 ERROR26_1 LDA #$1A
+04550           JMP ERROR_ROUT
+04560 ------------------------------
+04570 ***       EXIT          ***
+04580 EXIT_BEF JSR POP_1
+04590          BCS ERROR26_1
+04600          BNE .1
+04610          LDA #$08
+04620 .1       TAX
+04630          INX
+04640          JMP Y1103
+04650 Y1169    LDA #$1E
+04660          BNE Y1043
+04670 ------------------------------
+04680 ***      ENDPROC         ***
+04690 ENDPROC_BEF JSR POP_1
+04700             BCS ERROR28_1
+04710             CMP #$50
+04720             BEQ Y1043
+04730             CMP #$51
+04740             BEQ Y1169
+04750             CMP #$1E
+04760             BEQ ERROR28_1
+04770             CMP #$0C
+04780        BNE ENDPROC_BEF
+04790 ERROR29_1   SEC
+04800             SBC #$A4
+04810             .HX 2C
+04820 ERROR28_1   LDA #$1C
+04830             JMP ERROR_ROUT
+04840 ------------------------------
+04850 ***       EXEC          ***
+04860 EXEC_BEF JSR EXEC_BEGIN
+04870 Y1137    LDX #$C1
+04880 Y1172    LDY STATE_PTR
+04890          LDA (STMCUR),Y
+04900          BNE .1
+04910          INY
+04920          LDA (STMCUR),Y
+04930 .1       EOR #$80
+04940          JSR CALC_VARTAB
+04950          TXA
+04960          CMP (ZP09D),Y
+04970          BNE ERROR29_1
+04980          LDY #$03
+04990          LDA (ZP09D),Y
+05000          STA STMCUR+1
+05010          DEY
+05020          LDA (ZP09D),Y
+05030          STA STMCUR
+05040          LDA (STMCUR),Y
+05050          STA ZEIL_LEN
+05060          INY
+05070          LDA (STMCUR),Y
+05080          STA STATE_LEN
+05090          RTS
+05100 ------------------------------
+05110 ***       GO#            ***
+05120 GO_NR_BEF LDX #$C2
+05130           BNE Y1172
+05140 ------------------------------
+05150 ***       PROC           ***
+05160 PROC_BEF  LDA #$1B
+05170           .HX 2C
+05180 ERROR25_1 LDA #$19
+05190           JMP ERROR_ROUT
+05200 ------------------------------
+05210 ***       LOOP           ***
+05220 LOOP_BEF JSR POP_1
+05230          BCS ERROR25_1
+05240          CMP #$45
+05250          BNE .1
+05260          LDA #$04
+05270          JSR Y1112
+05280          LDA #$45
+05290          JMP Y1043
+05300 .1       JMP ERROR22_1
+05310 ------------------------------
+05320 ; ENDE TEIL 13
+05330 ------------------------------

@@ -1,0 +1,481 @@
+
+00010          .LI ON
+00020 ------------------------------
+00030 ;TURBO-BASIC TEIL 15
+00040 ------------------------------
+00050          .LI OFF
+00060 ------------------------------
+00070 ***       TEXT          ***
+00080 TEXT_BEF JSR L0119
+00090          STA ZP099
+00100          BNE Y1201
+00110          JSR LET_BEF
+00120          LDX ZP0AA
+00130          LDA XTAB3,X
+00140          BMI .1
+00150          JSR STR_FUN
+00160 .1       JSR L0632
+00170 TEXT_2   LDA FR0+2
+00180          ORA FR0+3
+00190          BEQ Y1201
+00200          LDY #$00
+00210          STY ZP0DB
+00220          STY ZP0DC
+00230          LDA (FR0),Y
+00240          BPL .3
+00250          DEC ZP0DB
+00260 .3       JSR TEXT_12
+00270          ASL
+00280          ASL
+00290          STA ZP0A2
+00300          LDA #$00
+00310          ROL
+00320          ASL ZP0A2
+00330          ROL
+00340          ADC CHBAS
+00350          STA ZP0A3
+00360          JSR Y1205
+00370          BCS Y1201
+00380 .4       LDY #$08
+00390          STY ZP0DD
+00400          LDY ZP0DC
+00410          LDA (ZP0A2),Y
+00420          EOR ZP0DB
+00430          STA ZP0DA
+00440          LDX ZP0ED
+00450          LDY FR1+3
+00460 .5       ASL ZP0DA
+00470          LDA (ZP0DE),Y
+00480          AND ADR_5C0,X
+00490          BCC .6
+00500          ORA ADR_5C8,X
+00510 .6       STA (ZP0DE),Y
+00520          DEC ZP0DD
+00530          BEQ .7
+00540          JSR Y1208
+00550          CPY FR1+1
+00560          BCC .5
+00570 .7       JSR TEXT_13
+00580          INC ZP0DC
+00590          LDA ZP0DC
+00600          CMP #$08
+00610          BCS .8
+00620          ADC ZP099
+00630          CMP FR1
+00640          BCC .4
+00650 .8       LDA ZP09B
+00660          ADC #$07
+00670          STA ZP09B
+00680          BCC .9
+00690          INC ZP09C
+00700 .9       INC FR0
+00710          BNE .10
+00720          INC FR0+1
+00730 .10      LDA FR0+2
+00740          BNE .11
+00750          DEC FR0+3
+00760 .11      DEC FR0+2
+00770          JMP TEXT_2
+00780 ------------------------------
+00790 TEXT_TAB1 .HX 40206000
+00800 ------------------------------
+00810 TEXT_12 TAY
+00820         ASL
+00830         ASL
+00840         ROL
+00850         ROL
+00860         AND #$03
+00870         TAX
+00880         TYA
+00890         EOR TEXT_TAB1,X
+00900         RTS
+00910 ------------------------------
+00920 Y1219    .HX 18180C1830306060
+00930          .HX C0C0C0C0180CC0C0
+00940 Y1223    .HX 2814140A0A141428
+00950          .HX 2828282828281428
+00960 Y1221    .HX 0000000203020302
+00970          .HX 0301010100000302
+00980 Y1227    .HX 00010307
+00990 Y1222    .HX 00F0FC
+01000 Y1230    .HX FE040201
+01010 ------------------------------
+01020 Y1220  SEC
+01030        RTS
+01040 Y1205  LDA DINDEX
+01050        AND #$0F
+01060        TAX
+01070        LDA #$00
+01080        STA ZP0DF
+01090        LDA ZP099
+01100        ASL
+01110        ROL ZP0DF
+01120        ASL
+01130        ROL ZP0DF
+01140        ADC ZP099
+01150        BCC .1
+01160        INC ZP0DF
+01170 .1     ASL
+01180        STA ZP0DE
+01190        ROL ZP0DF
+01200        LDA Y1219,X
+01210        STA FR1
+01220        CMP ZP099
+01230        BEQ Y1220
+01240        BCC Y1220
+01250        LDY Y1221,X
+01260        STY FR1+2
+01270        LDA Y1222,Y
+01280        STA ADR_5C0  
+01290        LDA Y1223,X
+01300        STA FR1+1
+01310        LSR
+01320        LSR
+01330        LSR
+01340        LSR
+01350        TAX
+01360        BEQ .3
+01370 .2     ASL ZP0DE
+01380        ROL ZP0DF
+01390        DEX
+01400        BNE .2
+01410 .3     CLC
+01420        LDA ZP0DE
+01430        ADC SAVMSC  
+01440        STA ZP0DE
+01450        LDA ZP0DF
+01460        ADC SAVMSC+1  
+01470        STA ZP0DF
+01480        LDA ZP09C
+01490        STA FR1+4
+01500        LDA ZP09B
+01510        STA FR1+3
+01520        LDY FR1+2
+01530        STY ZP0ED
+01540        BEQ .5
+01550        AND Y1227,Y
+01560        STA ZP0ED
+01570 .4     LSR FR1+4
+01580        ROR FR1+3
+01590        DEY
+01600        BNE .4
+01610 .5     LDA FR1+4
+01620        BNE Y1220
+01630        LDA FR1+3
+01640        CMP FR1+1
+01650        BCS Y1220
+01660        LDX FR1+2
+01670        BNE Y1229
+01680        LDA BAS_COLOR
+01690        JSR TEXT_12
+01700        STA ADR_5C8
+01710        CLC
+01720        RTS
+01730 Y1229  LDY Y1227,X
+01740        STY FR1+4
+01750        LDA Y1230,X
+01760        STA ZP0EE
+01770        LDA BAS_COLOR
+01780        ORA ADR_5C0  
+01790        EOR ADR_5C0  
+01800 .7     STA ADR_5C8,Y
+01810        LDX ZP0EE
+01820 .8     ASL
+01830        DEX
+01840        BNE .8
+01850        DEY
+01860        BPL .7
+01870        LDY FR1+4
+01880        LDA ADR_5C0  
+01890 .9     STA ADR_5C0,Y
+01900        LDX ZP0EE
+01910 .10    SEC
+01920        ROL
+01930        DEX
+01940        BNE .10
+01950        DEY
+01960        BPL .9
+01970        CLC
+01980 Y1235  RTS
+01990 ------------------------------
+02000 ***       PAINT          ***
+02010 PAINT_BEF JSR L0119
+02020           STA ZP099
+02030           BNE Y1235
+02040           JSR Y1205
+02050           BCS Y1235
+02060           LDA BASMEMTOP
+02070           STA ZP0A2
+02080           LDA BASMEMTOP+1
+02090           STA ZP0A3
+02100           LDA MEMTOP
+02110           SBC #$06
+02120           STA ZP0E7
+02130           LDA MEMTOP+1
+02140           SBC #$00
+02150           STA ZP0E8
+02160 PAINT_1   CLC
+02170           LDA ZP0A2
+02180           ADC #$03
+02190           STA ZP0A2
+02200           BCC .2
+02210           INC ZP0A3
+02220 .2        CMP ZP0E7
+02230           LDA ZP0A3
+02240           SBC ZP0E8
+02250           BCC .3
+02260           JMP ERROR2_2
+02270 .3        LDX ZP0ED
+02280           LDY FR1+3
+02290           JSR Y1238
+02300           BEQ .4
+02310           JMP PAINT_16
+02320 .4        JSR Y1241
+02330 .5        JSR Y1242
+02340           TYA
+02350           BMI .6
+02360           JSR Y1238
+02370           BNE .6
+02380           JSR Y1241
+02390           JMP .5
+02400 .6        JSR Y1208
+02410           TYA
+02420           LDY #$00
+02430           STA (ZP0A2),Y
+02440           TXA
+02450           ASL
+02460           ASL
+02470           ASL
+02480           INY
+02490           STA (ZP0A2),Y
+02500           LDY FR1+3
+02510           LDX ZP0ED
+02520 .7        JSR Y1208
+02530           CPY FR1+1
+02540           BCS .8
+02550           JSR Y1238
+02560           BNE .8
+02570           JSR Y1241
+02580           JMP .7
+02590 .8        JSR Y1242
+02600           TYA
+02610           LDY #$02
+02620           STA (ZP0A2),Y
+02630           TXA
+02640           DEY
+02650           ORA (ZP0A2),Y
+02660           STA (ZP0A2),Y
+02670           LDY ZP099
+02680           INY
+02690           CPY FR1
+02700           BCS PAINT_12
+02710           JSR PAINT_19
+02720           JSR PAINT_23
+02730 PAINT_9   LDY #$01
+02740           LDA (ZP0A2),Y
+02750           AND #$07
+02760           CMP ZP0ED
+02770           INY
+02780           LDA (ZP0A2),Y
+02790           SBC FR1+3
+02800           BCC PAINT_11
+02810           LDY #$00
+02820           LDA (ZP0A2),Y
+02830           ORA #$80
+02840 PAINT_10  STA (ZP0A2),Y
+02850           JMP PAINT_1
+02860 PAINT_11  JSR PAINT_21
+02870 PAINT_12  LDY ZP099
+02880           DEY
+02890           CPY FR1
+02900           BCS PAINT_15
+02910           JSR PAINT_21
+02920           JSR PAINT_23
+02930 PAINT_13  LDY #$01
+02940           LDA (ZP0A2),Y
+02950           AND #$07
+02960           CMP ZP0ED
+02970           INY
+02980           LDA (ZP0A2),Y
+02990           SBC FR1+3
+03000           BCC .14
+03010           LDY #$00
+03020           LDA (ZP0A2),Y
+03030           AND #$7F
+03040           BPL PAINT_10
+03050 .14       JSR PAINT_19
+03060 PAINT_15  LDY #$01
+03070           LDA (ZP0A2),Y
+03080           AND #$07
+03090           TAX
+03100           INY
+03110           LDA (ZP0A2),Y
+03120           TAY
+03130           JSR Y1208
+03140 PAINT_16  JSR Y1208
+03150           STX ZP0ED
+03160           STY FR1+3
+03170           SEC
+03180           LDA ZP0A2
+03190           SBC #$03
+03200           STA ZP0A2
+03210           BCS .17
+03220           DEC ZP0A3
+03230 .17       CMP BASMEMTOP
+03240           BNE .18
+03250           LDA ZP0A3
+03260           CMP BASMEMTOP+1
+03270           BEQ PAINT_20
+03280 .18       LDY #$00
+03290           LDA (ZP0A2),Y
+03300           BPL PAINT_13
+03310           BMI PAINT_9
+03320 PAINT_19  INC ZP099
+03330 TEXT_13   CLC
+03340           LDA ZP0DE
+03350           ADC FR1+1
+03360           STA ZP0DE
+03370           BCC PAINT_20
+03380           INC ZP0DF
+03390 PAINT_20  RTS
+03400 PAINT_21  DEC ZP099
+03410           SEC
+03420           LDA ZP0DE
+03430           SBC FR1+1
+03440           STA ZP0DE
+03450           BCS .22
+03460           DEC ZP0DF
+03470 .22       RTS
+03480 PAINT_23  LDY #$00
+03490           LDA (ZP0A2),Y
+03500           AND #$7F
+03510           STA FR1+3
+03520           INY
+03530           LDA (ZP0A2),Y
+03540           LSR
+03550           LSR
+03560           LSR
+03570           STA ZP0ED
+03580           RTS
+03590 Y1208     CPX FR1+4
+03600           INX
+03610           BCC .1
+03620           LDX #$00
+03630           INY
+03640 .1        RTS
+03650 Y1242     DEX
+03660           BPL .1
+03670           LDX FR1+4
+03680           DEY
+03690 .1        RTS
+03700 Y1241     LDA (ZP0DE),Y
+03710           AND ADR_5C0,X
+03720           ORA ADR_5C8,X
+03730           STA (ZP0DE),Y
+03740           RTS
+03750 Y1238     LDA (ZP0DE),Y
+03760           ORA ADR_5C0,X
+03770           EOR ADR_5C0,X
+03780           BEQ .1
+03790           LDA ADR_5C8
+03800           RTS
+03810 .1        LDA ADR_5C8
+03820           BEQ .2
+03830           LDA #$00
+03840           RTS
+03850 .2        LDA #$01
+03860           RTS
+03870 ------------------------------
+03880 ***       CLS           ***
+03890 CLS_BEF JSR CRS_HOME
+03900         LDA DSPFLG
+03910         PHA
+03920         STX DSPFLG
+03930         JSR IOCBNR_J_N
+03940         LDY #$7D
+03950         JSR WRITE_BYTE2
+03960         PLA
+03970         STA DSPFLG
+03980         JMP L0641
+03990 ------------------------------
+04000 ***       TRACE         ***
+04010 TRACE_BEF   LDA (STMCUR),Y
+04020             CMP #$26
+04030             BEQ TRACE_OFF
+04040             LDA #$4C
+04050             LDX #TRACE_PRINT
+04060             LDY /TRACE_PRINT
+04070             BNE TRACE_STORE
+04080 TRACE_OFF   LDA #$A0
+04090             LDX #$02
+04100             LDY #$B1
+04110 TRACE_STORE STA L0984
+04120             STX L0984+1
+04130             STY L0984+2
+04140             RTS
+04150 TRACE_PRINT LDA #$5B
+04160             JSR WRITE_BYTE
+04170             LDY #$00
+04180             LDA (STMCUR),Y
+04190             TAX
+04200             INY
+04210             LDA (STMCUR),Y
+04220             JSR L0520
+04230             LDA #$5D
+04240             JSR WRITE_BYTE
+04250             LDY #$02
+04260             LDA (STMCUR),Y
+04270             JMP Y1266
+04280 Y1268       JSR PAINT_21
+04290             LDA #$0C
+04300             JMP ERROR_ROUT
+04310 ------------------------------
+04320 ***       GOSUB         ***
+04330 GOSUB_BEF JSR EXEC_BEGIN
+04340 ------------------------------
+04350 ***       GOTO          ***
+04360 GOTO_BEF     JSR L0490
+04370 Y1136        STA ZP0A0
+04380              STY ZP0A1
+04390              JSR L0402
+04400              BCS Y1268
+04410              PLA
+04420              PLA
+04430              LDA BRKKEY
+04440              BEQ BREAK_KEY
+04450 L0984        LDY #$02
+04460              LDA (STMCUR),Y
+04470 Y1266        STA ZEIL_LEN
+04480              INY
+04490 .1           CPY ZEIL_LEN
+04500              BCS ZEILEN_INC
+04510              LDA (STMCUR),Y
+04520              STA STATE_LEN
+04530              INY
+04540              LDA (STMCUR),Y
+04550              INY
+04560              STY STATE_PTR
+04570              JSR JUMP_BEF_TAB
+04580              LDY STATE_LEN
+04590              LDA BRKKEY
+04600              BNE .1
+04610 BREAK_KEY    JMP BRK_BAS_V
+04620 JUMP_BEF_TAB ASL
+04630              STA BEFEHL_PTR+1
+04640 BEFEHL_PTR   JMP (BEFEHLS_TAB)
+04650 ZEILEN_INC   LDY #$01
+04660              LDA (STMCUR),Y
+04670              BMI .2
+04680              CLC
+04690              LDA ZEIL_LEN
+04700              ADC STMCUR
+04710              STA STMCUR
+04720              BCC .1
+04730              INC STMCUR+1
+04740 .1           LDA (STMCUR),Y
+04750              BPL L0984
+04760              JMP END_BEF
+04770 .2           JMP L0950
+04780 ------------------------------
+04790 ; ENDE TEIL 15
+04800 ------------------------------

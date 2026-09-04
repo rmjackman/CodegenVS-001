@@ -1,0 +1,330 @@
+
+00010          .LI ON
+00020 ------------------------------
+00030 ; TURBO-BASIC TEIL 14
+00040 ------------------------------
+00050          .LI OFF
+00060 ------------------------------
+00070 ERROR19_1 LDA #$13
+00080           .HX 2C
+00090 ERROR18_1 LDA #$12
+00100           .HX 2C
+00110 ------------------------------
+00120 ***       ERROR         ***
+00130 ERROR_LINE  LDA #$11
+00140 ERROR_ROUT  STA ZP0B9
+00150 ERROR_IO    LDA #$00
+00160             CLD
+00170             STA DSPFLG
+00180             JSR STORE_STOPLN
+00190             LDY TRAPLN+1
+00200             BMI .1
+00210             LDA TRAPLN
+00220             LDX #$80
+00230             STX TRAPLN+1
+00240             LDX ZP0B9
+00250             STX ERRSAV
+00260             LDX #$00
+00270             STX ZP0B9
+00280             JMP Y1136
+00290 .1          LDA ZP0B9
+00300             CMP #$80
+00310             BNE .2
+00320             JMP STOP_BEF
+00330 .2          JSR WRITE_EOL
+00340             LDA #$37
+00350             JSR Y1063
+00360             LDX ZP0B9
+00370             LDA #$00
+00380             JSR L0520
+00390             LDA ZP0B9
+00400             CMP #$1F
+00410             BCC .3
+00420             SBC #$62
+00430 .3          STA ZP0AF
+00440             CMP #$4C
+00450             BCS PRT_AT_LINE
+00460             LDX #$00
+00470             LDA /ERROR_TEXTE
+00480             LDY #ERROR_TEXTE
+00490             JSR Y1000
+00500             JSR Y1178
+00510 PRT_AT_LINE LDY #$01
+00520             LDA (STMCUR),Y
+00530             BMI .1
+00540             LDA #ERROR_TEXTE
+00550             LDY /ERROR_TEXTE
+00560             JSR Y1180
+00570             LDY #$01
+00580             LDA (STMCUR),Y
+00590             STA FR0+1
+00600             DEY
+00610             LDA (STMCUR),Y
+00620             STA FR0
+00630             JSR Y1181
+00640 .1          JSR WRITE_EOL
+00650             JSR TRACE_OFF
+00660             JMP Y1182
+00670 ------------------------------
+00680 L0520        STA FR0+1
+00690              STX FR0
+00700 Y1181        JSR L0124
+00710 CALL_FP_ASC1 JSR CALL_FP_ASC
+00720 Y1074        LDA INBUFF
+00730              LDY INBUFF+1
+00740 Y1180        STA ZP095
+00750              STY ZP096
+00760              JMP Y1052
+00770 ------------------------------
+00780 ***     FEHLERTEXTE        ***
+00790 ERROR_TEXTE .DA " AT LINE "
+00800             .DA "?BLOAÄ"
+00810             .DA "MEÍ"
+00820             .DA "VALUÅ"
+00830             .DA ">#VARÓ"
+00840             .DA "$LEÎ"
+00850             .DA "?DATÁ"
+00860             .DA ">3276·"
+00870             .DA "INPUÔ"
+00880             .DA "DIÍ"
+00890             .DA "STACË"
+00900             .DA "OVERFLO×"
+00910             .DA "?LINÅ"
+00920             .DA "?FOÒ"
+00930             .DA "TOO LONÇ"
+00940             .DA "?DEÌ"
+00950             .DA "?GOSUÂ"
+00960             .DA "GARBAGÅ"
+00970             .DA "?CHÒ"
+00980             .DA "MEÍ"
+00990             .DA "£"
+01000             .DA "?LOAÄ"
+01010             .DA "?NESÔ"
+01020             .DA "?WHILÅ"
+01030             .DA "?REPEAÔ"
+01040             .DA "?DÏ"
+01050             .DA "?EXIÔ"
+01060             .DA "XPROÃ"
+01070             .DA "?EXEÃ"
+01080             .DA "?PROÃ"
+01090             .DA "?£"
+01100             .DA "IS OPEÎ"
+01110             .DA "?DEÖ"
+01120             .DA "WR ONLÙ"
+01130             .DA "CMÄ"
+01140             .DA "NOT OPEÎ"
+01150             .DA "£"
+01160             .DA "RD ONLÙ"
+01170             .DA "EOÆ"
+01180             .DA "TRUNÃ"
+01190             .DA "TIMEOUÔ"
+01200             .DA "NAË"
+01210             .DA "!FRAMÅ"
+01220             .DA "CURSOÒ"
+01230             .DA "!OVERRUÎ"
+01240             .DA "CHKSUÍ"
+01250             .DA "DONÅ"
+01260             .DA "MODÅ"
+01270             .DA "NOT IMPÌ"
+01280             .DA "RAÍ"
+01290             .DA "            "
+01300             .DA "D?º"
+01310             .DA ">#FILEÓ"
+01320             .DA "DSK FULÌ"
+01330             .DA "FATAL I/Ï"
+01340             .DA "FILE£"
+01350             .DA "NAMÅ"
+01360             .DA "POINÔ"
+01370             .DA "LOCKEÄ"
+01380             .DA "DCMÄ"
+01390             .DA ">DIÒ"
+01400             .DA "?FILÅ"
+01410             .DA "POINÔ"
+01420             .DA "?APPNÄ"
+01430             .DA "BAD SECTORÓ"
+01440 ------------------------------
+01450 ***       TIME           ***
+01460 TIME_FUN LDA RTCLOK+2
+01470          LDY RTCLOK+1
+01480          LDX RTCLOK
+01490          CMP RTCLOK+2
+01500          BNE TIME_FUN
+01510          PHA
+01520          STX FR0+1
+01530          STY FR0
+01540          JSR L0124
+01550          LDX #$05
+01560 .1       LDA TIME_TAB,X
+01570          STA FR1,X
+01580          DEX
+01590          BPL .1
+01600          JSR L0287
+01610          JSR FR0_TO_FR1
+01620          PLA
+01630          STA FR0
+01640          LDA #$00
+01650          STA FR0+1
+01660          JSR L0124
+01670          JSR L0265
+01680          LDA #$00
+01690          STA ZP0D2
+01700          STA ZP0D3
+01710          JMP L0125
+01720 ------------------------------
+01730 ***       TIME$          ***
+01740 TIMES_FUN JSR TIME_FUN
+01750           DEC ZP0AA
+01760           LDX #$05
+01770 .1        LDA TIMES_TAB,X
+01780           STA FR1,X
+01790           DEX
+01800           BPL .1
+01810           JSR L0317
+01820           LDY #$00
+01830           LDA FR0
+01840           CMP #$40
+01850           BNE .2
+01860           STY FR0+1
+01870 .2        STY CIX
+01880           LDA #$24
+01890           JSR .3
+01900           LDA #$60
+01910           JSR .3
+01920           LDA #$60
+01930           JSR .3
+01940           LDY #$06
+01950           LDA #ADR_580
+01960           JMP L0804
+01970 .3        PHA
+01980           JSR L0262
+01990           JSR FR0_TO_FR1
+02000           JSR FR0_EINS
+02010           PLA
+02020           STA FR0+1
+02030           JSR L0287
+02040           LDA #$00
+02050           LDY FR0
+02060           CPY #$40
+02070           BNE .4
+02080           LDY FR0+1
+02090           STA FR0+1
+02100           TYA
+02110 .4        TAX
+02120           LSR
+02130           LSR
+02140           LSR
+02150           LSR
+02160           JSR .5
+02170           TXA
+02180           AND #$0F
+02190 .5        ORA #$30
+02200           CMP #$3A
+02210           BCC .6
+02220           ADC #$06
+02230 .6        LDY CIX
+02240           STA ADR_580,Y
+02250           INC CIX
+02260           RTS
+02270 ------------------------------
+02280 TIME_TAB  .HX 410256000000
+02290 TIMES_TAB .HX 430432000000
+02300 ------------------------------
+02310 ***       TIME$=       ***
+02320 TIMES_BEF JSR LET_BEF
+02330           JSR L0595
+02340           LDY #$00
+02350           STY CIX
+02360           STY FR1+1
+02370           STY FR1+2
+02380           JSR .3
+02390           CMP #$18
+02400           BCS .2
+02410           STA FR1
+02420           JSR TIMES_B8
+02430           JSR .3
+02440           CMP #$3C
+02450           BCS .2
+02460           JSR .4
+02470           JSR TIMES_B8
+02480           JSR .3
+02490           CMP #$3C
+02500           BCS .2
+02510           JSR .4
+02520           JSR TIMES_B7
+02530           JSR TIMES_B6
+02540           LDA FR1
+02550           LDY FR1+1
+02560           LDX FR1+2
+02570 .1        STA RTCLOK+2
+02580           STY RTCLOK+1
+02590           STX RTCLOK
+02600           CMP RTCLOK+2
+02610           BNE .1
+02620           JMP L0596
+02630 .2        JSR L0596
+02640           JMP ERROR18_1
+02650 .3        JSR Y1199
+02660           INC CIX
+02670           BCS .2
+02680           ASL
+02690           STA FR1+3
+02700           ASL
+02710           ASL
+02720           ADC FR1+3
+02730           STA FR1+3
+02740           JSR Y1199
+02750           INC CIX
+02760           BCS .2
+02770           ADC FR1+3
+02780           RTS
+02790 .4        CLC
+02800           ADC FR1
+02810           STA FR1
+02820           BCC .5
+02830           INC FR1+1
+02840           BNE .5
+02850           INC FR1+2
+02860 .5        RTS
+02870 TIMES_B6  ASL FR1
+02880           ROL FR1+1
+02890           ROL FR1+2
+02900 TIMES_B7  LDY FR1+2
+02910           LDA FR1
+02920           LDX FR1+1
+02930           ASL FR1
+02940           ROL FR1+1
+02950           ROL FR1+2
+02960           ASL FR1
+02970           ROL FR1+1
+02980           ROL FR1+2
+02990           ADC FR1
+03000           STA FR1
+03010           TXA
+03020           ADC FR1+1
+03030           STA FR1+1
+03040           TYA
+03050           ADC FR1+2
+03060           STA FR1+2
+03070           RTS
+03080 TIMES_B8  JSR TIMES_B6
+03090           LDY FR1+2
+03100           LDA FR1
+03110           LDX FR1+1
+03120           ASL FR1
+03130           ROL FR1+1
+03140           ROL FR1+2
+03150           ADC FR1
+03160           STA FR1
+03170           TXA
+03180           ADC FR1+1
+03190           STA FR1+1
+03200           TYA
+03210           ADC FR1+2
+03220           ASL FR1
+03230           ROL FR1+1
+03240           ROL
+03250           STA FR1+2
+03260 Y1201     RTS
+03270 ------------------------------
+03280 ; ENDE TEIL 14
+03290 ------------------------------

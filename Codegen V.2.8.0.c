@@ -197,7 +197,7 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 "BPL BMI BVC BVS BCC BCS BNE BEQ JMP JSR ";// for checking labels
 
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL APPEND RMB INITRMB "
-"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE LI "
+"ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE LI OR "
 #if !ATMAS_II_COMPATIBLE
 "ascii text db byte dw word fill = *= IN OF HX DA DAT ";
 #endif
@@ -1038,6 +1038,7 @@ int main(int argc, char* argv[]) {
 						contains_word_icase(assdirecssolo, (opcode + 1)))) {
 
 					memmove(opcode, opcode + 1, strlen(opcode));
+					
 				}
 
 
@@ -1053,7 +1054,7 @@ int main(int argc, char* argv[]) {
 					strcpy_s(opcode, sizeof(opcode), "MEND");
 				}
 
-				if (contains_word_icase(" *= ", opcode)) {
+				if (contains_word_icase(" *= OR ", opcode)) {
 					strcpy_s(opcode, sizeof(opcode), "ORG");
 				}
 
@@ -1187,7 +1188,7 @@ int main(int argc, char* argv[]) {
 				if (*stand_alone_label) {
 					if (*label) {
 						if (_stricmp(opcode, "EQU") && _stricmp(opcode, "EPZ")){// not EQU and not EPZ
-							error("A stand-alone label is already assaociated with this line.");
+							error("A stand-alone label is already associated with this line.");
 						}
 					}
 					else
@@ -1400,6 +1401,9 @@ int main(int argc, char* argv[]) {
 				/* LI */
 
 				if (_stricmp(opcode, "LI") == 0) {
+
+					find_operand();
+
 					if (_stricmp(operand, "ON") == 0)
 						li_flg = 1;
 					else if (_stricmp(operand, "OFF") == 0)
@@ -1436,8 +1440,9 @@ int main(int argc, char* argv[]) {
 					continue;
 				}
 				/* INCLUDE */
-
+				
 				if (_stricmp(opcode, "INCLUDE") == 0) {
+
 					if (include_flg) error("Can't have 'INCLUDE' in an included file.");
 					include_flg = 1;
 					operand_to_filename(include_filename);

@@ -1,0 +1,744 @@
+
+00010          .LI ON
+00020 ------------------------------
+00030 ; TURBO-BASIC TEIL 2
+00040 ------------------------------
+00050          .LI OFF
+00060 ------------------------------
+00070 ERROR2_1   JMP ERROR2_2
+00080 L0468      LDA #$00
+00090 L0703      STY ZP0A4
+00100            STA ZP0A5
+00110            CLC
+00120            LDA BASMEMTOP
+00130            ADC ZP0A4
+00140            TAY
+00150            LDA BASMEMTOP+1
+00160            ADC ZP0A5
+00170            CMP MEMTOP+1
+00180            BCC .1
+00190            BNE ERROR2_1
+00200            CPY MEMTOP
+00210            BCC .1
+00220            BNE ERROR2_1
+00230 .1         SEC
+00240            LDA BASMEMTOP
+00250            SBC LINZBS,X
+00260            STA ZP0A2
+00270            LDA BASMEMTOP+1
+00280            SBC LINZBS+1,X
+00290            STA ZP0A3
+00300            CLC
+00310            LDA LINZBS,X
+00320            STA ZP097
+00330            STA ZP099
+00340            ADC ZP0A4
+00350            STA ZP09B
+00360            LDA LINZBS+1,X
+00370            STA ZP098
+00380            STA ZP09A
+00390            ADC ZP0A5
+00400            STA ZP09C
+00410 .2         LDA LINZBS,X
+00420            ADC ZP0A4
+00430            STA LINZBS,X
+00440            LDA LINZBS+1,X
+00450            ADC ZP0A5
+00460            STA LINZBS+1,X
+00470            INX
+00480            INX
+00490            CPX #$92
+00500            BCC .2
+00510            STA APPMHI+1
+00520            LDA BASMEMTOP
+00530            STA APPMHI
+00540 MOVE_D_SUB INC PORTB
+00550            LDX ZP0A3
+00560            CLC
+00570            TXA
+00580            ADC ZP09A
+00590            STA ZP09A
+00600            CLC
+00610            TXA
+00620            ADC ZP09C
+00630            STA ZP09C
+00640            INX
+00650            LDY ZP0A2
+00660            BEQ .4
+00670 .1         DEY
+00680            LDA (ZP099),Y
+00690            STA (ZP09B),Y
+00700            TYA
+00710            BNE .1
+00720            BEQ .4
+00730 .2         DEC ZP09A
+00740            DEC ZP09C
+00750 .3         DEY
+00760            LDA (ZP099),Y
+00770            STA (ZP09B),Y
+00780            DEY
+00790            LDA (ZP099),Y
+00800            STA (ZP09B),Y
+00810            DEY
+00820            LDA (ZP099),Y
+00830            STA (ZP09B),Y
+00840            DEY
+00850            LDA (ZP099),Y
+00860            STA (ZP09B),Y
+00870            TYA
+00880            BNE .3
+00890 .4         DEX
+00900            BNE .2
+00910            DEC PORTB
+00920            RTS
+00930 L0495      LDA #$00
+00940 L0979      STY ZP0A4
+00950            STA ZP0A5
+00960            SEC
+00970            LDA BASMEMTOP
+00980            SBC LINZBS,X
+00990            STA ZP0A2
+01000            LDA BASMEMTOP+1
+01010            SBC LINZBS+1,X
+01020            STA ZP0A3
+01030            SEC
+01040            LDA LINZBS,X
+01050            STA ZP099
+01060            SBC ZP0A4
+01070            STA ZP09B
+01080            LDA LINZBS+1,X
+01090            STA ZP09A
+01100            SBC ZP0A5
+01110            STA ZP09C
+01120 .1         SEC
+01130            LDA LINZBS,X
+01140            SBC ZP0A4
+01150            STA LINZBS,X
+01160            LDA LINZBS+1,X
+01170            SBC ZP0A5
+01180            STA LINZBS+1,X
+01190            INX
+01200            INX
+01210            CPX #$92
+01220            BCC .1
+01230            STA APPMHI+1
+01240            LDA BASMEMTOP
+01250            STA APPMHI
+01260 MOVE_SUB   INC PORTB
+01270            LDY #$00
+01280            LDX ZP0A3
+01290            BEQ .2
+01300 .1         LDA (ZP099),Y
+01310            STA (ZP09B),Y
+01320            INY
+01330            LDA (ZP099),Y
+01340            STA (ZP09B),Y
+01350            INY
+01360            LDA (ZP099),Y
+01370            STA (ZP09B),Y
+01380            INY
+01390            LDA (ZP099),Y
+01400            STA (ZP09B),Y
+01410            INY
+01420            BNE .1
+01430            INC ZP09A
+01440            INC ZP09C
+01450            DEX
+01460            BNE .1
+01470 .2         LDX ZP0A2
+01480            BEQ .4
+01490 .3         LDA (ZP099),Y
+01500            STA (ZP09B),Y
+01510            INY
+01520            DEX
+01530            BNE .3
+01540 .4         DEC PORTB
+01550            RTS
+01560 L0150      CLC
+01570            JMP CLEAR_FR0
+01580 L0149      CLC
+01590            RTS
+01600 L0152      SEC
+01610            RTS
+01620 L0311      JSR FR0_TO_FR1
+01630 L0287      LDA FR0
+01640            BEQ L0149
+01650            LDA FR1
+01660            BEQ L0150
+01670            EOR FR0
+01680            AND #$80
+01690            STA ZP0EE
+01700            LDA FR1
+01710            AND #$7F
+01720            STA FR1
+01730            LDA FR0
+01740            AND #$7F
+01750            SEC
+01760            SBC #$40
+01770            SEC
+01780            ADC FR1
+01790            BMI L0152
+01800            ORA ZP0EE
+01810            TAY
+01820            JSR L0153
+01830            STA ZP0DA
+01840            STA ZP0DB
+01850            STA ZP0DC
+01860            STA ZP0DD
+01870            STA ZP0DE
+01880            STA ZP0DF
+01890            STY FR0
+01900            LDY #$07
+01910 .1         LSR FR1+5
+01920            BCC .2
+01930            CLC
+01940            LDA ZP0DE
+01950            ADC XTAB2_28,Y
+01960            STA ZP0DE
+01970            LDA ZP0DD
+01980            ADC XTAB2_20,Y
+01990            STA ZP0DD
+02000            LDA ZP0DC
+02010            ADC XTAB2_18,Y
+02020            STA ZP0DC
+02030            LDA ZP0DB
+02040            ADC XTAB2_10,Y
+02050            STA ZP0DB
+02060            LDA ZP0DA
+02070            ADC XTAB2_8,Y
+02080            STA ZP0DA
+02090            LDA FR0+5
+02100            ADC XTAB2,Y
+02110            STA FR0+5
+02120            DEY
+02130            BPL .1
+02140            BMI .3
+02150 .2         BEQ .3
+02160            DEY
+02170            BPL .1
+02180 .3         LDY #$07
+02190 L0167      LSR FR1+4
+02200            BCC .5
+02210            CLC
+02220            LDA ZP0DD
+02230            ADC XTAB2_28,Y
+02240            STA ZP0DD
+02250            LDA ZP0DC
+02260            ADC XTAB2_20,Y
+02270            STA ZP0DC
+02280            LDA ZP0DB
+02290            ADC XTAB2_18,Y
+02300            STA ZP0DB
+02310            LDA ZP0DA
+02320            ADC XTAB2_10,Y
+02330            STA ZP0DA
+02340            LDA FR0+5
+02350            ADC XTAB2_8,Y
+02360            STA FR0+5
+02370            LDA FR0+4
+02380            ADC XTAB2,Y
+02390            STA FR0+4
+02400            DEY
+02410            BPL L0167
+02420            BMI .6
+02430 .5         BEQ .6
+02440            DEY
+02450            BPL L0167
+02460 .6         LDY #$07
+02470 .7         LSR FR1+3
+02480            BCC .8
+02490            CLC
+02500            LDA ZP0DC
+02510            ADC XTAB2_28,Y
+02520            STA ZP0DC
+02530            LDA ZP0DB
+02540            ADC XTAB2_20,Y
+02550            STA ZP0DB
+02560            LDA ZP0DA
+02570            ADC XTAB2_18,Y
+02580            STA ZP0DA
+02590            LDA FR0+5
+02600            ADC XTAB2_10,Y
+02610            STA FR0+5
+02620            LDA FR0+4
+02630            ADC XTAB2_8,Y
+02640            STA FR0+4
+02650            LDA FR0+3
+02660            ADC XTAB2,Y
+02670            STA FR0+3
+02680            DEY
+02690            BPL .7
+02700            BMI .9
+02710 .8         BEQ .9
+02720            DEY
+02730            BPL .7
+02740 .9         LDY #$07
+02750 L0177      LSR FR1+2
+02760            BCC .11
+02770            CLC
+02780            LDA ZP0DB
+02790            ADC XTAB2_28,Y
+02800            STA ZP0DB
+02810            LDA ZP0DA
+02820            ADC XTAB2_20,Y
+02830            STA ZP0DA
+02840            LDA FR0+5
+02850            ADC XTAB2_18,Y
+02860            STA FR0+5
+02870            LDA FR0+4
+02880            ADC XTAB2_10,Y
+02890            STA FR0+4
+02900            LDA FR0+3
+02910            ADC XTAB2_8,Y
+02920            STA FR0+3
+02930            LDA FR0+2
+02940            ADC XTAB2,Y
+02950            STA FR0+2
+02960            DEY
+02970            BPL L0177
+02980            BMI .12
+02990 .11        BEQ .12
+03000            DEY
+03010            BPL L0177
+03020 .12        LDY #$07
+03030 .13        LSR FR1+1
+03040            BCC .14
+03050            CLC
+03060            LDA ZP0DA
+03070            ADC XTAB2_28,Y
+03080            STA ZP0DA
+03090            LDA FR0+5
+03100            ADC XTAB2_20,Y
+03110            STA FR0+5
+03120            LDA FR0+4
+03130            ADC XTAB2_18,Y
+03140            STA FR0+4
+03150            LDA FR0+3
+03160            ADC XTAB2_10,Y
+03170            STA FR0+3
+03180            LDA FR0+2
+03190            ADC XTAB2_8,Y
+03200            STA FR0+2
+03210            LDA FR0+1
+03220            ADC XTAB2,Y
+03230            STA FR0+1
+03240            DEY
+03250            BPL .13
+03260            BMI .15
+03270 .14        BEQ .15
+03280            DEY
+03290            BPL .13
+03300 .15        JMP L0183
+03310 L0185      CLC
+03320            RTS
+03330 L0184      SEC
+03340            RTS
+03350 L0317      LDA FR1
+03360            BEQ L0184
+03370            LDA FR0
+03380            BEQ L0185
+03390            EOR FR1
+03400            AND #$80
+03410            STA ZP0EE
+03420            LDA FR1
+03430            AND #$7F
+03440            STA FR1
+03450            LDA FR0
+03460            AND #$7F
+03470            SEC
+03480            SBC FR1
+03490            CLC
+03500            ADC #$40
+03510            BMI L0184
+03520            ORA ZP0EE
+03530            TAY
+03540            JSR L0153
+03550            STA ZP0E6
+03560            STA ZP0E7
+03570            STA ZP0E8
+03580            STA ZP0E9
+03590            STA ZP0EA
+03600            STA FR1
+03610            STA ZP0DA
+03620            STY FR0
+03630            LDY #$00
+03640 .1         LDA FR1
+03650            CMP XTAB2,Y
+03660            BNE .2   
+03670            LDA FR1+1
+03680            CMP XTAB2_8,Y
+03690            BNE .2   
+03700            LDA FR1+2
+03710            CMP XTAB2_10,Y
+03720            BNE .2   
+03730            LDA FR1+3
+03740            CMP XTAB2_18,Y
+03750            BNE .2   
+03760            LDA FR1+4
+03770            CMP XTAB2_20,Y
+03780            BNE .2   
+03790            LDA FR1+5
+03800            CMP XTAB2_28,Y
+03810            BNE .2   
+03820            LDX #$00
+03830            JMP L0192
+03840 .2         BCC .3   
+03850            LDA FR1+5
+03860            SBC XTAB2_28,Y
+03870            STA FR1+5
+03880            LDA FR1+4
+03890            SBC XTAB2_20,Y
+03900            STA FR1+4
+03910            LDA FR1+3
+03920            SBC XTAB2_18,Y
+03930            STA FR1+3
+03940            LDA FR1+2
+03950            SBC XTAB2_10,Y
+03960            STA FR1+2
+03970            LDA FR1+1
+03980            SBC XTAB2_8,Y
+03990            STA FR1+1
+04000            LDA FR1
+04010            SBC XTAB2,Y
+04020            STA FR1
+04030 .3         ROL FR0+1
+04040            INY
+04050            CPY #$08
+04060            BNE .1   
+04070            LDY #$00
+04080 L0197      LDA FR1+1
+04090            CMP XTAB2,Y
+04100            BNE .5   
+04110            LDA FR1+2
+04120            CMP XTAB2_8,Y
+04130            BNE .5   
+04140            LDA FR1+3
+04150            CMP XTAB2_10,Y
+04160            BNE .5   
+04170            LDA FR1+4
+04180            CMP XTAB2_18,Y
+04190            BNE .5   
+04200            LDA FR1+5
+04210            CMP XTAB2_20,Y
+04220            BNE .5   
+04230            LDA ZP0E6
+04240            CMP XTAB2_28,Y
+04250            BNE .5   
+04260            LDX #$01
+04270            JMP L0192
+04280 .5         BCC .6   
+04290            LDA ZP0E6
+04300            SBC XTAB2_28,Y
+04310            STA ZP0E6
+04320            LDA FR1+5
+04330            SBC XTAB2_20,Y
+04340            STA FR1+5
+04350            LDA FR1+4
+04360            SBC XTAB2_18,Y
+04370            STA FR1+4
+04380            LDA FR1+3
+04390            SBC XTAB2_10,Y
+04400            STA FR1+3
+04410            LDA FR1+2
+04420            SBC XTAB2_8,Y
+04430            STA FR1+2
+04440            LDA FR1+1
+04450            SBC XTAB2,Y
+04460            STA FR1+1
+04470 .6         ROL FR0+2
+04480            INY
+04490            CPY #$08
+04500            BNE L0197
+04510            LDY #$00
+04520 L0200      LDA FR1+2
+04530            CMP XTAB2,Y
+04540            BNE .8   
+04550            LDA FR1+3
+04560            CMP XTAB2_8,Y
+04570            BNE .8   
+04580            LDA FR1+4
+04590            CMP XTAB2_10,Y
+04600            BNE .8   
+04610            LDA FR1+5
+04620            CMP XTAB2_18,Y
+04630            BNE .8   
+04640            LDA ZP0E6
+04650            CMP XTAB2_20,Y
+04660            BNE .8   
+04670            LDA ZP0E7
+04680            CMP XTAB2_28,Y
+04690            BNE .8   
+04700            LDX #$02
+04710            JMP L0192
+04720 .8         BCC .9   
+04730            LDA ZP0E7
+04740            SBC XTAB2_28,Y
+04750            STA ZP0E7
+04760            LDA ZP0E6
+04770            SBC XTAB2_20,Y
+04780            STA ZP0E6
+04790            LDA FR1+5
+04800            SBC XTAB2_18,Y
+04810            STA FR1+5
+04820            LDA FR1+4
+04830            SBC XTAB2_10,Y
+04840            STA FR1+4
+04850            LDA FR1+3
+04860            SBC XTAB2_8,Y
+04870            STA FR1+3
+04880            LDA FR1+2
+04890            SBC XTAB2,Y
+04900            STA FR1+2
+04910 .9         ROL FR0+3
+04920            INY
+04930            CPY #$08
+04940            BNE L0200
+04950            LDY #$00
+04960 L0203      LDA FR1+3
+04970            CMP XTAB2,Y
+04980            BNE .11
+04990            LDA FR1+4
+05000            CMP XTAB2_8,Y
+05010            BNE .11
+05020            LDA FR1+5
+05030            CMP XTAB2_10,Y
+05040            BNE .11
+05050            LDA ZP0E6
+05060            CMP XTAB2_18,Y
+05070            BNE .11
+05080            LDA ZP0E7
+05090            CMP XTAB2_20,Y
+05100            BNE .11
+05110            LDA ZP0E8
+05120            CMP XTAB2_28,Y
+05130            BNE .11
+05140            LDX #$03
+05150            JMP L0192
+05160 .11        BCC .12
+05170            LDA ZP0E8
+05180            SBC XTAB2_28,Y
+05190            STA ZP0E8
+05200            LDA ZP0E7
+05210            SBC XTAB2_20,Y
+05220            STA ZP0E7
+05230            LDA ZP0E6
+05240            SBC XTAB2_18,Y
+05250            STA ZP0E6
+05260            LDA FR1+5
+05270            SBC XTAB2_10,Y
+05280            STA FR1+5
+05290            LDA FR1+4
+05300            SBC XTAB2_8,Y
+05310            STA FR1+4
+05320            LDA FR1+3
+05330            SBC XTAB2,Y
+05340            STA FR1+3
+05350 .12        ROL FR0+4
+05360            INY
+05370            CPY #$08
+05380            BNE L0203
+05390            LDY #$00
+05400 L0206      LDA FR1+4
+05410            CMP XTAB2,Y
+05420            BNE .14
+05430            LDA FR1+5
+05440            CMP XTAB2_8,Y
+05450            BNE .14
+05460            LDA ZP0E6
+05470            CMP XTAB2_10,Y
+05480            BNE .14
+05490            LDA ZP0E7
+05500            CMP XTAB2_18,Y
+05510            BNE .14
+05520            LDA ZP0E8
+05530            CMP XTAB2_20,Y
+05540            BNE .14
+05550            LDA ZP0E9
+05560            CMP XTAB2_28,Y
+05570            BNE .14
+05580            LDX #$04
+05590            JMP L0192
+05600 .14        BCC L0205
+05610            LDA ZP0E9
+05620            SBC XTAB2_28,Y
+05630            STA ZP0E9
+05640            LDA ZP0E8
+05650            SBC XTAB2_20,Y
+05660            STA ZP0E8
+05670            LDA ZP0E7
+05680            SBC XTAB2_18,Y
+05690            STA ZP0E7
+05700            LDA ZP0E6
+05710            SBC XTAB2_10,Y
+05720            STA ZP0E6
+05730            LDA FR1+5
+05740            SBC XTAB2_8,Y
+05750            STA FR1+5
+05760            LDA FR1+4
+05770            SBC XTAB2,Y
+05780            STA FR1+4
+05790 L0205      ROL FR0+5
+05800            INY
+05810            CPY #$08
+05820            BNE L0206
+05830            LDA FR0+1
+05840            BNE L0207
+05850            LDY #$00
+05860 .16        LDA FR1+5
+05870            CMP XTAB2,Y
+05880            BNE .17
+05890            LDA ZP0E6
+05900            CMP XTAB2_8,Y
+05910            BNE .17
+05920            LDA ZP0E7
+05930            CMP XTAB2_10,Y
+05940            BNE .17
+05950            LDA ZP0E8
+05960            CMP XTAB2_18,Y
+05970            BNE .17
+05980            LDA ZP0E9
+05990            CMP XTAB2_20,Y
+06000            BNE .17
+06010            LDA ZP0EA
+06020            CMP XTAB2_28,Y
+06030            BNE .17
+06040            LDX #$05
+06050            JMP L0192
+06060 .17        BCC .18
+06070            LDA ZP0EA
+06080            SBC XTAB2_28,Y
+06090            STA ZP0EA
+06100            LDA ZP0E9
+06110            SBC XTAB2_20,Y
+06120            STA ZP0E9
+06130            LDA ZP0E8
+06140            SBC XTAB2_18,Y
+06150            STA ZP0E8
+06160            LDA ZP0E7
+06170            SBC XTAB2_10,Y
+06180            STA ZP0E7
+06190            LDA ZP0E6
+06200            SBC XTAB2_8,Y
+06210            STA ZP0E6
+06220            LDA FR1+5
+06230            SBC XTAB2,Y
+06240            STA FR1+5
+06250 .18        ROL ZP0DA
+06260            INY
+06270            CPY #$08
+06280            BNE .16
+06290 L0207      JMP L0183
+06300 ------------------------------
+06310 L0192  ROL FR0+1,X
+06320        INY
+06330        CPY #$08
+06340        BNE L0192
+06350        BEQ L0207
+06360 L0153  SED
+06370        CLC
+06380        LDA FR1+5
+06390        STA XTAB2_2F
+06400        ADC FR1+5
+06410        STA XTAB2_2E
+06420        LDA FR1+4
+06430        STA XTAB2_27
+06440        ADC FR1+4
+06450        STA XTAB2_26
+06460        LDA FR1+3
+06470        STA XTAB2_1F
+06480        ADC FR1+3
+06490        STA XTAB2_1E
+06500        LDA FR1+2
+06510        STA XTAB2_17
+06520        ADC FR1+2
+06530        STA XTAB2_16
+06540        LDA FR1+1
+06550        STA XTAB2_F
+06560        ADC FR1+1
+06570        STA XTAB2_E
+06580        LDA #$00
+06590        STA XTAB2_7
+06600        ADC #$00
+06610        STA XTAB2_6
+06620        LDX #$02
+06630 .1     LDA XTAB2_2C,X
+06640        ADC XTAB2_2C,X
+06650        STA XTAB2_2B,X
+06660        LDA XTAB2_24,X
+06670        ADC XTAB2_24,X
+06680        STA XTAB2_23,X
+06690        LDA XTAB2_1C,X
+06700        ADC XTAB2_1C,X
+06710        STA XTAB2_1B,X
+06720        LDA XTAB2_14,X
+06730        ADC XTAB2_14,X
+06740        STA XTAB2_13,X
+06750        LDA XTAB2_C,X
+06760        ADC XTAB2_C,X
+06770        STA XTAB2_B,X
+06780        LDA XTAB2_4,X
+06790        ADC XTAB2_4,X
+06800        STA XTAB2_3,X
+06810        DEX
+06820        BNE .1   
+06830        LDA XTAB2_2E
+06840        ADC XTAB2_2C
+06850        STA XTAB2_2B
+06860        LDA XTAB2_26
+06870        ADC XTAB2_24
+06880        STA XTAB2_23
+06890        LDA XTAB2_1E
+06900        ADC XTAB2_1C
+06910        STA XTAB2_1B
+06920        LDA XTAB2_16
+06930        ADC XTAB2_14
+06940        STA XTAB2_13
+06950        LDA XTAB2_E
+06960        ADC XTAB2_C
+06970        STA XTAB2_B
+06980        LDA XTAB2_6
+06990        ADC XTAB2_4
+07000        STA XTAB2_3
+07010        LDX #$02
+07020 .2     LDA XTAB2_29,X
+07030        ADC XTAB2_29,X
+07040        STA XTAB2_28,X
+07050        LDA XTAB2_21,X
+07060        ADC XTAB2_21,X
+07070        STA XTAB2_20,X
+07080        LDA XTAB2_19,X
+07090        ADC XTAB2_19,X
+07100        STA XTAB2_18,X
+07110        LDA XTAB2_11,X
+07120        ADC XTAB2_11,X
+07130        STA XTAB2_10,X
+07140        LDA XTAB2_9,X
+07150        ADC XTAB2_9,X
+07160        STA XTAB2_8,X
+07170        LDA XTAB2_1,X
+07180        ADC XTAB2_1,X
+07190        STA XTAB2,X
+07200        DEX
+07210        BPL .2   
+07220        LDA FR0+1
+07230        STA FR1+1
+07240        LDA FR0+2
+07250        STA FR1+2
+07260        LDA FR0+3
+07270        STA FR1+3
+07280        LDA FR0+4
+07290        STA FR1+4
+07300        LDA FR0+5
+07310        STA FR1+5
+07320 ------------------------------
+07330 CLEAR_FR0  LDA #$00
+07340            STA FR0
+07350            STA FR0+1
+07360            STA FR0+2
+07370            STA FR0+3
+07380            STA FR0+4
+07390            STA FR0+5
+07400            RTS
+07410 ------------------------------
+07420 ; ENDE TEIL 2
+07430 ------------------------------

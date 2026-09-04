@@ -1,0 +1,740 @@
+
+00010          .LI ON
+00020 ------------------------------
+00030 ; TURBO-BASIC TEIL 5
+00040 ------------------------------
+00050          .LI OFF
+00060 ------------------------------
+00070 ; VORPROGRAMM, WIRD NACH BEEN-
+00080 ; DIGUNG NICHT MEHR GEBRAUCHT
+00090 ------------------------------
+00100        .OR TOP_LOADER
+00110 ------------------------------
+00120        LDX KEYBDV+4
+00130        LDY KEYBDV+5
+00140        INX
+00150        BNE L_1
+00160        INY
+00170 L_1    STX GETKEY_VEC+1
+00180        STY GETKEY_VEC+2
+00190 ------------------------------
+00200 ; VEKTOR FUER NMI + IRQ IN DEN
+00210 ; IN DEN O.S.RAM SCHREIBEN
+00220 ;
+00230        LDA #$00
+00240        STA NMIEN
+00250        SEI
+00260        LDA #$FE
+00270        STA PORTB
+00280        LDA #NMI_AUFRUF
+00290        STA NMI_VEC
+00300        LDA /NMI_AUFRUF
+00310        STA NMI_VEC+1
+00320        LDA #IRQ_AUFRUF
+00330        STA IRQ_VEC
+00340        LDA /IRQ_AUFRUF
+00350        STA IRQ_VEC+1
+00360 ------------------------------
+00370 ; ZEICHENSAETZE IN RAM KOPIEREN
+00380 ;
+00390        LDA #$CC
+00400        JSR COPY_ZSATZ
+00410        LDA #$E0
+00420        JSR COPY_ZSATZ
+00430 ------------------------------
+00440        LDA #$40
+00450        STA NMIEN
+00460        CLI
+00470        LDA #$FF
+00480        STA PORTB
+00490 ------------------------------
+00500 ;  REST VON DISK LADEN
+00510        JSR TB_HIGH_READ
+00520 ------------------------------
+00530        LDA #TURBOBAS_TOP
+00540        LDY /TURBOBAS_TOP
+00550        STA MEMLO
+00560        STY MEMLO+1
+00570 ------------------------------
+00580        LDA DOSINI
+00590        LDY DOSINI+1
+00600        STA DOS_ADR_SAV+1
+00610        STY DOS_ADR_SAV+2
+00620 ------------------------------
+00630        LDA #RESET_VEC
+00640        LDY /RESET_VEC
+00650        STA DOSINI
+00660        STY DOSINI+1
+00670 ------------------------------
+00680        LDA #$FE
+00690        STA PORTB
+00700        STA PROG_CLR
+00710 ------------------------------
+00720        LDA #$01
+00730        STA BASICF
+00740        ORA BOOT
+00750        STA BOOT
+00760        LDA #$00
+00770        STA COLDST
+00780 ------------------------------
+00790           JSR NEW_BAS_PTR
+00800           LDA #$00
+00810           STA ZP0A0
+00820           STA ZP0A1
+00830           JSR L0467
+00840           LDY #$1F
+00850           LDX #$8A
+00860           JSR L0468
+00870           LDY #$1E
+00880 TOPLOAD_1 LDA INIT_TAB,Y
+00890           STA (ZP097),Y
+00900           DEY
+00910           BPL TOPLOAD_1
+00920           JSR L0421
+00930           LDA /L0984-1
+00940           PHA
+00950           LDA #L0984-1
+00960           PHA
+00970           JSR SET_RAMTOP
+00980           DEC PORTB
+00990           JMP RUN_1
+01000 ------------------------------
+01010 INIT_TAB .HX 000019070D671419
+01020          .HX 250F0D
+01030          .DA "D:AUTORUN.BAS"
+01040          .HX 16010006061616
+01050 ------------------------------
+01060 ; SPEICHERGRENZEN SETZEN
+01070 ;     EDITOR OEFFNEN
+01080 ;
+01090 SET_RAMTOP LDA #$FF
+01100            STA PORTB
+01110            LDA #$C0
+01120            STA RAMTOP
+01130            LSR
+01140            STA APPMHI+1
+01150            LDA EDITRV+1
+01160            PHA
+01170            LDA EDITRV
+01180            PHA
+01190            RTS
+01200 ------------------------------
+01210 ; 4 PAGES FUER Z.S. KOPIEREN
+01220 ;
+01230 COPY_ZSATZ STA FR0+1
+01240            LDY #$00
+01250            STY FR0
+01260            LDX #$04
+01270 .1         LDA #$FF
+01280            STA PORTB
+01290 .2         LDA (FR0),Y
+01300            STA XTAB3,Y
+01310            INY
+01320            BNE .2
+01330            DEC PORTB
+01340 .3         LDA XTAB3,Y
+01350            STA (FR0),Y
+01360            INY
+01370            BNE .3
+01380            INC FR0+1
+01390            DEX
+01400            BNE .1
+01410            RTS
+01420 ------------------------------
+01430 ; TEILE DIE UNTER DEN O.S. ROM
+01440 ; KOMMEN, LESEN
+01450 ;
+01460 TB_HIGH_READ
+01470        LDX #$10
+01480        LDA #$D6
+01490        STA ICBAL,X
+01500        LDA #$00
+01510        STA ICBAH,X
+01520        STA ICBLH,X
+01530        LDA #$04
+01540        STA ICBLL,X
+01550        LDA #$07
+01560        STA ICCOM,X
+01570        JSR CIOV
+01580        BMI .6
+01590        LDA #TOP_LOAD_BUF
+01600        STA ZP0DA
+01610        STA ICBAL,X
+01620        LDA /TOP_LOAD_BUF
+01630        STA ZP0DB
+01640        STA ICBAH,X
+01650        LDA FR0+4
+01660        SBC FR0+2
+01670        STA ZP0DC
+01680        LDA FR0+5
+01690        SBC FR0+3
+01700        STA ZP0DD
+01710        INC ZP0DC
+01720        BNE .1
+01730        INC ZP0DD
+01740 .1     LDA ZP0DC
+01750        STA ICBLL,X
+01760        LDA ZP0DD
+01770        STA ICBLH,X
+01780        JSR CIOV
+01790        BMI .7
+01800        DEC PORTB
+01810        LDY #$00
+01820        LDX ZP0DD
+01830        BEQ .3
+01840 .2     LDA (ZP0DA),Y
+01850        STA (FR0+2),Y
+01860        INY
+01870        BNE .2
+01880        INC FR0+3
+01890        INC ZP0DB
+01900        DEX
+01910        BNE .2
+01920 .3     LDX ZP0DC
+01930        BEQ .5
+01940 .4     LDA (ZP0DA),Y
+01950        STA (FR0+2),Y
+01960        INY
+01970        DEX
+01980        BNE .4
+01990 .5     LDA #$FF
+02000        STA PORTB
+02010        BMI TB_HIGH_READ
+02020 .6     RTS
+02030 .7     JMP (DOSVEC)
+02040 TOP_LOAD_BUF
+02050 ------------------------------
+02060        .OR INITAD
+02070        .DA TOP_LOADER
+02080 ------------------------------
+02090        .OR OS_RAM_C0
+02100 ------------------------------
+02110 ***         DEL          ***
+02120 DEL_BEF JSR LOOP_BEGIN
+02130         JSR L0489
+02140         JSR L0490
+02150         STA ZP0A0
+02160         STY ZP0A1
+02170         JSR L0490
+02180         JSR L0467
+02190 .1      LDY #$01
+02200         LDA (STMCUR),Y
+02210         CMP FR0+1
+02220         BNE .2
+02230         DEY
+02240         LDA (STMCUR),Y
+02250         CMP FR0
+02260 .2      BCC .3
+02270         BNE .5
+02280 .3      LDY #$02
+02290         CLC
+02300         LDA (STMCUR),Y
+02310         TAY
+02320         ADC STMCUR
+02330         STA STMCUR
+02340         BCC .4
+02350         INC STMCUR+1
+02360 .4      LDX #$8A
+02370         JSR L0495
+02380         JMP .1
+02390 .5      JSR L0497
+02400         JMP L0422
+02410 ------------------------------
+02420 ***         DUMP          ***
+02430 DUMP_BEF INY
+02440          CPY STATE_LEN
+02450          BCS .1
+02460          JSR OPENWRITE
+02470 .1       LDA #$00
+02480          STA ZP0B9
+02490 .2       JSR WRITE_EOL
+02500          LDA BRKKEY
+02510          BEQ .4
+02520          LDA ZP0B9
+02530          JSR FP_VVTP_FR0
+02540          LDA ZP09D
+02550          CMP STMTAB
+02560          LDA ZP09E
+02570          SBC STMTAB+1
+02580          BCS .5
+02590          LDA ZP0B9
+02600          JSR .3
+02610          INC ZP0B9
+02620          BNE .2
+02630 .3       JSR WRITE_VARNAME
+02640          JSR L0510
+02650          LDA ZP0D2
+02660          CMP #$C0
+02670          BCS .7
+02680          CMP #$80
+02690          BCS DUMP_9
+02700          CMP #$40
+02710          BCS DUMP_9
+02720          LDA #$3D
+02730          JSR WRITE_BYTE
+02740          JMP CALL_FP_ASC1
+02750 .4       DEC BRKKEY
+02760 .5       LDA ZP0B5
+02770          BEQ .6
+02780          JSR IO_CLOSE
+02790          LDA #$00
+02800          STA ZP0B5
+02810 .6       RTS
+02820 .7       LDY #$4F
+02830          LSR
+02840          BCS DUMP_8
+02850          LDY #$5D
+02860          LSR
+02870          BCS DUMP_8
+02880          LDA #$3F
+02890          JMP WRITE_BYTE
+02900 DUMP_8   TYA
+02910          JSR L0519
+02920          LDY #$00
+02930          LDA (FR0),Y
+02940          TAX
+02950          INY
+02960          LDA (FR0),Y
+02970          JMP L0520
+02980 DUMP_9   LDA FR0+5
+02990          PHA
+03000          LDA FR0+4
+03010          PHA
+03020          LDA FR0+3
+03030          LDX FR0+2
+03040          JSR L0520
+03050          LDA #$2C
+03060          JSR WRITE_BYTE
+03070          PLA
+03080          TAX
+03090          PLA
+03100          JMP L0520
+03110 ------------------------------
+03120 L0489  TXA
+03130        PHA
+03140        LDA BASMEMTOP
+03150        PHA
+03160        LDA BASMEMTOP+1
+03170        PHA
+03180        LDA ZP0B2
+03190        PHA
+03200        LDA ZP0A0
+03210        PHA
+03220        LDA ZP0A1
+03230        PHA
+03240 .1     JSR POP_1
+03250        BCS L0523
+03260        LDY ZP0A1
+03270        BNE .2
+03280        LDA #XTAB8
+03290        STA ZP0A0
+03300        LDA /XTAB8
+03310        STA ZP0A1
+03320 .2     TAY
+03330        BMI .3
+03340        LDY #$00
+03350        LDA (ZP0A0),Y
+03360        INY
+03370        STA (BASMEMTOP),Y
+03380        LDA (ZP0A0),Y
+03390        INY
+03400        STA (BASMEMTOP),Y
+03410        BCC .1
+03420 .3     LDY #$00
+03430        LDA (ZP0A0),Y
+03440        LDY #$13
+03450        STA (BASMEMTOP),Y
+03460        LDY #$01
+03470        LDA (ZP0A0),Y
+03480        LDY #$14
+03490        STA (BASMEMTOP),Y
+03500        BCC .1
+03510 L0523  PLA
+03520        STA ZP0A1
+03530        PLA
+03540        STA ZP0A0
+03550        PLA
+03560        STA ZP0B2
+03570        PLA
+03580        STA BASMEMTOP+1
+03590        STA APPMHI+1
+03600        PLA
+03610        STA BASMEMTOP
+03620        STA APPMHI
+03630        PLA
+03640        TAX
+03650        RTS
+03660 L0497  PHA
+03670        LDA BASMEMTOP
+03680        PHA
+03690        LDA BASMEMTOP+1
+03700        PHA
+03710        LDA ZP0B2
+03720        PHA
+03730        LDA ZP0A0
+03740        PHA
+03750        LDA ZP0A1
+03760        PHA
+03770        LDA STMCUR
+03780        PHA
+03790        LDA STMCUR+1
+03800        PHA
+03810        LDA ZP0BE
+03820        PHA
+03830        LDA ZP0BF
+03840        PHA
+03850        JSR L0528
+03860        JSR L0421
+03870 L0497_1 JSR POP_1
+03880        BCS .5
+03890        PHA
+03900        LDY ZP0A1
+03910        INY
+03920        BEQ .2
+03930        JSR L0402
+03940        BCC .3
+03950 .2     LDA #$00
+03960        STA STMCUR
+03970        STA STMCUR+1
+03980 .3     LDY #$01
+03990        PLA
+04000        BPL .4
+04010        LDY #$13
+04020 .4     LDA STMCUR
+04030        STA (BASMEMTOP),Y
+04040        INY
+04050        LDA STMCUR+1
+04060        STA (BASMEMTOP),Y
+04070        JMP L0497_1
+04080 .5     PLA
+04090        STA ZP0BF
+04100        PLA
+04110        STA ZP0BE
+04120        PLA
+04130        STA STMCUR+1
+04140        PLA
+04150        STA STMCUR
+04160        JMP L0523
+04170 XTAB8  .HX FFFF
+04180 L0528  LDA VVTP
+04190        STA ZP0A0
+04200        LDA VVTP+1
+04210        STA ZP0A1
+04220 .1     LDA ZP0A0
+04230        CMP STMTAB
+04240        LDA ZP0A1
+04250        SBC STMTAB+1
+04260        BCS .3
+04270        LDY #$00
+04280        LDA (ZP0A0),Y
+04290        AND #$C0
+04300        CMP #$C0
+04310        BNE .2
+04320        STA (ZP0A0),Y
+04330 .2     CLC
+04340        LDA ZP0A0
+04350        ADC #$08
+04360        STA ZP0A0
+04370        BCC .1
+04380        INC ZP0A1
+04390        BCS .1
+04400 .3     RTS
+04410 ------------------------------
+04420 ***      SETCOLOR        ***
+04430 SETCOLOR_BEF
+04440            JSR L0399
+04450            AND #$0F
+04460            ASL ZP09B
+04470            ASL ZP09B
+04480            ASL ZP09B
+04490            ASL ZP09B
+04500            ORA ZP09B
+04510            LDX ZP09A
+04520            BNE ERROR3_2
+04530            LDX ZP099
+04540            CPX #$05
+04550            BCS ERROR3_2
+04560            STA COLOR0,X
+04570            RTS
+04580 ------------------------------
+04590 SOUND_OFF  LDX #$07
+04600            LDA #$00
+04610 .1         STA AUDF1,X
+04620            DEX
+04630            BPL .1
+04640            RTS
+04650 ------------------------------
+04660 ERROR3_2   JMP ERROR_3
+04670 ------------------------------
+04680 ***   SOUND + DSOUND      ***
+04690 DSOUND_BEF
+04700 SOUND_BEF
+04710        STA ZP0A2
+04720        INY
+04730        CPY STATE_LEN
+04740        BCS SOUND_OFF
+04750        JSR L0540
+04760        LDY #$00
+04770        BIT ZP0A2
+04780        BPL .1
+04790        ASL
+04800        LDY #$78
+04810 .1     CMP #$04
+04820        BCS ERROR3_2
+04830        ASL
+04840        PHA
+04850        STY AUDCTL
+04860        LDA #$03
+04870        STA SKCTL
+04880        JSR L0399
+04890        PLA
+04900        TAX
+04910        LDA ZP099
+04920        STA AUDF1,X
+04930        BIT ZP0A2
+04940        BPL .2
+04950        INX
+04960        INX
+04970        LDA ZP09A
+04980        STA AUDF1,X
+04990 .2     LDA ZP09B
+05000        ASL
+05010        ASL
+05020        ASL
+05030        ASL
+05040        ORA FR0
+05050        STA AUDC1,X
+05060        RTS
+05070 ------------------------------
+05080 ***     POSITION         ***
+05090 POSITION_BEF
+05100 POSITION
+05110        JSR L0543
+05120        STA COLCRS
+05130        STY COLCRS+1
+05140        JSR L0540
+05150        STA ROWCRS
+05160        RTS
+05170 ------------------------------
+05180 ***          COLOR       ***
+05190 COLOR_BEF  JSR L0543
+05200            STA BAS_COLOR
+05210            RTS
+05220 ------------------------------
+05230 ***          FCOLOR      ***
+05240 FCOLOR_BEF  JSR L0543
+05250             STA FILDAT
+05260             RTS
+05270 ------------------------------
+05280 ***   FILLTO + DRAWTO    ***
+05290 FILLTO_BEF  LDA #$12
+05300             .HX 2C
+05310 DRAWTO_BEF  LDA #$11
+05320             PHA
+05330             JSR POSITION
+05340             LDA BAS_COLOR
+05350             STA ATACHR
+05360             LDX #$60
+05370             LDA #$0C
+05380             STA ICAX1,X
+05390             LDA #$00
+05400             STA ICAX2,X
+05410             PLA
+05420             JMP L0546
+05430 ------------------------------
+05440 ***       GRAPHICS        ***
+05450 GRAPHICS_BEF
+05460        LDX #$06
+05470        STX CIO_KANAL
+05480        JSR IO_CLOSE
+05490        JSR L0543
+05500        LDX #SCREEN_NAME
+05510        LDY /SCREEN_NAME
+05520        STX INBUFF
+05530        STY INBUFF+1
+05540        LDX #$06
+05550        AND #$F0
+05560        EOR #$1C
+05570        TAY
+05580        LDA FR0
+05590        JSR OPENIOCB
+05600        JMP IO_STATUS
+05610 ------------------------------
+05620 ***         PLOT         ***
+05630 PLOT_BEF  JSR POSITION
+05640           LDY BAS_COLOR
+05650           LDX #$60
+05660           JMP WRITE_BYTE2
+05670 ------------------------------
+05680 L0749  LDX ZP0B4
+05690        BNE L0552
+05700        LDA ZP0C2
+05710        JSR WRITE_BYTE
+05720 L0552  LDX ZP0B4
+05730        LDA #$05
+05740        JSR L0553
+05750        JSR CIOCALL_1
+05760        JMP IO_STATUS
+05770 ------------------------------
+05780 WRITE_EOL    LDA #$9B
+05790 WRITE_BYTE   LDX ZP0B5
+05800 WRITE_BYTE1  TAY
+05810              JSR L0555
+05820 WRITE_BYTE2  LDA ICAX1,X
+05830              STA ICAX1Z
+05840              LDA ICAX2,X
+05850              STA ICAX2Z
+05860              JSR PUTBYTE
+05870 L0641        TYA
+05880              JMP IO_ERR_BRK
+05890 L0553        STA CIO_CMD
+05900 L0555        STX CIO_KANAL
+05910              JMP IONR_MUL
+05920 ------------------------------
+05930 ***      ENTER           ***
+05940 ENTER_BEF  LDA #$04
+05950            JSR OPENIOCB_7
+05960            STA ZP0B4
+05970            JMP L0561
+05980 OPENWRITE  LDA #$08
+05990            JSR OPENIOCB_7
+06000            STA ZP0B5
+06010            RTS
+06020 ------------------------------
+06030 OPENIOCB_7  LDY #$07
+06040 OPENIOCB_X  STY CIO_KANAL
+06050             PHA
+06060             JSR IONR_MUL
+06070             JSR IO_CLOSE_NR
+06080             LDY #$03
+06090             STY CIO_CMD
+06100             PLA
+06110             LDY #$00
+06120             JSR L0563
+06130             LDA #$07
+06140             RTS
+06150 ------------------------------
+06160 ***         LOAD          ***
+06170 RUN_LOAD_BAS
+06180           LDA #$FF
+06190           .HX 2C
+06200 LOAD_BEF  LDA #$00
+06210           PHA
+06220           LDA #$04
+06230           JSR OPENIOCB_7
+06240           PLA
+06250 LOAD_BAS  PHA
+06260           LDA #$07
+06270           STA CIO_CMD
+06280           STA PROG_CLR
+06290           JSR IONR_MUL
+06300           LDY #$0E
+06310           JSR CIOCALL_2
+06320           JSR IO_STATUS
+06330           LDA ADR_580
+06340           ORA ADR_581
+06350           BNE ERROR21_1
+06360           LDX #$8C
+06370 .1        CLC
+06380           LDA BAS_LOMEM
+06390           ADC ADR_500,X
+06400           TAY
+06410           LDA BAS_LOMEM+1
+06420           ADC ADR_501,X
+06430           CMP MEMTOP+1
+06440           BCC .3
+06450           BNE .2
+06460           CPY MEMTOP
+06470           BCC .3
+06480 .2        JMP ERROR19_1
+06490 .3        STA LINZBS+1,X
+06500           STY LINZBS,X
+06510           DEX
+06520           DEX
+06530           CPX #$82
+06540           BCS .1
+06550           JSR LO_SA_BASPRG
+06560           JSR CLR_1
+06570           LDA #$00
+06580           STA PROG_CLR
+06590           PLA
+06600           BEQ .4
+06610           RTS
+06620 .4        JMP L0579
+06630 ERROR21_1 LDA #$00
+06640           STA PROG_CLR
+06650           LDA #$15
+06660           JMP ERROR_ROUT
+06670 ------------------------------
+06680 ***         SAVE          ***
+06690 SAVE_BEF  LDA #$08
+06700           JSR OPENIOCB_7
+06710 SAVE_BAS  LDA #$0B
+06720           STA CIO_CMD
+06730           LDX #$80
+06740 .1        SEC
+06750           LDA LINZBS,X
+06760           SBC BAS_LOMEM
+06770           STA ADR_500,X
+06780           INX
+06790           LDA LINZBS,X
+06800           SBC BAS_LOMEM+1
+06810           STA ADR_500,X
+06820           INX
+06830           CPX #$8E
+06840           BCC .1
+06850           JSR IONR_MUL
+06860           LDY #$0E
+06870           JSR CIOCALL_2
+06880           JSR IO_STATUS
+06890 LO_SA_BASPRG
+06900           JSR IONR_MUL
+06910           LDA VNTP
+06920           STA INBUFF
+06930           LDA VNTP+1
+06940           STA INBUFF+1
+06950           LDY ADR_58D
+06960           DEY
+06970           TYA
+06980           LDY ADR_58C
+06990           JSR CIOCALL_3
+07000           JSR IO_STATUS
+07010           JMP IO_CLOSE
+07020 ------------------------------
+07030 ***         CSAVE         ***
+07040 CSAVE_BEF  LDA #$08
+07050            JSR OPEN_CASS
+07060            JMP SAVE_BAS
+07070 ------------------------------
+07080 ***         CLOAD         ***
+07090 CLOAD_BEF  LDA #$04
+07100            JSR OPEN_CASS
+07110            LDA #$00
+07120            JMP LOAD_BAS
+07130 ------------------------------
+07140 OPEN_CASS  PHA
+07150            LDX #CASSETTE_NAME
+07160            STX INBUFF
+07170            LDX /CASSETTE_NAME
+07180            STX INBUFF+1
+07190            LDX #$07
+07200            PLA
+07210            TAY
+07220            LDA #$80
+07230            JSR OPENIOCB
+07240            JSR IO_STATUS
+07250            LDA #$07
+07260            RTS
+07270 ------------------------------
+07280 OPENIOCB  PHA
+07290           LDA #$03
+07300           JSR L0553
+07310           PLA
+07320           STA ICAX2,X
+07330           TYA
+07340           STA ICAX1,X
+07350           JSR CIOCALL_4
+07360           JMP SET_INBUFF_580
+07370 ------------------------------
+07380 ; ENDE TEIL 5
+07390 ------------------------------
