@@ -80,6 +80,8 @@ void emit_word();
 void emit_ascii_string();
 void sourcgen_symtab();
 void sectyp_at(uint16_t address, char line_type);
+void skip_line_numbers();
+int is_in_string(char* start, char* pos);
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -154,6 +156,7 @@ short bytcnt = 0;
 short prnlnum = 0;
 uint8_t syms_in_expr = 0;
 bool reverse_unary_ch_flg = 1;
+bool skip_line_numbers_flg = 0;
 
 char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
@@ -333,7 +336,7 @@ int main(int argc, char* argv[]) {
 		fpos_t pos1;
 		bool star_flg = 0;
 		bool first_NNsymbol_flg = 1;
-		bool skip_line_numbers_flg = 0;
+		
 		bool li_flg = 0;
 #if NEW_DIRECT_ADDRESSING		
 		int16_t pc_sav1 = 0;
@@ -575,21 +578,8 @@ int main(int argc, char* argv[]) {
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
 
 				/* skip line number */
-				if (skip_line_numbers_flg) {
-
-					if (*txtptr == ':')
-						txtptr++;
-
-					while (isdigit((unsigned char)*txtptr))
-						txtptr++;
-
-					if (!isspace((unsigned char)*txtptr)) {
-						printf("%c is not valid", *txtptr);
-						error("This is not a valid line number");
-					}
-
-					txtptr++;
-				}
+				skip_line_numbers();
+				
 				/////////////////////////////////////////////////////
 
 				reverse_unary_ch_flg = 1;	// reset for each line
@@ -598,6 +588,7 @@ int main(int argc, char* argv[]) {
 					linnum = linnum_sav;
 					txtptr = txtptr_sav;
 					include_flg = 0;
+					skip_line_numbers();
 				}
 
 				if (strpbrk(outflgs, "Ll")) {
@@ -653,86 +644,118 @@ int main(int argc, char* argv[]) {
 				
 				*label = '\0';
 				labflg = 0;
-				
+
 				*operand = '\0';
-				linbegptr = linptr = txtptr;			//set line begin to txtptr
+				linbegptr = linptr = txtptr;			// set line begin to txtptr
 				lnbfptr = linbuf[maclevel];
-				linlen = (short)(strchr(linbegptr, '\n') + 1L - linbegptr);	//find linlen
+				linlen = (short)(strchr(linbegptr, '\n') + 1L - linbegptr);	// find linlen
+
 
 				if (!maclevel && pass == 1)	// Test line for illegal characters.
 				{
+					int quote_flg = 0;
+
 					for (cnt = 1; cnt <= linlen; cnt++) {
-						if (*linptr & 128) //character is inverted
-						{
+
+						if (*linptr == '"')
+							quote_flg = !quote_flg;
+
+						else if ((*linptr & 128) && !quote_flg) {
+							// inverted character outside a string = illegal
 							linbegptr[linlen] = 0;
 							printf("\a\nIllegal character at line %i:\n", linnum);
 							puts(linbegptr);
 							hit_Enter();
 							exit(1);
 						}
+
 						linptr++;
 					}
+
 					linptr = linbegptr;
 				}
 
+
 				while (*linptr != '\n') {
+
 					/* Determine and place local label in macro */
 
 					*lnbfptr = 0;
+
 					if ((*linptr == '@') && maclevel) {
 						ptr = linptr - 1;
 						cnt = 0;
+
 						while (isalnum(*ptr))		// Find beginning of local label.
 						{
 							ptr--;
 							cnt++;
 						}
-						if (strchr(", \n+-", *ptr))	// Characters that can precede a local label!!!!!!!
+
+						if (strchr(", \n+-", *ptr))	// Characters that can precede a local label
 						{
 							if (cnt > 4)
 								error("Local labels cannot be longer than 5 characters");
+
 							ptr++;
 							labptr = lab;
+
 							while (cnt) {
 								cnt--;
 								*labptr++ = *ptr++;
 							}
+
 							*labptr = 0;
 
 							for (loclabtbpos = 0; loclabtbpos < loclabnum; loclabtbpos++)
-								if (_stricmp(loclabtb[loclabtbpos], lab) == 0) break; // local label found
-							if (loclabtbpos == loclabnum) // label into loclabtb
+								if (_stricmp(loclabtb[loclabtbpos], lab) == 0)
+									break;		// local label found
+
+							if (loclabtbpos == loclabnum)	// label into loclabtb
 							{
-								strcpy_s(loclabtb[loclabnum], sizeof(loclabtb[loclabnum]), lab);
+								strcpy_s(loclabtb[loclabnum],
+									sizeof(loclabtb[loclabnum]), lab);
+
 								labexttab[loclabnum++] = 0;
 							}
+
 							cnt = 0;
+
 							while (cnt < lclbnum[maclevel]) {
 								if (lclb[maclevel][cnt] == loclabtbpos)
 									break;
+
 								cnt++;
 							}
+
 							if (cnt == lclbnum[maclevel]) {
 								lclb[maclevel][cnt] = loclabtbpos;
 								labexttab[loclabtbpos]++;
 								lclbnum[maclevel]++;
 							}
+
 							// Add four digits to label
-							sprintf_s(lnbfptr, MAX_LINE_SIZE, "%04d", labexttab[loclabtbpos]);
+							sprintf_s(lnbfptr, MAX_LINE_SIZE, "%04d",
+								labexttab[loclabtbpos]);
+
 							lnbfptr += 4;
 							linptr++;
 						}
 					}
 
+
 					/********** Dummy in macro ***********/
 
-					if ((*linptr & 128) && !macroflg)   // inverted characters
+					if ((*linptr & 128) && !macroflg &&
+						!is_in_string(linbegptr, linptr))	// inverted character outside string
 					{
 						ptr = macargsptr[maclevel];
 						cnt = *linptr & 127;
+
 						while (cnt) {
 							while (*ptr != ',')
 								ptr++;
+
 							ptr++;
 							cnt--;
 						}
@@ -840,6 +863,7 @@ int main(int argc, char* argv[]) {
 
 
 					/* ******************** find label ****************************/
+
 
 					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
 						printf("%c is not valid", *txtptr);
@@ -4138,4 +4162,36 @@ void sectyp_at(uint16_t address, char line_type)
 		sss[symnumext].symadr = address;
 		symnumext++;
 	}
+}
+
+void skip_line_numbers() {
+	if (skip_line_numbers_flg) {
+		if (*txtptr == ':' || isdigit((unsigned char)*txtptr)) {
+			if (*txtptr == ':')
+				txtptr++;
+
+			while (isdigit((unsigned char)*txtptr))
+				txtptr++;
+
+			if (!isspace((unsigned char)*txtptr)) {
+				printf("%c is not valid", *txtptr);
+				error("This is not a valid line number or label.");
+			}
+			txtptr++;
+		}
+	}
+}
+
+int is_in_string(char* start, char* pos)
+{
+	int quote_flg = 0;
+
+	while (start < pos) {
+		if (*start == '"')
+			quote_flg = !quote_flg;
+
+		start++;
+	}
+
+	return quote_flg;
 }
