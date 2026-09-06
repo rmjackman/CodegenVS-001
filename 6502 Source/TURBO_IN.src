@@ -1,6 +1,6 @@
-
-
-:00010           .OF D:TURBO.COM
+:00010 verify
+:00010 out lt
+:00010 *          .OF D:TURBO.COM
 :00020 ---------------------------
 :00030           .IN TURBO_01.src
 :00040           .IN TURBO_02.src

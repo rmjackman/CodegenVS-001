@@ -156,7 +156,7 @@ short bytcnt = 0;
 short prnlnum = 0;
 uint8_t syms_in_expr = 0;
 bool reverse_unary_ch_flg = 1;
-bool skip_line_numbers_flg = 0;
+int skip_line_numbers_flg = 0;
 
 char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
@@ -566,15 +566,26 @@ int main(int argc, char* argv[]) {
 			{
 				char* tmp_txtptr = txtbuf;
 
-				while (isspace((unsigned char)*tmp_txtptr))
-					tmp_txtptr++;
+				/* Skip empty lines and horizontal whitespace at the beginning */
+				while (*tmp_txtptr) {
+					if (*tmp_txtptr == '\n') {
+						tmp_txtptr++;
+						continue;
+					}
 
-				if (tmp_txtptr > txtbuf && tmp_txtptr[-1] == '\n') {	/* line number is at beginning of line */
-					if (isdigit((unsigned char)*tmp_txtptr) || *tmp_txtptr == ':')
-						skip_line_numbers_flg = 1;
+					if (*tmp_txtptr == ' ' || *tmp_txtptr == '\t') {
+						tmp_txtptr++;
+						continue;
+					}
+
+					break;
 				}
-			}
 
+				/* First non-empty line */
+				if (isdigit((unsigned char)*tmp_txtptr) || *tmp_txtptr == ':')
+					skip_line_numbers_flg = 1;
+			}
+			
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
 
 				/* skip line number */
@@ -864,7 +875,7 @@ int main(int argc, char* argv[]) {
 
 					/* ******************** find label ****************************/
 
-
+					
 					if (!isalpha(*txtptr) && strchr("._", *txtptr) == NULL) {
 						printf("%c is not valid", *txtptr);
 						error("Label must begin with an alphabetic character or '.' or '_'");
@@ -947,8 +958,10 @@ int main(int argc, char* argv[]) {
 					if (pass == 1) {
 						sss[symnum].symadr = pc;
 						strcpy_s(sss[symnum].symbol,sizeof(sss[symnum].symbol), label);
+						
 						symnum++;
 					}
+					strcpy_s(current_global, sizeof(label), label);
 					continue;
 
 				}
