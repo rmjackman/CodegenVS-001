@@ -281,7 +281,7 @@ void disassemble(const char* filename) {
 		while (1) {
 			pcsav = pc;
 
-			if (pc == 0x8572) 
+			if (pc == 0xdc93) 
 				pc=pc;	//breakpoint
 
 			pc = disassln(&ctx, pc);// D I S A S S   L I N E

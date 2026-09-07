@@ -21,7 +21,7 @@
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr before starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See cdgn_global.h for examples.
-#define SORT_EQU_EPZ 1		//Place EQU constants before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
+#define SORT_EQU_EPZ 0		//Place EQU constants before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
@@ -587,7 +587,7 @@ int main(int argc, char* argv[]) {
 			}
 			
 			for (linnum = 0; !((*txtptr == 0) && (include_flg == 0)); txtptr = linbegptr + linlen) {
-
+				
 				/* skip line number */
 				skip_line_numbers();
 				
@@ -1254,7 +1254,11 @@ int main(int argc, char* argv[]) {
 
 								if (_stricmp(opcode, "EQU") == 0) {
 									if (i < 256)
+#if SORT_EQU_EPZ
 										sss[symnum].symtyp = ']';
+#else
+										sss[symnum].symtyp = '#';
+#endif
 								}
 								else {                         /* EPZ */
 									if (i >= 256)
@@ -1948,130 +1952,138 @@ int main(int argc, char* argv[]) {
 /* opc #nn */
 #if NEW_DIRECT_ADDRESSING
 
-				else if (operand[0] == '#' || operand[0] == '/') {
+else if (operand[0] == '#' || operand[0] == '/') {
 
-					syms_in_expr = 0;
+	syms_in_expr = 0;
 
-					if (data[cnt][NN] == 0)
-						error("direct addressing cannot be used with this opcode");
+	if (data[cnt][NN] == 0)
+		error("direct addressing cannot be used with this opcode");
 
-					txtptr++;
+	txtptr++;
 
 #if !ATMAS_II_COMPATIBLE
-					if (operand[0] == '#' && (operand[1] == '>' || operand[1] == '<')) // e.g. LDA #>OKTXT
-						txtptr++;
+	if (operand[0] == '#' &&
+		(operand[1] == '>' || operand[1] == '<'))
+		txtptr++;
 #endif
 
-					intval = expresstoi_p2();
-					uint8_t nn_byte = (uint8_t)intval;
+	intval = expresstoi_p2();
+	uint8_t nn_byte = (uint8_t)intval;
 
-					if (operand[0] == '#' && operand[1] == '\'' && strlen(operand) == 4) // e.g. LDA #'A'
-						sectyp('\'');
+	if (operand[0] == '#' &&
+		operand[1] == '\'' &&
+		strlen(operand) == 4)
 
-					if (operand[0] == '#' && operand[1] == '%')							// e.g. LDA #%11000000
-						sectyp('!');
+		sectyp('\'');
 
-					if (pass == 2) {
+	if (operand[0] == '#' &&
+		operand[1] == '%')
 
-						if (operand[0] == '#' && intval < 256 && symfg && syms_in_expr == 1) { // constants and zero page
+		sectyp('!');
 
-							for (i = 0; i < symnum; i++) {
-								if (sss[i].symadr == intval &&
-									sss[i].symtyp == ']') { // constants
-									sectyp('[');
-									break;
-								}
-							}
+	if (pass == 2) {
 
-							/* No matching constant was found. */
-							if (i == symnum)
-								sectyp('('); // zero-page address
+		if (operand[0] == '#' &&
+			intval < 256 &&
+			symfg &&
+			syms_in_expr == 1) {
+
+			for (i = 0; i < symnum; i++) {
+
+				if (sss[i].symadr == intval &&
+					sss[i].symtyp == ']') {
+
+					sectyp('[');
+					break;
+				}
+			}
+
+			if (i == symnum)
+				sectyp('(');
+		}
+
+		lo_fg = 1;
+
+		if ((*txtptr == ':' &&
+			txtptr[1] == 'H') ||
+			operand[1] == '>' ||
+			operand[0] == '/') {
+
+			nn_byte = (uint8_t)(intval >> 8);
+			lo_fg = 0;
+		}
+
+		if (intval > 255) {
+
+			if (first_NNsymbol_flg) {
+
+				intval_sav = intval;
+				pc_sav1 = pc;
+				lo_fg_sav = lo_fg;
+
+				first_NNsymbol_flg = false;
+			}
+			else {
+
+				if (intval_sav == intval) {
+
+					if (lo_fg_sav)
+						sectyp_at(pc_sav1, '&');
+					else
+						sectyp_at(pc_sav1, '@');
+
+					first_NNsymbol_flg = true;
+				}
+				else {
+
+					if (symnumext >= MAXSYMS)
+						error("Too many symbols");
+
+					else {
+
+						sss[symnumext].symadr =
+							pc_sav1 + 1;
+
+						if (lo_fg_sav) {
+							sprintf_s(
+								sss[symnumext].symbol,
+								sizeof(sss[symnumext].symbol),
+								"%02X",
+								(unsigned int)
+								((intval_sav >> 8) & 0xFF));
+						}
+						else {
+							sprintf_s(
+								sss[symnumext].symbol,
+								sizeof(sss[symnumext].symbol),
+								"%02X:",
+								(unsigned int)
+								(intval_sav & 0xFF));
 						}
 
-						lo_fg = 1;
+						sss[symnumext].symtyp = ';';
 
-						if ((*txtptr == ':' && txtptr[1] == 'H') ||
-							operand[1] == '>' || operand[0] == '/') {
-
-							nn_byte = (uint8_t)(intval >> 8);
-							lo_fg = 0;
-						}
-
-						if (intval > 255) {
-
-							if (first_NNsymbol_flg) {
-
-								/* Save this 16-bit operand. */
-								intval_sav = intval;
-								pc_sav1 = pc;
-								lo_fg_sav = lo_fg;
-
-								first_NNsymbol_flg = false;
-							}
-							else {
-
-								/* Compare with the previous 16-bit operand. */
-								if (intval_sav == intval) {
-
-									/* Same value: mark the PREVIOUS line. */
-									if (lo_fg_sav)
-										sectyp_at(pc_sav1, '&');
-									else
-										sectyp_at(pc_sav1, '@');
-
-									/* Pair is complete. */
-									first_NNsymbol_flg = true;
-								}
-								else {
-
-									/* Different value: create 5A/5B information
-									   for the previous line. */
-									if (symnumext >= MAXSYMS)
-										error("Too many symbols");
-
-									else {
-
-										sss[symnumext].symadr = pc_sav1 + 1;
-
-										if (lo_fg_sav) {
-
-											sprintf_s(
-												sss[symnumext].symbol,
-												sizeof(sss[symnumext].symbol),
-												"%02X",
-												(unsigned int)((intval_sav >> 8) & 0xFF));
-										}
-										else {
-
-											sprintf_s(
-												sss[symnumext].symbol,
-												sizeof(sss[symnumext].symbol),
-												"%02X:",
-												(unsigned int)(intval_sav & 0xFF));
-										}
-
-										symnumext++;
-									}
-
-									/* Current operand becomes the new pending operand. */
-									intval_sav = intval;
-									pc_sav1 = pc;
-									lo_fg_sav = lo_fg;
-
-									first_NNsymbol_flg = false;
-								}
-							}
-						}
+						symnumext++;
 					}
 
-					if (strchr("!&@([", section_type) == 0)
-						sectyp(';');
+					intval_sav = intval;
+					pc_sav1 = pc;
+					lo_fg_sav = lo_fg;
 
-					toxlbuf((char)data[cnt][NN]);
-					toxlbuf(nn_byte);
-
-					continue;
+					first_NNsymbol_flg = false;
 				}
+			}
+		}
+	}
+
+	if (strchr("!&@([", section_type) == 0)
+		sectyp(';');
+
+	toxlbuf((char)data[cnt][NN]);
+	toxlbuf(nn_byte);
+
+	continue;
+}
 
 #else // NEW_DIRECT_ADDRESSING begin old routine
 
@@ -2386,8 +2398,187 @@ int main(int argc, char* argv[]) {
 
 #endif // SORT_EQU_EPZ
 
-			/* Remove unneeded symbols */
 
+
+			/* ... existing cleanup code ... */
+
+			/* Remove unneeded symbols */
+#define NEW_REMOVE_UNNEEDED_SYMBOLS 1
+#if NEW_REMOVE_UNNEEDED_SYMBOLS
+/* Remove unneeded symbols */
+
+			puts("");
+			symnum = 0;
+
+			for (i = 0; i < symnumext; i++) {
+
+				int sectype = 0;
+				int differing_types = 0;
+				int duplicate = 0;
+				int dupnum = -1;
+				int j;
+
+				/*
+				 * MACRO entries are not retained.
+				 */
+				if (sss[i].macf == MACRO)
+					continue;
+
+
+				/*
+				 * Report unused symbols.
+				 */
+				if (((sss[i].macf == UNUSED) ||
+					(sss[i].macf == MACRO_UNUSED)) &&
+					sss[i].symbol[0])
+
+					printf("Unused symbol: %4X %s\n",
+						sss[i].symadr, sss[i].symbol);
+
+
+				/****************************************************************
+				 * Find the section type for this address.
+				 *
+				 * Look through ALL symbols, not just the previous symbol.
+				 *
+				 * A section type of 0 means "no section type".
+				 * If one or more symbols have a non-zero section type,
+				 * that type is used for the address.
+				 *
+				 * If different non-zero section types are found, issue
+				 * a warning.
+				 ****************************************************************/
+
+				for (j = 0; j < symnumext; j++) {
+
+					if (sss[j].macf == MACRO)
+						continue;
+
+					if (sss[j].symadr != sss[i].symadr)
+						continue;
+
+					if (sss[j].symtyp == 0)
+						continue;
+
+					if (sectype == 0)
+						sectype = sss[j].symtyp;
+					else if (sectype != sss[j].symtyp)
+						differing_types = 1;
+				}
+
+
+				/*
+				 * Warn if different non-zero section types were found
+				 * for the same address.
+				 */
+				if (differing_types) {
+
+					printf("WARNING -- different section types for "
+						"address $%04X\n", sss[i].symadr);
+				}
+
+
+				/****************************************************************
+				 * Check whether this address has already been placed in the
+				 * compacted symbol table.
+				 *
+				 * Do NOT just compare with symnum - 1.  The same address may
+				 * have occurred several entries earlier.
+				 ****************************************************************/
+
+				for (j = 0; j < symnum; j++) {
+
+					if (sss[j].symadr == sss[i].symadr) {
+						duplicate = 1;
+						dupnum = j;
+						break;
+					}
+				}
+
+
+				/****************************************************************
+				 * This address already exists in the compacted table.
+				 ****************************************************************/
+
+				if (duplicate) {
+
+					/*
+					 * If the existing entry has no symbol but the current
+					 * entry does, use the current entry.
+					 */
+					if (!sss[dupnum].symbol[0] && sss[i].symbol[0])
+						sss[dupnum] = sss[i];
+
+
+					/*
+					 * If a non-zero section type exists anywhere at this
+					 * address, use it for the retained entry.
+					 */
+					if (sectype != 0)
+						sss[dupnum].symtyp = sectype;
+
+
+					/*
+					 * Handle two named symbols at the same address.
+					 */
+					if (sss[dupnum].symbol[0] && sss[i].symbol[0]) {
+
+						/*
+						 * Do not report the same symbol as a duplicate
+						 * of itself.
+						 */
+						if (strcmp(sss[dupnum].symbol, sss[i].symbol) != 0) {
+
+							/*
+							 * A MACRO_LAB is replaced by the non-macro
+							 * label.
+							 */
+							if ((sss[dupnum].macf == MACRO_LAB) ||
+								(sss[i].macf == MACRO_LAB)) {
+
+								if (sss[dupnum].macf == MACRO_LAB) {
+
+									sss[dupnum] = sss[i];
+
+									if (sectype != 0)
+										sss[dupnum].symtyp = sectype;
+								}
+							}
+							else {
+
+								printf("%s and %s both = $%X\n",
+									sss[i].symbol,
+									sss[dupnum].symbol,
+									sss[i].symadr);
+							}
+						}
+					}
+
+					continue;
+				}
+
+
+				/****************************************************************
+				 * This is a new address.
+				 *
+				 * Copy the entry into the compacted symbol table.
+				 ****************************************************************/
+
+				sss[symnum] = sss[i];
+
+
+				/*
+				 * If any symbol having this address had a non-zero section
+				 * type, use that type.
+				 */
+				if (sectype != 0)
+					sss[symnum].symtyp = sectype;
+
+
+				symnum++;
+			}
+
+#else
 			puts("");
 			symnum = 0;
 			for (i = 0; i < symnumext; i++) {
@@ -2423,7 +2614,7 @@ int main(int argc, char* argv[]) {
 				sss[symnum++] = sss[i];
 			}
 
-
+#endif
 
 
 

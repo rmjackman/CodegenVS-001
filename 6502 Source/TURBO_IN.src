@@ -1,5 +1,7 @@
+:00000 	RUNEMUL "C:\Programs Stand Alone\Altirra-4.21\Altirra64.exe"	;DAW
 :00010 verify
 :00010 out lt
+:00000 *	CPFL TB
 :00010 *          .OF D:TURBO.COM
 :00020 ---------------------------
 :00030           .IN TURBO_01.src
