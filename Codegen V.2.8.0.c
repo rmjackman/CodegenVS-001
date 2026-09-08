@@ -82,6 +82,7 @@ void sourcgen_symtab();
 void sectyp_at(uint16_t address, char line_type);
 void skip_line_numbers();
 int is_in_string(char* start, char* pos);
+void sr_5a_5b();
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -157,6 +158,14 @@ short prnlnum = 0;
 uint8_t syms_in_expr = 0;
 bool reverse_unary_ch_flg = 1;
 int skip_line_numbers_flg = 0;
+#if NEW_DIRECT_ADDRESSING		
+int16_t pc_sav1 = 0;
+bool lo_fg_sav = 0;
+bool first_NNsymbol_flg = 1;
+
+#endif
+short lo_fg = 0;
+int intval = 0, intval_sav = 0;
 
 char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
@@ -167,6 +176,9 @@ char outflgs[MAX_LABEL_SIZE + 1] = { 0 };
 char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
 char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
 char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { {0} };
+
+
+
 
 ssstype	sss[MAXSYMS] = { 0 };
 
@@ -295,7 +307,7 @@ int main(int argc, char* argv[]) {
 		char ch = 0;
 		unsigned int operval = 0;
 		int operno = 0;
-		int i = 0, intval = 0, intval_sav = 0;
+		int i = 0;
 		char label[MAX_LABEL_SIZE] = { 0 };
 		
 
@@ -325,7 +337,7 @@ int main(int argc, char* argv[]) {
 
 
 		short link_cnt = 0;
-		short lo_fg = 0;
+		
 		short objfile_flag = 0;
 		short addtoimg_cnt = 0;
 		short append_cnt = 0;
@@ -335,14 +347,10 @@ int main(int argc, char* argv[]) {
 		char tmptyp;
 		fpos_t pos1;
 		bool star_flg = 0;
-		bool first_NNsymbol_flg = 1;
+		
 		
 		bool li_flg = 0;
-#if NEW_DIRECT_ADDRESSING		
-		int16_t pc_sav1 = 0;
-		bool lo_fg_sav = 0;
-		
-#endif
+
 		if (verif_flg == 0) {
 
 
@@ -601,6 +609,35 @@ int main(int argc, char* argv[]) {
 					include_flg = 0;
 					skip_line_numbers();
 				}
+
+				/*
+ * A real symbol-table entry at the beginning of the current
+ * source line terminates a pending 16-bit direct-address pair.
+ *
+ * Do this here, rather than searching the address range between
+ * the two instructions.  The symbol table also contains synthetic
+ * entries for operand bytes, and those must NOT terminate a pair.
+ */
+				if (pass == 2 && !first_NNsymbol_flg && pc != pc_sav1) {
+
+					for (i = 0; i < symnum; i++) {
+
+						if (sss[i].symadr == pc) {
+
+							/*
+							 * The current source line is a real source-line
+							 * symbol-table entry.  Therefore the saved operand
+							 * cannot be combined with the current operand.
+							 */
+							sr_5a_5b();
+
+							first_NNsymbol_flg = true;
+
+							break;
+						}
+					}
+				}
+
 
 				if (strpbrk(outflgs, "Ll")) {
 					if (*prnlnbufbeg || *prnlnbuf) {		// if there's something to print
@@ -2015,6 +2052,7 @@ else if (operand[0] == '#' || operand[0] == '/') {
 
 		if (intval > 255) {
 
+
 			if (first_NNsymbol_flg) {
 
 				intval_sav = intval;
@@ -2022,10 +2060,12 @@ else if (operand[0] == '#' || operand[0] == '/') {
 				lo_fg_sav = lo_fg;
 
 				first_NNsymbol_flg = false;
+
 			}
 			else {
 
 				if (intval_sav == intval) {
+
 
 					if (lo_fg_sav)
 						sectyp_at(pc_sav1, '&');
@@ -2036,35 +2076,9 @@ else if (operand[0] == '#' || operand[0] == '/') {
 				}
 				else {
 
-					if (symnumext >= MAXSYMS)
-						error("Too many symbols");
 
-					else {
 
-						sss[symnumext].symadr =
-							pc_sav1 + 1;
-
-						if (lo_fg_sav) {
-							sprintf_s(
-								sss[symnumext].symbol,
-								sizeof(sss[symnumext].symbol),
-								"%02X",
-								(unsigned int)
-								((intval_sav >> 8) & 0xFF));
-						}
-						else {
-							sprintf_s(
-								sss[symnumext].symbol,
-								sizeof(sss[symnumext].symbol),
-								"%02X:",
-								(unsigned int)
-								(intval_sav & 0xFF));
-						}
-
-						sss[symnumext].symtyp = ';';
-
-						symnumext++;
-					}
+					sr_5a_5b();
 
 					intval_sav = intval;
 					pc_sav1 = pc;
@@ -4352,16 +4366,33 @@ void sectyp_at(uint16_t address, char line_type)
 	if (pass != 2)
 		return;
 
+	printf("\nsectyp_at: address=%04X type=%c symnum=%d symnumext=%d",
+		address, line_type, symnum, symnumext);
+
 	for (int i = 0; i < symnum; i++) {
+
 		if (sss[i].symadr == address) {
+
+			printf("\n  FOUND i=%d old type=%c symbol=[%s]",
+				i,
+				sss[i].symtyp,
+				sss[i].symbol);
+
 			sss[i].symtyp = line_type;
+
+			printf("  NEW type=%c", sss[i].symtyp);
+
 			return;
 		}
 	}
 
+	printf("\n  NOT FOUND in first symnum entries");
+
 	if (symnumext >= MAXSYMS)
 		error("Too many symbols");
 	else {
+		printf("\n  ADDING at index %d", symnumext);
+
 		sss[symnumext].symtyp = line_type;
 		sss[symnumext].symadr = address;
 		symnumext++;
@@ -4398,4 +4429,38 @@ int is_in_string(char* start, char* pos)
 	}
 
 	return quote_flg;
+}
+
+void sr_5a_5b() {
+	if (symnumext >= MAXSYMS)
+		error("Too many symbols");
+
+	else {
+
+		sss[symnumext].symadr =
+			pc_sav1 + 1;
+
+		if (lo_fg_sav) {
+			sprintf_s(
+				sss[symnumext].symbol,
+				sizeof(sss[symnumext].symbol),
+				"%02X",
+				(unsigned int)
+				((intval_sav >> 8) & 0xFF));
+		}
+		else {
+			sprintf_s(
+				sss[symnumext].symbol,
+				sizeof(sss[symnumext].symbol),
+				"%02X:",
+				(unsigned int)
+				(intval_sav & 0xFF));
+		}
+
+		sss[symnumext].symtyp = ';';
+
+		symnumext++;
+	}
+
+	
 }
