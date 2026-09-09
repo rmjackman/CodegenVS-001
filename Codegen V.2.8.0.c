@@ -610,6 +610,8 @@ int main(int argc, char* argv[]) {
 					skip_line_numbers();
 				}
 
+#define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 0
+#if HI_LO_INTERRUPT_AT_SYMTAB_ENTRY
 				/*
  * A real symbol-table entry at the beginning of the current
  * source line terminates a pending 16-bit direct-address pair.
@@ -637,7 +639,7 @@ int main(int argc, char* argv[]) {
 						}
 					}
 				}
-
+#endif
 
 				if (strpbrk(outflgs, "Ll")) {
 					if (*prnlnbufbeg || *prnlnbuf) {		// if there's something to print
@@ -4361,42 +4363,35 @@ void sourcgen_symtab(){
 	}
 }
 
+
 void sectyp_at(uint16_t address, char line_type)
 {
-	if (pass != 2)
-		return;
-
-	printf("\nsectyp_at: address=%04X type=%c symnum=%d symnumext=%d",
-		address, line_type, symnum, symnumext);
+	printf("\nSECTYP_AT: address=%04X type=%c pass=%d symnum=%d symnumext=%d\n",
+		address, line_type, pass, symnum, symnumext);
 
 	for (int i = 0; i < symnum; i++) {
 
 		if (sss[i].symadr == address) {
 
-			printf("\n  FOUND i=%d old type=%c symbol=[%s]",
-				i,
-				sss[i].symtyp,
-				sss[i].symbol);
+			printf("  FOUND index=%d BEFORE type=%c symbol=[%s]\n",
+				i, sss[i].symtyp, sss[i].symbol);
 
 			sss[i].symtyp = line_type;
 
-			printf("  NEW type=%c", sss[i].symtyp);
+			printf("  AFTER type=%c\n", sss[i].symtyp);
 
 			return;
 		}
 	}
 
-	printf("\n  NOT FOUND in first symnum entries");
+	printf("  NOT FOUND -- adding at symnumext=%d\n", symnumext);
 
 	if (symnumext >= MAXSYMS)
 		error("Too many symbols");
-	else {
-		printf("\n  ADDING at index %d", symnumext);
 
-		sss[symnumext].symtyp = line_type;
-		sss[symnumext].symadr = address;
-		symnumext++;
-	}
+	sss[symnumext].symtyp = line_type;
+	sss[symnumext].symadr = address;
+	symnumext++;
 }
 
 void skip_line_numbers() {

@@ -1,13 +1,8 @@
 verify
  out lt
+            ORG $DA68
 
-      
 ADR_6000 EQU $6000
-       
-       ORG $DA68
-up      dfb 9
-      LDA #ADR_6000
-      sta $400
+
+        LDA #ADR_6000
         LDX /ADR_6000
-        stx $401
-        dfb 0
