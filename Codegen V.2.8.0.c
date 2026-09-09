@@ -4366,31 +4366,35 @@ void sourcgen_symtab(){
 
 void sectyp_at(uint16_t address, char line_type)
 {
-	printf("\nSECTYP_AT: address=%04X type=%c pass=%d symnum=%d symnumext=%d\n",
-		address, line_type, pass, symnum, symnumext);
+	if (pass != 2)
+		return;
 
-	for (int i = 0; i < symnum; i++) {
+	/*
+	 * First look through ALL existing symbol entries.
+	 * An entry with an empty symbol still counts.
+	 */
+	for (int i = 0; i < symnumext; i++) {
 
 		if (sss[i].symadr == address) {
 
-			printf("  FOUND index=%d BEFORE type=%c symbol=[%s]\n",
-				i, sss[i].symtyp, sss[i].symbol);
-
-			sss[i].symtyp = line_type;
-
-			printf("  AFTER type=%c\n", sss[i].symtyp);
+			/*
+			 * If this is already an &/@ entry, replace it.
+			 * Otherwise preserve the existing source-line type.
+			 */
+			if (line_type == '&' || line_type == '@') {
+				sss[i].symtyp = line_type;
+			}
 
 			return;
 		}
 	}
 
-	printf("  NOT FOUND -- adding at symnumext=%d\n", symnumext);
-
 	if (symnumext >= MAXSYMS)
 		error("Too many symbols");
 
-	sss[symnumext].symtyp = line_type;
 	sss[symnumext].symadr = address;
+	sss[symnumext].symtyp = line_type;
+	sss[symnumext].symbol[0] = '\0';
 	symnumext++;
 }
 
