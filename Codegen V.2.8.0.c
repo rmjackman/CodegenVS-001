@@ -610,7 +610,7 @@ int main(int argc, char* argv[]) {
 					skip_line_numbers();
 				}
 
-#define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 0
+#define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 1
 #if HI_LO_INTERRUPT_AT_SYMTAB_ENTRY
 				/*
  * A real symbol-table entry at the beginning of the current
@@ -622,7 +622,7 @@ int main(int argc, char* argv[]) {
  */
 				if (pass == 2 && !first_NNsymbol_flg && pc != pc_sav1) {
 
-					for (i = 0; i < symnum; i++) {
+					for (i = 0; i < symnumext; i++) {
 
 						if (sss[i].symadr == pc) {
 
@@ -2066,7 +2066,7 @@ else if (operand[0] == '#' || operand[0] == '/') {
 			}
 			else {
 
-				if (intval_sav == intval) {
+				if (intval_sav == intval && lo_fg_sav != lo_fg) {
 
 
 					if (lo_fg_sav)
@@ -2356,8 +2356,9 @@ else if (operand[0] == '#' || operand[0] == '/') {
 
 
 				for (i = symnum - 1; i > 1; i--) {
-					if (_stricmp(sss[i].symbol, sss[i - 1].symbol) == 0) {
-						printf("\nSame label twice -\n");
+					if (_stricmp(sss[i].symbol, sss[i - 1].symbol) == 0
+						&& sss[i].symadr != sss[i - 1].symadr) {
+						printf("\nSame label twice, used for different addresses or constants -\n");
 						list_label(i - 1);
 						list_label(i);
 						twiceflg = 1;
