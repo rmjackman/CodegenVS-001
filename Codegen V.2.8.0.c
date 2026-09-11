@@ -347,7 +347,7 @@ int main(int argc, char* argv[]) {
 		char tmptyp;
 		fpos_t pos1;
 		bool star_flg = 0;
-		
+		uint16_t next_entry_addr;
 		
 		bool li_flg = 0;
 
@@ -612,32 +612,13 @@ int main(int argc, char* argv[]) {
 
 #define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 1
 #if HI_LO_INTERRUPT_AT_SYMTAB_ENTRY
-				/*
- * A real symbol-table entry at the beginning of the current
- * source line terminates a pending 16-bit direct-address pair.
- *
- * Do this here, rather than searching the address range between
- * the two instructions.  The symbol table also contains synthetic
- * entries for operand bytes, and those must NOT terminate a pair.
- */
-				if (pass == 2 && !first_NNsymbol_flg && pc != pc_sav1) {
+				if (pass == 2 &&
+					!first_NNsymbol_flg &&
+					next_entry_addr != 0 &&
+					pc == next_entry_addr) {
 
-					for (i = 0; i < symnumext; i++) {
-
-						if (sss[i].symadr == pc) {
-
-							/*
-							 * The current source line is a real source-line
-							 * symbol-table entry.  Therefore the saved operand
-							 * cannot be combined with the current operand.
-							 */
-							sr_5a_5b();
-
-							first_NNsymbol_flg = true;
-
-							break;
-						}
-					}
+					sr_5a_5b();
+					first_NNsymbol_flg = true;
 				}
 #endif
 
@@ -2057,6 +2038,17 @@ else if (operand[0] == '#' || operand[0] == '/') {
 
 			if (first_NNsymbol_flg) {
 
+				
+
+				next_entry_addr = 0;
+
+				for (i = 0; i < symnum; i++) {
+					if (sss[i].symadr > pc) {
+						next_entry_addr = sss[i].symadr;
+						break;
+					}
+				}
+
 				intval_sav = intval;
 				pc_sav1 = pc;
 				lo_fg_sav = lo_fg;
@@ -2375,14 +2367,14 @@ else if (operand[0] == '#' || operand[0] == '/') {
 
 #endif
 
-
+			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 
 		} // END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES
 
 
 		if (verif_flg == 0 || verif_flg == 1) {
 
-			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
+			
 
 
 #if SORT_EQU_EPZ
