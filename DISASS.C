@@ -372,7 +372,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	}
 
 	*lnbfptr = '\0';
-	sctp = sss[sno].symtyp;
+	sctp = sss[sno].symtyp;// KEY_TAB OK
 
 #else
 	while (sss[sno].symtyp == ']')

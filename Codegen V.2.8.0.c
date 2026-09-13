@@ -1713,6 +1713,7 @@ int main(int argc, char* argv[]) {
 				/* HX */
 
 				if (_stricmp(opcode, "HX") == 0) {
+					sectyp('#');
 					data_flg = 1;
 					txtptr++;
 					while (isxdigit((unsigned char)txtptr[0]) &&
@@ -1733,7 +1734,7 @@ int main(int argc, char* argv[]) {
 
 						toxlbuf((char)((hi << 4) | lo));
 
-						sectyp('#');
+						
 						txtptr += 2;
 					}
 
@@ -2050,7 +2051,8 @@ int main(int argc, char* argv[]) {
 						}
 
 						if (intval > 255) {
-
+							if (pc == 0xda6d)
+								pc = pc;
 							if (first_NNsymbol_flg) {
 
 								next_entry_addr = 0;
@@ -2359,8 +2361,11 @@ int main(int argc, char* argv[]) {
 
 
 				for (i = symnum - 1; i > 1; i--) {
-					if (_stricmp(sss[i].symbol, sss[i - 1].symbol) == 0
-						&& sss[i].symadr != sss[i - 1].symadr) {
+					if (sss[i].symbol[0] != '\0' &&
+						sss[i - 1].symbol[0] != '\0' &&
+						_stricmp(sss[i].symbol, sss[i - 1].symbol) == 0 &&
+						sss[i].symadr != sss[i - 1].symadr) {
+
 						printf("\nSame label twice, used for different addresses or constants -\n");
 						list_label(i - 1);
 						list_label(i);
@@ -4048,7 +4053,7 @@ void sectyp(char line_type) {
 			sss[symnumext++].symadr = pc;
 		}
 		return;
-	}
+	}/* end if */
 
 	if (!labflg && (line_type == ';') && strchr("!&@'([", section_type))
 		line_type = section_type;
@@ -4071,13 +4076,27 @@ void sectyp(char line_type) {
 					sss[symnum - 1].symtyp = line_type;
 			}
 		}
-		else /* no label */ //??????????????????????????????????????
-			if ((pass == 2) && (pc > 0xff)) {
-				if (symnumext >= MAXSYMS)
-					error("Too many symbols");
+		else /* no label */
+			if (pc > 0xff) {
+				if (pass == 1) {
+					if (symnum >= MAXSYMS)
+						error("Too many symbols");
+					else {
+						sss[symnum].symtyp = line_type;
+						sss[symnum].symadr = pc;
+						sss[symnum].symbol[0] = '\0';
+						symnum++;
+					}
+				}
 				else {
-					sss[symnumext].symtyp = line_type;
-					sss[symnumext++].symadr = pc;
+					if (symnumext >= MAXSYMS)
+						error("Too many symbols");
+					else {
+						sss[symnumext].symtyp = line_type;
+						sss[symnumext].symadr = pc;
+						sss[symnumext].symbol[0] = '\0';
+						symnumext++;
+					}
 				}
 			}
 	}
