@@ -977,11 +977,12 @@ int main(int argc, char* argv[]) {
 						txtptr++;
 				}
 
-#if !ATMAS_II_COMPATIBLE
-
 				/*************** Process stand-alone label *****************/
 
-				if (*label && (*txtptr == '\n' || *txtptr == ';')) {
+#if !ATMAS_II_COMPATIBLE
+
+
+				if (*label && (*txtptr == '\n' || *txtptr == ';' || *txtptr == '\0')) {
 
 					if (strpbrk(outflgs, "Ll"))
 						fprintf(stream2, "%s\n", label);
@@ -991,7 +992,7 @@ int main(int argc, char* argv[]) {
 
 						symnum++;
 					}
-					strcpy_s(current_global, sizeof(label), label);
+					strcpy_s(current_global, sizeof(current_global), label);
 					continue;
 
 				}
@@ -1004,7 +1005,7 @@ int main(int argc, char* argv[]) {
 
 #if !ATMAS_II_COMPATIBLE
 				if (*txtptr == ';')
-					continue;	// comment (ATMAS-II incompatibility)
+					continue;
 #endif
 
 				/*
@@ -2017,7 +2018,8 @@ int main(int argc, char* argv[]) {
 						operand[1] == '%')
 
 						sectyp('!');
-
+					if (pc == 0xda6d && pass == 1)
+						pc = pc;
 					if (pass == 2) {
 
 						if (operand[0] == '#' &&
@@ -2051,8 +2053,7 @@ int main(int argc, char* argv[]) {
 						}
 
 						if (intval > 255) {
-							if (pc == 0xda6d)
-								pc = pc;
+
 							if (first_NNsymbol_flg) {
 
 								next_entry_addr = 0;
@@ -2352,7 +2353,7 @@ int main(int argc, char* argv[]) {
 				}
 				if (d40f_found == 0) {
 					sss[symnum].symtyp = '#';
-					strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");
+					//strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");//may not need this line
 					sss[symnum++].symadr = 0xd40f;
 				}
 
