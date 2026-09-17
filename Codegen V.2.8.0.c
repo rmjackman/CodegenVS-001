@@ -977,10 +977,10 @@ int main(int argc, char* argv[]) {
 						txtptr++;
 				}
 
-				/*************** Process stand-alone label *****************/
+
 
 #if !ATMAS_II_COMPATIBLE
-
+				/*************** Process stand-alone label *****************/
 
 				if (*label && (*txtptr == '\n' || *txtptr == ';' || *txtptr == '\0')) {
 
@@ -1392,6 +1392,8 @@ int main(int argc, char* argv[]) {
 						if (_stricmp(label, "cont") == 0) sprintf_s(label, sizeof(label), "cont%u", contnum++);
 						if (_stricmp(label, "endif") == 0) sprintf_s(label, sizeof(label), "endi%u", endifnum++);
 					}
+					/******************  Add label, comment and address to symbol table  ***********************/
+
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);//Add label to symbol table
 
@@ -1469,7 +1471,7 @@ int main(int argc, char* argv[]) {
 
 				/***************** Assembler Directives *****************/
 
-								/* LI */
+				/* LI */
 
 				if (_stricmp(opcode, "LI") == 0) {
 
@@ -1641,7 +1643,7 @@ int main(int argc, char* argv[]) {
 
 				/**************** Other directives *****************/
 
-								/* ORG */
+				/* ORG */
 
 				if (_stricmp(opcode, "ORG") == 0) {
 					pc_overflow_flg = false;
@@ -4039,10 +4041,13 @@ uint32_t symtoi3(char* strbeg) {
 void sectyp(char line_type) {
 	//if(pc == 0x4729)
 		//pc=pc;
+
+
 	if (pass == 2 && strchr("&@([", line_type)) {
 		for (int i = 0; i < symnum; i++) {
 			if (sss[i].symadr == pc) {
 				sss[i].symtyp = line_type;
+
 				return;
 			}
 		}
@@ -4062,6 +4067,10 @@ void sectyp(char line_type) {
 
 	if ((line_type != section_type) || labflg) // if new sec type or a label
 	{
+
+		if (pass == 2 && strpbrk(outflgs, "Ll"))
+			fprintf(stream2, "* %c\n", line_type);
+
 		section_type = line_type;
 		if (labflg)								//if there is a label....
 		{
