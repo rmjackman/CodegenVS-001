@@ -610,7 +610,7 @@ int main(int argc, char* argv[]) {
 					skip_line_numbers();
 				}
 
-#define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 1
+#define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 0
 #if HI_LO_INTERRUPT_AT_SYMTAB_ENTRY
 				if (pass == 2){
 					if (!first_NNsymbol_flg &&
@@ -1709,11 +1709,11 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "DFB") == 0) {
 					data_flg = 1;
-
+					
 					do {
 						emit_byte();
 					} while (*txtptr == ',');
-
+					
 					continue;
 				}
 #if !ATMAS_II_COMPATIBLE
@@ -2059,26 +2059,13 @@ int main(int argc, char* argv[]) {
 						}
 
 						if (intval > 255) {
-
+							if (pc == 0XDA4F)
+								pc = pc;
 							if (first_NNsymbol_flg) {
-
-								next_entry_addr = 0;
-
-								
-								for (i = 0; i < symnum; i++) {
-									
-									if (sss[i].symadr > pc) {
-										next_entry_addr = sss[i].symadr;
-										break;
-									}
-								}
 
 								intval_sav = intval;
 								pc_sav1 = pc;
 								lo_fg_sav = lo_fg;
-
-								//nn_txtptr_sav = txtptr;
-								//nn_linnum_sav = linnum;
 
 								first_NNsymbol_flg = false;
 
@@ -2086,8 +2073,7 @@ int main(int argc, char* argv[]) {
 							else {
 								if (labflg ||
 									intval_sav != intval ||
-									lo_fg_sav == lo_fg ||
-									pc == next_entry_addr) {
+									lo_fg_sav == lo_fg) {
 
 									sr_5a_5b();
 
@@ -2397,7 +2383,7 @@ int main(int argc, char* argv[]) {
 
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 			for (i = 0; i < symnumext; i++)
-				printf("\npass=%d, sss[%d].symadr = 0x%04X, %s", pass, i, sss[i].symadr, sss[i].symbol);
+				printf("\npass=%d, sss[%d].symadr = 0x%04X, %c %s", pass, i, sss[i].symadr, sss[i].symtyp, sss[i].symbol);
 		} 
 		
 /***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
@@ -4058,7 +4044,7 @@ uint32_t symtoi3(char* strbeg) {
 
 
 void sectyp(char line_type) {
-	if(pc == 0xDA03)
+	if(pc == 0xDA4f)
 		pc=pc;
 
 
@@ -4091,6 +4077,16 @@ void sectyp(char line_type) {
 			fprintf(stream2, "* %c\n", line_type);*/
 
 		section_type = line_type;
+
+		if (pass == 2) {
+			if (!first_NNsymbol_flg) {
+
+				sr_5a_5b();
+				first_NNsymbol_flg = true;
+			}
+		}
+
+
 		if (labflg)								//if there is a label....
 		{
 			if (pass == 1) /**/
@@ -4116,6 +4112,7 @@ void sectyp(char line_type) {
 						sss[symnum].symbol[0] = '\0';
 						symnum++;
 					}
+					printf("\npass=%d, sss[%d].symadr = 0x%04X, %s", pass, symnum, sss[symnum].symadr, sss[symnum].symbol);
 				}
 				else {
 					if (symnumext >= MAXSYMS)

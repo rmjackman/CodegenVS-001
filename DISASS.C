@@ -178,25 +178,33 @@ void disassemble(const char* filename) {
 /********      Write header                  ********/
 	
 	printf ("Writing header\n");
-	bool found = 0;
+	bool in_segment = 0;
 	
 	//printf("symnum = %d\n\n", symnum);
 	for (i = 0; i < symnum; i++) {
-		found = 0;
-		if (sss[i].symbol) {
+		in_segment = 0;
+		if (sss[i].symbol 
+#if EQU_IN_SECTION
+			&& sss[i].symtyp != '{'
+#endif
+			) {
 			//printf("i = %d",i);
 			for (segment = 1; segment <= number_of_segments; segment++) {
 				if ((sss[i].symadr >= start_address[segment]
 					&& sss[i].symadr <= end_address[segment]) // Check if symbol is in segment
 					|| sss[i].symtyp == '*') {  // Check if ORG
-					found = 1;
+					in_segment = 1;
 					break;
 				}
-				
+
 			}
 			//printf("    Segment = %d\n", segment-1);
 		}
-		if (found == 0) {
+#if EQU_IN_SECTION
+		if (sss[i].symtyp == '{') sss[i].symtyp = '#';
+#endif
+		
+		if (in_segment == 0) {
 			
 			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == ']')) {
 				if (epz_flg == 0) {
@@ -447,6 +455,9 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	case '@':
 	case '(':
 	case '['://(EQU CONSTANT <= $FF)
+#if EQU_IN_SECTION
+	case '{':
+#endif
 	case '<':	break; //normal opcodes
 
 	case '#':

@@ -29,6 +29,8 @@
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
+#define EQU_IN_SECTION 0
+
 #include <stdint.h>
 
 
