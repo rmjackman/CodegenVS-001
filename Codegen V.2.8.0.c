@@ -347,7 +347,7 @@ int main(int argc, char* argv[]) {
 		char tmptyp;
 		fpos_t pos1;
 		bool star_flg = 0;
-		uint16_t next_entry_addr;
+		uint16_t next_entry_addr = NULL;
 
 		bool li_flg = 0;
 
@@ -612,13 +612,14 @@ int main(int argc, char* argv[]) {
 
 #define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 1
 #if HI_LO_INTERRUPT_AT_SYMTAB_ENTRY
-				if (pass == 2 &&
-					!first_NNsymbol_flg &&
-					next_entry_addr != 0 &&
-					pc == next_entry_addr) {
+				if (pass == 2){
+					if (!first_NNsymbol_flg &&
+						next_entry_addr != 0 &&
+						pc == next_entry_addr) {
 
-					sr_5a_5b();
-					first_NNsymbol_flg = true;
+						sr_5a_5b();
+						first_NNsymbol_flg = true;
+					}
 				}
 #endif
 
@@ -1359,7 +1360,8 @@ int main(int argc, char* argv[]) {
 						labflg = 1;
 
 #if !ATMAS_II_COMPATIBLE
-						if (*label == '.') { // local label, must be appended to previous global label
+					// local label, must be appended to previous label
+						if (*label == '.') {
 							char temp[MAX_LABEL_SIZE];
 
 							strcpy_s(temp, sizeof(temp), label);
@@ -1396,7 +1398,8 @@ int main(int argc, char* argv[]) {
 
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);//Add label to symbol table
-
+						sss[symnum].symadr = pc;
+						printf("\npass=%d, sss[%d].symadr = 0x%04X, %s", pass, symnum, sss[symnum].symadr, sss[symnum].symbol);
 #if COMMENTS
 						i = 0;
 						if (star_flg) {
@@ -1419,7 +1422,8 @@ int main(int argc, char* argv[]) {
 						}
 
 #endif
-						sss[symnum++].symadr = pc;
+						symnum++;
+						
 					}
 				}
 				/*END LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
@@ -2060,7 +2064,9 @@ int main(int argc, char* argv[]) {
 
 								next_entry_addr = 0;
 
+								
 								for (i = 0; i < symnum; i++) {
+									
 									if (sss[i].symadr > pc) {
 										next_entry_addr = sss[i].symadr;
 										break;
@@ -2071,22 +2077,17 @@ int main(int argc, char* argv[]) {
 								pc_sav1 = pc;
 								lo_fg_sav = lo_fg;
 
+								//nn_txtptr_sav = txtptr;
+								//nn_linnum_sav = linnum;
+
 								first_NNsymbol_flg = false;
 
 							}
 							else {
-
-								if (intval_sav == intval && lo_fg_sav != lo_fg) {
-
-
-									if (lo_fg_sav)
-										sectyp_at(pc_sav1, '&');
-									else
-										sectyp_at(pc_sav1, '@');
-
-									first_NNsymbol_flg = true;
-								}
-								else {
+								if (!labflg ||
+									intval_sav != intval ||
+									lo_fg_sav == lo_fg ||
+									pc == next_entry_addr) {
 
 									sr_5a_5b();
 
@@ -2095,6 +2096,14 @@ int main(int argc, char* argv[]) {
 									lo_fg_sav = lo_fg;
 
 									first_NNsymbol_flg = false;
+								}
+								else {
+									if (lo_fg_sav)
+										sectyp_at(pc_sav1, '&');
+									else
+										sectyp_at(pc_sav1, '@');
+
+									first_NNsymbol_flg = true;
 								}
 							}
 						}
@@ -2355,7 +2364,7 @@ int main(int argc, char* argv[]) {
 				}
 				if (d40f_found == 0) {
 					sss[symnum].symtyp = '#';
-					//strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");//may not need this line
+					strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");//may not need this line
 					sss[symnum++].symadr = 0xd40f;
 				}
 
@@ -2387,7 +2396,8 @@ int main(int argc, char* argv[]) {
 #endif
 
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
-
+			for (i = 0; i < symnumext; i++)
+				printf("\npass=%d, sss[%d].symadr = 0x%04X, %s", pass, i, sss[i].symadr, sss[i].symbol);
 		} 
 		
 /***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
@@ -3783,6 +3793,11 @@ void toxlbuf(uint8_t ch) {
 	if (!orgflg)
 		error("ORG value must precede this line");
 
+	/*if (first_NNsymbol_flg) {
+		pc++;
+		return;
+	}*/
+
 	if (pc == 0xFFFF)
 		pc_overflow_flg = true;
 
@@ -3978,7 +3993,11 @@ static void operand_to_filename(char filename[MAX_FILENAME_LEN + 1]) {
 
 
 int ssscmpadr(const ssstype* a1, const ssstype* a2) {
-	return (a1->symadr - a2->symadr);
+	if (a1->symadr < a2->symadr)
+		return -1;
+	if (a1->symadr > a2->symadr)
+		return 1;
+	return 0;
 }
 
 // end ssscmpadr
@@ -4039,8 +4058,8 @@ uint32_t symtoi3(char* strbeg) {
 
 
 void sectyp(char line_type) {
-	//if(pc == 0x4729)
-		//pc=pc;
+	if(pc == 0xDA03)
+		pc=pc;
 
 
 	if (pass == 2 && strchr("&@([", line_type)) {
@@ -4068,8 +4087,8 @@ void sectyp(char line_type) {
 	if ((line_type != section_type) || labflg) // if new sec type or a label
 	{
 
-		if (pass == 2 && strpbrk(outflgs, "Ll"))
-			fprintf(stream2, "* %c\n", line_type);
+		/*if (pass == 2 && strpbrk(outflgs, "Ll"))
+			fprintf(stream2, "* %c\n", line_type);*/
 
 		section_type = line_type;
 		if (labflg)								//if there is a label....

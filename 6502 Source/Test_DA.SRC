@@ -13,8 +13,9 @@ ADR_8000 EQU $8000
 ; BASIC LOW/HIGH PAIRS
 ; ============================================================
 
+        TYA
         LDA #ADR_1234
-        LDX /ADR_1234             ; & at DA00
+LAB1    LDX /ADR_1234             ; & at DA00
 
         LDA /ADR_1234
         LDX #ADR_1234             ; @ at DA02
