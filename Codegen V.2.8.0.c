@@ -2084,7 +2084,7 @@ int main(int argc, char* argv[]) {
 
 							}
 							else {
-								if (!labflg ||
+								if (labflg ||
 									intval_sav != intval ||
 									lo_fg_sav == lo_fg ||
 									pc == next_entry_addr) {
