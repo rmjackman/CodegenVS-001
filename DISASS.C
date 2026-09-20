@@ -201,7 +201,7 @@ void disassemble(const char* filename) {
 			//printf("    Segment = %d\n", segment-1);
 		}
 #if EQU_IN_SECTION
-		if (sss[i].symtyp == '{') sss[i].symtyp = '#';
+		//if (sss[i].symtyp == '{') sss[i].symtyp = 0;
 #endif
 		
 		if (in_segment == 0) {
@@ -256,16 +256,26 @@ void disassemble(const char* filename) {
 
 		pcsav = 0;
 		print_line();  print_line();
-		pts_p("\tORG $%X", pc); print_line();
+		pts_p("\tORG ");
+		adnmw2((uint16_t)pc);
+		print_line();
 		print_line();
 		
 #if CREATE_DBG
 		seg_start_address = pc;
 		dbg_seg(&ctx, segment, pc);
 #endif
-		
+if (pc == 0x2400){
+pc = pc;
+}
+
 		sno = 0;
-		while (sss[sno].symadr < pc) {
+		while (sss[sno].symadr < pc
+#if EQU_IN_SECTION
+			|| sss[sno].symtyp == '{'
+#endif			
+			) {
+
 			sno++;
 			if (sno == symnum) {
 				sno--;
@@ -274,6 +284,7 @@ void disassemble(const char* filename) {
 		}
 		if (sss[sno].symadr > pc) sno--;//symbol not found. Go back one
 										//If address in symbol table, stay there
+		pc = pc;
 #define PRINT_COMMENTS 0
 #if PRINT_COMMENTS
 

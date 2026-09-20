@@ -83,6 +83,7 @@ void sectyp_at(uint16_t address, char line_type);
 void skip_line_numbers();
 int is_in_string(char* start, char* pos);
 void sr_5a_5b();
+void print_symbol_table();
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -1294,12 +1295,17 @@ int main(int argc, char* argv[]) {
 #else
 										sss[symnum].symtyp = '#';
 #endif
+#if EQU_IN_SECTION
+									else
+										sss[symnum].symtyp = '{';
+#endif
 								}
 								else {                         /* EPZ */
 									if (i >= 256)
 										error("EPZ must define a zero-page address.");
 
 									sss[symnum].symtyp = '#';
+
 								}
 
 								symnum++;
@@ -1399,7 +1405,7 @@ int main(int argc, char* argv[]) {
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);//Add label to symbol table
 						sss[symnum].symadr = pc;
-						printf("\npass=%d, sss[%d].symadr = 0x%04X, %s", pass, symnum, sss[symnum].symadr, sss[symnum].symbol);
+						
 #if COMMENTS
 						i = 0;
 						if (star_flg) {
@@ -2382,8 +2388,7 @@ int main(int argc, char* argv[]) {
 #endif
 
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
-			for (i = 0; i < symnumext; i++)
-				printf("\npass=%d, sss[%d].symadr = 0x%04X, %c %s", pass, i, sss[i].symadr, sss[i].symtyp, sss[i].symbol);
+			
 		} 
 		
 /***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
@@ -2430,6 +2435,7 @@ int main(int argc, char* argv[]) {
 
 			/* Remove unneeded symbols */
 #define NEW_REMOVE_UNNEEDED_SYMBOLS 1
+
 #if NEW_REMOVE_UNNEEDED_SYMBOLS
 /* Remove unneeded symbols */
 
@@ -2468,8 +2474,9 @@ int main(int argc, char* argv[]) {
 				 * Look through ALL symbols, not just the previous symbol.
 				 *
 				 * A section type of 0 means "no section type".
-				 * If one or more symbols have a non-zero section type,
-				 * that type is used for the address.
+				 *
+				 * '{' is NOT a section type. It is a special symbol
+				 * category and must remain distinct from normal entries.
 				 *
 				 * If different non-zero section types are found, issue
 				 * a warning.
@@ -2483,7 +2490,8 @@ int main(int argc, char* argv[]) {
 					if (sss[j].symadr != sss[i].symadr)
 						continue;
 
-					if (sss[j].symtyp == 0)
+					if (sss[j].symtyp == 0 ||
+						sss[j].symtyp == '{')
 						continue;
 
 					if (sectype == 0)
@@ -2505,16 +2513,24 @@ int main(int argc, char* argv[]) {
 
 
 				/****************************************************************
-				 * Check whether this address has already been placed in the
-				 * compacted symbol table.
+				 * Check whether this address/type category has already been
+				 * placed in the compacted symbol table.
 				 *
-				 * Do NOT just compare with symnum - 1.  The same address may
-				 * have occurred several entries earlier.
+				 * Normal entries and '{' entries are kept separately.
+				 *
+				 * The table is sorted by address, so stop when a larger
+				 * address is encountered.
 				 ****************************************************************/
 
 				for (j = 0; j < symnum; j++) {
 
-					if (sss[j].symadr == sss[i].symadr) {
+					if (sss[j].symadr > sss[i].symadr)
+						break;
+
+					if (sss[j].symadr == sss[i].symadr &&
+						((sss[j].symtyp == '{') ==
+							(sss[i].symtyp == '{'))) {
+
 						duplicate = 1;
 						dupnum = j;
 						break;
@@ -2523,7 +2539,8 @@ int main(int argc, char* argv[]) {
 
 
 				/****************************************************************
-				 * This address already exists in the compacted table.
+				 * This address/type category already exists in the compacted
+				 * table.
 				 ****************************************************************/
 
 				if (duplicate) {
@@ -2538,9 +2555,11 @@ int main(int argc, char* argv[]) {
 
 					/*
 					 * If a non-zero section type exists anywhere at this
-					 * address, use it for the retained entry.
+					 * address, use it for the retained normal entry.
+					 *
+					 * Never overwrite a '{' entry.
 					 */
-					if (sectype != 0)
+					if (sectype != 0 && sss[dupnum].symtyp != '{')
 						sss[dupnum].symtyp = sectype;
 
 
@@ -2566,7 +2585,8 @@ int main(int argc, char* argv[]) {
 
 									sss[dupnum] = sss[i];
 
-									if (sectype != 0)
+									if (sectype != 0 &&
+										sss[dupnum].symtyp != '{')
 										sss[dupnum].symtyp = sectype;
 								}
 							}
@@ -2585,7 +2605,7 @@ int main(int argc, char* argv[]) {
 
 
 				/****************************************************************
-				 * This is a new address.
+				 * This is a new address/type category.
 				 *
 				 * Copy the entry into the compacted symbol table.
 				 ****************************************************************/
@@ -2594,10 +2614,12 @@ int main(int argc, char* argv[]) {
 
 
 				/*
-				 * If any symbol having this address had a non-zero section
-				 * type, use that type.
+				 * If any normal symbol having this address had a non-zero
+				 * section type, use it for the retained normal entry.
+				 *
+				 * Never overwrite a '{' entry.
 				 */
-				if (sectype != 0)
+				if (sectype != 0 && sss[symnum].symtyp != '{')
 					sss[symnum].symtyp = sectype;
 
 
@@ -2605,6 +2627,7 @@ int main(int argc, char* argv[]) {
 			}
 
 #else
+	
 			puts("");
 			symnum = 0;
 			for (i = 0; i < symnumext; i++) {
@@ -2656,6 +2679,9 @@ int main(int argc, char* argv[]) {
 						list_label_f(i);
 				}
 			}
+
+
+
 
 			/* xasm Symbol table. Call using "yr xasm.lab" in debugger console */
 			if (strpbrk(outflgs, "Xx")) {
@@ -2752,14 +2778,14 @@ int main(int argc, char* argv[]) {
 				else
 					strcat_s(smbfilename, sizeof(smbfilename), ".SMT");
 			}
-
+			
 
 			if (fopen_s(&stream, smbfilename, "wb") != 0) {
 				perror("Error opening file");
 				hit_Enter();
 				exit(1);
 			}
-
+			
 			printf("Saving symbol-file %s\n", smbfilename);
 
 			fputc(0xfb, stream);
@@ -2772,10 +2798,11 @@ int main(int argc, char* argv[]) {
 			fputc(0, stream);
 			secsiz = 0;
 			fgetpos(stream, &pos2);
-			for (i = 0; i < symnum; i++) {
+			
+			/*for (i = 0; i < symnum; i++) {// turned off temporarilly because it alters the simbol table prior to disassembly
 				lensv = fptsmb(i);
 				secsiz += lensv;
-			}
+			}*/
 			fsetpos(stream, &pos1);
 			fputc((char)secsiz, stream);
 			fputc((char)(secsiz >> 8), stream);
@@ -2784,7 +2811,7 @@ int main(int argc, char* argv[]) {
 
 			//end Save SMT
 
-
+			
 
 			/******************* Save to image ************************************/
 
@@ -2807,7 +2834,7 @@ int main(int argc, char* argv[]) {
 				}
 			}
 			// end Save to image
-
+			
 			/****************** Result of comparison with LOA file made in pass2 ********************/
 		}
 		//else {//verif_flg == 1;
@@ -2851,6 +2878,9 @@ int main(int argc, char* argv[]) {
 
 //			return 0;
 		//}//end verif_flg == 2
+
+
+
 #if DISASSEMBLE
 		if (verif_flg == 0 || verif_flg == 1)
 			disassemble(loafilename);
@@ -4112,7 +4142,6 @@ void sectyp(char line_type) {
 						sss[symnum].symbol[0] = '\0';
 						symnum++;
 					}
-					printf("\npass=%d, sss[%d].symadr = 0x%04X, %s", pass, symnum, sss[symnum].symadr, sss[symnum].symbol);
 				}
 				else {
 					if (symnumext >= MAXSYMS)
@@ -4514,4 +4543,21 @@ void sr_5a_5b() {
 	}
 
 
+}
+
+void print_symbol_table() {
+	/*
+	 * Print the complete symbol table.
+	 */
+
+	printf("\nComplete symbol table: %d entries\n", symnum);
+
+	for (int i = 0; i < symnum; i++) {
+
+		printf("%c %d %04X\t%s\n",
+			sss[i].symtyp ? sss[i].symtyp : ' ',
+			sss[i].ofst,
+			sss[i].symadr,
+			sss[i].symbol);
+	}
 }
