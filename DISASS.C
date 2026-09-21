@@ -75,6 +75,7 @@ uint8_t linebeg_lablen = 0;
 char output_filename[FILENAME_MAX];
 FILE* outputfile;
 FILE* madslstfile;
+bool label_equ_flg = false;
 
 void disassemble(const char* filename) {
 
@@ -257,7 +258,9 @@ void disassemble(const char* filename) {
 		pcsav = 0;
 		print_line();  print_line();
 		pts_p("\tORG ");
+		label_equ_flg = 1;
 		adnmw2((uint16_t)pc);
+		label_equ_flg = 0;
 		print_line();
 		print_line();
 		
@@ -376,7 +379,9 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 #if E_5A_5B
 
-	while (sno < symnum - 1 && sss[sno + 1].symadr <= ska)
+	while (sno < symnum - 1 && 
+		(sss[sno + 1].symadr <= ska ||
+		sss[sno ].symtyp == '{'))
 		sno++;
 
 	while (sno < symnum && sss[sno].symtyp == ']')
@@ -909,14 +914,17 @@ void adnmw2(uint16_t ska) {
 	//printf("i = %d, ska = %04X symnum = %d\n", i, ska, symnum);
 
 	while (i <= symnum && sss[i].symadr <= ska) {
-		if (sss[i].symbol[0]) {         // symbol exists at this i
+
+		if (sss[i].symbol[0]) {
 			isav = i;
-			if (sss[i].symadr == ska) {     // symbol found at this address?
-				pts(sss[i].symbol);         // symbol to string
-				
+
+			if (sss[i].symadr == ska &&
+				(label_equ_flg == 0 || sss[i].symtyp == '{')) {
+				pts(sss[i].symbol);
 				return;
 			}
 		}
+
 		i++;
 	}
 
