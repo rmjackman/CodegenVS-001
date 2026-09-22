@@ -263,14 +263,14 @@ void disassemble(const char* filename) {
 		label_equ_flg = 0;
 		print_line();
 		print_line();
+		sno = 0;
 		
 #if CREATE_DBG
 		seg_start_address = pc;
 		dbg_seg(&ctx, segment, pc);
 #endif
-if (pc == 0x2400){
-pc = pc;
-}
+
+
 
 		sno = 0;
 		while (sss[sno].symadr < pc
@@ -337,8 +337,22 @@ pc = pc;
 			}
 #endif
 
-			if (pc == end_address[segment] + 1)
+			if (pc == end_address[segment] + 1) {
+
+				i = 0;
+				while (i < symnum &&
+					(sss[i].symadr < pc))
+					i++;
+				if (sss[i].symadr == pc &&
+					sss[i].symtyp == '*' &&
+					sss[i].symbol[0]) {
+						pts(sss[i].symbol);
+						//pts(" ORG *");
+						print_line();
+				}
 				break;
+			}
+				
 			if (pc > end_address[segment] + 1) {
 				printf("\aEnd of segment not recognised\n");
 				break;
@@ -378,26 +392,46 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	offset_added = false;
 
 #if E_5A_5B
-
-	while (sno < symnum - 1 && 
-		(sss[sno + 1].symadr <= ska ||
-		sss[sno ].symtyp == '{'))
-		sno++;
-
+	/* Advance beyond any constants in the symbol table */
 	while (sno < symnum && sss[sno].symtyp == ']')
 		sno++;
 
-	linebeg_lablen = 0;
-	lnbfptr = beglabbuf;
+	/* Advance to possible target in the symbol table */
+	while (sno + 1 < symnum &&
+		(sss[sno + 1].symadr <= ska))
+		sno++;
 
-	if (sss[sno].symadr == ska && sss[sno].symbol) {
-		while (sss[sno].symbol[linebeg_lablen])
-			*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
+	if (sss[sno].symadr > ska)
+		sno--;
+
+	if (sss[sno-1].symadr == ska)
+		sno--;
+
+	/* If target adddress, advance to possible usable entry in the symbol table */
+	if (sss[sno].symadr == ska) {
+		while (sno < symnum &&
+			sss[sno].symadr == ska &&
+			sss[sno].symtyp == '{')
+			sno++;
 	}
 
-	*lnbfptr = '\0';
-	sctp = sss[sno].symtyp;// KEY_TAB OK
+	/* If usable entry at target address, get symbol type */
+	if (sss[sno].symadr == ska) {
 
+
+		linebeg_lablen = 0;
+		lnbfptr = beglabbuf;
+
+		if (sss[sno].symadr == ska && sss[sno].symbol[0]) {
+			while (sss[sno].symbol[linebeg_lablen])
+				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
+		}
+
+		
+
+		sctp = sss[sno].symtyp;// KEY_TAB OK
+	}
+	*lnbfptr = '\0';
 #else
 	while (sss[sno].symtyp == ']')
 		sno++;

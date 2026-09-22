@@ -738,7 +738,7 @@ int main(int argc, char* argv[]) {
 
 							ptr++;
 							labptr = lab;
-
+							
 							while (cnt) {
 								cnt--;
 								*labptr++ = *ptr++;
@@ -2675,7 +2675,7 @@ int main(int argc, char* argv[]) {
 			if (strpbrk(outflgs, "Nn")) {
 				fprintf(stream2, "\n\n**** Symbol table *****\n\n");
 				for (i = 0; i < symnumext; i++) {
-					if (sss[i].symbol)
+					
 						list_label_f(i);
 				}
 			}
@@ -4436,7 +4436,7 @@ void sourcgen_symtab() {
 		if (sss[i].symtyp)
 			fprintf(stream2, "%c ", sss[i].symtyp);
 		else fprintf(stream2, "  ");
-		fprintf(stream2, "%d ", sss[i].ofst);
+		fprintf(stream2, "%x %d ",i, sss[i].ofst);
 		//if (sss[i].comment[0])
 			//fprintf(stream2, "*** %s\n", sss[i].comment);
 		list_label_f2(i);
