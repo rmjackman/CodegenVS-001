@@ -20,7 +20,7 @@
 
 
 #define ASC_STRING_LENGTH 21 //23
-#define DFB_BYTES_PER_LINE 6 //8
+#define DFB_BYTES_PER_LINE 6
 #define SHOW_LO 0 // Show ':L'
 
 //The following switches 1,2,3,5,6,7 correspond aproximately to the output menu switches in SOURCGEN
@@ -404,7 +404,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	if (sss[sno].symadr > ska)
 		sno--;
 
-	if (sss[sno-1].symadr == ska)
+	if (sno > 0 && sss[sno-1].symadr == ska)
 		sno--;
 
 	/* If target adddress, advance to possible usable entry in the symbol table */
@@ -422,7 +422,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 		linebeg_lablen = 0;
 		lnbfptr = beglabbuf;
 
-		if (sss[sno].symadr == ska && sss[sno].symbol[0]) {
+		if (sss[sno].symbol[0]) {
 			while (sss[sno].symbol[linebeg_lablen])
 				*lnbfptr++ = sss[sno].symbol[linebeg_lablen++];
 		}
@@ -471,7 +471,8 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 
 	if (sss[sno].symadr == pc) {
-		pts("*");					//Change this back to pts("* ");
+		pts("* ");					//Change this back to pts("* ");
+		ptc(sss[sno].symtyp);
 		if (flag[1]) //ADDR_LEFT_COMMENT
 			pts_p("%X", pc);
 

@@ -2030,8 +2030,7 @@ int main(int argc, char* argv[]) {
 						operand[1] == '%')
 
 						sectyp('!');
-					if (pc == 0xda6d && pass == 1)
-						pc = pc;
+
 					if (pass == 2) {
 
 						if (operand[0] == '#' &&
@@ -2065,8 +2064,7 @@ int main(int argc, char* argv[]) {
 						}
 
 						if (intval > 255) {
-							if (pc == 0XDA4F)
-								pc = pc;
+
 							if (first_NNsymbol_flg) {
 
 								intval_sav = intval;
@@ -2077,7 +2075,7 @@ int main(int argc, char* argv[]) {
 
 							}
 							else {
-								if (labflg ||
+								if (//labflg ||
 									intval_sav != intval ||
 									lo_fg_sav == lo_fg) {
 
@@ -3809,11 +3807,6 @@ void toxlbuf(uint8_t ch) {
 	if (!orgflg)
 		error("ORG value must precede this line");
 
-	/*if (first_NNsymbol_flg) {
-		pc++;
-		return;
-	}*/
-
 	if (pc == 0xFFFF)
 		pc_overflow_flg = true;
 
@@ -4074,9 +4067,6 @@ uint32_t symtoi3(char* strbeg) {
 
 
 void sectyp(char line_type) {
-	if(pc == 0xDA4f)
-		pc=pc;
-
 
 	if (pass == 2 && strchr("&@([", line_type)) {
 		for (int i = 0; i < symnum; i++) {
@@ -4102,10 +4092,6 @@ void sectyp(char line_type) {
 
 	if ((line_type != section_type) || labflg) // if new sec type or a label
 	{
-
-		/*if (pass == 2 && strpbrk(outflgs, "Ll"))
-			fprintf(stream2, "* %c\n", line_type);*/
-
 		section_type = line_type;
 
 		if (pass == 2) {
