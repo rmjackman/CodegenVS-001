@@ -984,19 +984,27 @@ int main(int argc, char* argv[]) {
 #if !ATMAS_II_COMPATIBLE
 				/*************** Process stand-alone label *****************/
 
-				if (*label && (*txtptr == '\n' || *txtptr == ';' || *txtptr == '\0')) {
+				if (*label) {
+					char* p = txtptr;
 
-					if (strpbrk(outflgs, "Ll"))
-						fprintf(stream2, "%s\n", label);
-					if (pass == 1) {
-						sss[symnum].symadr = pc;
-						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);
+					while (*p == ' ' || *p == '\t')
+						p++;
 
-						symnum++;
+					if (*p == '\n' || *p == ';' || *p == '\0') {
+
+						if (strpbrk(outflgs, "Ll"))
+							fprintf(stream2, "%4X:             %s\n", pc, label);
+
+						if (pass == 1) {
+							sss[symnum].symadr = pc;
+							strcpy_s(sss[symnum].symbol,
+								sizeof(sss[symnum].symbol), label);
+							symnum++;
+						}
+
+						strcpy_s(current_global, sizeof(current_global), label);
+						continue;
 					}
-					strcpy_s(current_global, sizeof(current_global), label);
-					continue;
-
 				}
 #endif
 
@@ -1726,6 +1734,7 @@ int main(int argc, char* argv[]) {
 				/* HX */
 
 				if (_stricmp(opcode, "HX") == 0) {
+					
 					sectyp('#');
 					data_flg = 1;
 					txtptr++;
@@ -3852,22 +3861,30 @@ void toxlbuf(uint8_t ch) {
 
 			sprintf_s(tempstr, sizeof(tempstr), " %02X", ch & 0xFF);
 
+			if (bytcnt == 1)
+				sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc - 1);
+			
 			if (bytcnt <= LSTBYTES)
 				strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), tempstr);
 			else {
 
 				if (bytcnt % LSTBYTES == 1) {
 					prnlnum++;
+
 					if (_stricmp(opcode, "ORG")) { // if not ORG
-						sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]),
+						sprintf_s(prnlnbuf2[prnlnum - 1], 
+							sizeof(prnlnbuf2[prnlnum - 1]),
 							"%4X:", pc - 1);
 					}
 					else { // if ORG
-						sprintf_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]),
+						sprintf_s(prnlnbuf2[prnlnum - 1], 
+							sizeof(prnlnbuf2[prnlnum - 1]),
 							"     ");
 					}
 				}
-				strcat_s(prnlnbuf2[prnlnum - 1], sizeof(prnlnbuf2[prnlnum - 1]), tempstr);
+				strcat_s(prnlnbuf2[prnlnum - 1],
+					sizeof(prnlnbuf2[prnlnum - 1]), tempstr);
+
 			}
 
 			/* Comparison column */

@@ -316,9 +316,6 @@ void disassemble(const char* filename) {
 		}
 #endif
 
-			if (pc == 0x40c7)
-				pc=pc;	//breakpoint
-
 
 			print_line();
 
@@ -343,11 +340,15 @@ void disassemble(const char* filename) {
 				while (i < symnum &&
 					(sss[i].symadr < pc))
 					i++;
-				if (sss[i].symadr == pc &&
+
+				if (i < symnum &&
+					sss[i].symadr == pc &&
 					sss[i].symtyp == '*' &&
 					sss[i].symbol[0]) {
+
 						pts(sss[i].symbol);
 						//pts(" ORG *");
+						pcsav = pc;
 						print_line();
 				}
 				break;
