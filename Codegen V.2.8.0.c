@@ -1819,7 +1819,59 @@ int main(int argc, char* argv[]) {
 				}
 
 				/* DAT */
+#define NEW_DAT 1
+#if NEW_DAT
+				if ((_stricmp(opcode, "DAT") == 0)) {// calculated using txtptr, not operand, since operand is not yet set
 
+					enum SectionType {NONE, STRING = 1, BYTE = 2, WORD = 3};
+					enum SectionType sectype = NONE;
+
+					data_flg = 1;
+					do {
+						enum SectionType new_sectype;
+
+						if (strchr(DA_QUOTATION_MARKS, txtptr[1])) {
+							new_sectype = STRING;
+						}
+						else if (strchr("%'#", txtptr[1])) {
+							new_sectype = BYTE;
+						}
+						else {
+							char* sav_txtptr = txtptr++;
+							int i = expresstoi();
+							txtptr = sav_txtptr;
+
+							new_sectype = (i >= 0 && i < 256) ? BYTE : WORD;
+						}
+
+						/* Start a new section whenever the type changes. */
+						if (new_sectype != sectype) {
+							sectype = new_sectype;
+
+							/* pc is the starting address of this new section */
+							/* Create the new symbol-table entry here. */
+							/* ... */
+						}
+
+						switch (sectype) {
+						case STRING:
+							emit_ascii_string();
+							break;
+
+						case BYTE:
+							emit_byte();
+							break;
+
+						case WORD:
+							emit_word();
+							break;
+						}
+
+					} while (*txtptr == ',');
+
+					continue;
+				}
+#else
 				if ((_stricmp(opcode, "DAT") == 0)) {// calculated using txtptr, not operand, since operand is not yet set
 
 					data_flg = 1;
@@ -1832,8 +1884,7 @@ int main(int argc, char* argv[]) {
 						else if (strchr("%'#", txtptr[1])) {
 							emit_byte();
 						}
-						else
-						{
+						else {
 							char* sav_txtptr = txtptr++;
 							int i = expresstoi();
 							txtptr = sav_txtptr;
@@ -1848,6 +1899,7 @@ int main(int argc, char* argv[]) {
 					} while (*txtptr == ',');
 					continue;
 				}
+#endif
 				/************************ END DIRECTIVES ************************/
 
 				/* Find operand   Find operand  Find operand  Find operand  Find operand  Find operand  Find operand */
