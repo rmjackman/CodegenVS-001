@@ -303,8 +303,6 @@ void disassemble(const char* filename) {
 		while (1) {
 			pcsav = pc;
 
-			if (pc == 0xdc93) 
-				pc=pc;	//breakpoint
 
 			pc = disassln(&ctx, pc);// D I S A S S   L I N E
 
@@ -333,6 +331,7 @@ void disassemble(const char* filename) {
 
 			}
 #endif
+			/* Label at end address of segment + 1 */
 
 			if (pc == end_address[segment] + 1) {
 
@@ -348,7 +347,8 @@ void disassemble(const char* filename) {
 
 						pts(sss[i].symbol);
 						//pts(" ORG *");
-						pcsav = pc;
+						pcsav = pc; // Address to print
+						opcodeptr = NULL; // No code to print
 						print_line();
 				}
 				break;
@@ -1246,7 +1246,7 @@ void pt_ska_comment(uint16_t ska) {
 void print_line() {
 	if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
 		if (diss_linnum == 2607)
-			pc = pc;	//breakpoint
+
 		diss_linnum++;
 
 		if (flag[0]) // PRINT_DISS_LINNUM
