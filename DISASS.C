@@ -1245,7 +1245,6 @@ void pt_ska_comment(uint16_t ska) {
 
 void print_line() {
 	if (!((lo_hi_task == 1) || (lo_hi_task == 2))) {
-		if (diss_linnum == 2607)
 
 		diss_linnum++;
 
