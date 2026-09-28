@@ -30,6 +30,7 @@
 #define LIS_TO_CONSOLE 1
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
+#define IF_ELSE_ENDIF 1
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -84,6 +85,585 @@ void skip_line_numbers();
 int is_in_string(char* start, char* pos);
 void sr_5a_5b();
 void print_symbol_table();
+
+short pass = 0;
+
+#if IF_ELSE_ENDIF
+
+#define MAX_IF_DEPTH       64
+#define MAX_DEFINES        256
+#define MAX_DEFINE_NAME    64
+#define MAX_DEFINE_VALUE   128
+
+typedef struct {
+	char name[MAX_DEFINE_NAME];
+	char value[MAX_DEFINE_VALUE];
+} IF_DEFINE;
+
+typedef struct {
+	int parent_active;
+	int condition_true;
+	int active;
+	int else_seen;
+} IF_STATE;
+
+static IF_DEFINE if_defines[MAX_DEFINES];
+static int if_define_count = 0;
+
+static IF_STATE if_stack[MAX_IF_DEPTH];
+static int if_depth = 0;
+
+static int if_last_pass = -1;
+
+
+/*
+ * Return non-zero if the current source line is in an active
+ * conditional section.
+ */
+static int if_is_active(void) {
+	if (if_depth == 0)
+		return 1;
+
+	return if_stack[if_depth - 1].active;
+}
+
+
+/*
+ * Reset conditional state when CODEGEN changes pass.
+ *
+ * This function can safely be called for every source line.
+ * The definitions remain in effect throughout a pass, including
+ * while processing INCLUDEs and macros.
+ */
+static void if_new_pass(void) {
+	if (if_last_pass != pass) {
+		if_last_pass = pass;
+
+		if_define_count = 0;
+		if_depth = 0;
+	}
+}
+
+
+/*
+ * Find a .define name.
+ */
+static int if_find_define(const char* name) {
+	int i;
+
+	for (i = 0; i < if_define_count; i++) {
+		if (_stricmp(if_defines[i].name, name) == 0)
+			return i;
+	}
+
+	return -1;
+}
+
+
+/*
+ * Convert a CODEGEN-style integer constant to a long.
+ *
+ * Supports:
+ *
+ *     123
+ *     $1234
+ *     0x1234
+ *     -123
+ *     -$1234
+ */
+static int if_number(const char* text, long* result) {
+	char buf[MAX_DEFINE_VALUE];
+	char* endptr;
+	char* p;
+	int negative = 0;
+
+	while (*text == ' ' || *text == '\t')
+		text++;
+
+	if (*text == '-') {
+		negative = 1;
+		text++;
+	}
+
+	if (*text == '$') {
+
+		p = buf;
+
+		if (negative)
+			*p++ = '-';
+
+		*p++ = '0';
+		*p++ = 'x';
+
+		text++;
+
+		while (*text &&
+			!isspace((unsigned char)*text) &&
+			(size_t)(p - buf) < sizeof(buf) - 1)
+			*p++ = *text++;
+
+		*p = '\0';
+
+	}
+	else {
+
+		p = buf;
+
+		if (negative)
+			*p++ = '-';
+
+		while (*text &&
+			!isspace((unsigned char)*text) &&
+			(size_t)(p - buf) < sizeof(buf) - 1)
+			*p++ = *text++;
+
+		*p = '\0';
+	}
+
+	if (!buf[0] || (negative && buf[1] == '\0'))
+		return 0;
+
+	*result = strtol(buf, &endptr, 0);
+
+	if (*endptr != '\0')
+		return 0;
+
+	return 1;
+}
+
+
+/*
+ * Return the numeric value of a .define.
+ *
+ * A .define without a value has value 1.
+ *
+ * For now the value must resolve to a numeric constant or another
+ * .define containing a numeric constant.
+ */
+static int if_value(const char* name, long* value) {
+	char token[MAX_DEFINE_NAME];
+	const char* p;
+	int n;
+	int d;
+
+	p = name;
+
+	while (*p == ' ' || *p == '\t')
+		p++;
+
+	n = 0;
+
+	while (*p &&
+		!isspace((unsigned char)*p) &&
+		*p != '=' &&
+		*p != '!' &&
+		*p != '<' &&
+		*p != '>' &&
+		n < MAX_DEFINE_NAME - 1) {
+
+		token[n++] = *p++;
+	}
+
+	token[n] = '\0';
+
+	if (!token[0])
+		return 0;
+
+	/*
+	 * First see whether it is a number.
+	 */
+	if (if_number(token, value))
+		return 1;
+
+	/*
+	 * Otherwise look for a .define.
+	 */
+	d = if_find_define(token);
+
+	if (d < 0)
+		return 0;
+
+	/*
+	 * Empty .define means TRUE / 1.
+	 */
+	if (!if_defines[d].value[0]) {
+		*value = 1;
+		return 1;
+	}
+
+	/*
+	 * Numeric value.
+	 */
+	if (if_number(if_defines[d].value, value))
+		return 1;
+
+	/*
+	 * Value referring to another .define.
+	 */
+	return if_value(if_defines[d].value, value);
+}
+
+
+/*
+ * Evaluate the expression following .if.
+ *
+ * Supported forms:
+ *
+ *     .if NAME
+ *     .if 1
+ *     .if NAME = 1
+ *     .if NAME == 1
+ *     .if NAME != 1
+ *     .if NAME < 2
+ *     .if NAME <= 2
+ *     .if NAME > 1
+ *     .if NAME >= 1
+ *
+ * An undefined name has value zero.
+ */
+static int if_expression(const char* expression) {
+	char left[MAX_DEFINE_VALUE];
+	char right[MAX_DEFINE_VALUE];
+	const char* p;
+	char op[3] = { 0 };
+	long left_value = 0;
+	long right_value = 0;
+	int n;
+
+	p = expression;
+
+	while (*p == ' ' || *p == '\t')
+		p++;
+
+	/*
+	 * Copy the left operand.
+	 */
+	n = 0;
+
+	while (*p &&
+		!isspace((unsigned char)*p) &&
+		*p != '=' &&
+		*p != '!' &&
+		*p != '<' &&
+		*p != '>') {
+
+		if (n < MAX_DEFINE_VALUE - 1)
+			left[n++] = *p;
+
+		p++;
+	}
+
+	left[n] = '\0';
+
+	if (!left[0])
+		error(".if requires an expression");
+
+	/*
+	 * No comparison operator:
+	 *
+	 *     .if NAME
+	 *     .if 1
+	 */
+	while (*p == ' ' || *p == '\t')
+		p++;
+
+	if (*p == '\n' || *p == '\0' || *p == ';') {
+
+		if (!if_value(left, &left_value))
+			left_value = 0;
+
+		return left_value != 0;
+	}
+
+	/*
+	 * Comparison operator.
+	 */
+	if (*p == '=' && p[1] == '=') {
+		op[0] = '=';
+		op[1] = '=';
+		p += 2;
+	}
+	else if (*p == '=') {
+		op[0] = '=';
+		p++;
+	}
+	else if (*p == '!' && p[1] == '=') {
+		op[0] = '!';
+		op[1] = '=';
+		p += 2;
+	}
+	else if (*p == '<' && p[1] == '=') {
+		op[0] = '<';
+		op[1] = '=';
+		p += 2;
+	}
+	else if (*p == '>' && p[1] == '=') {
+		op[0] = '>';
+		op[1] = '=';
+		p += 2;
+	}
+	else if (*p == '<') {
+		op[0] = '<';
+		p++;
+	}
+	else if (*p == '>') {
+		op[0] = '>';
+		p++;
+	}
+	else {
+		error("Invalid .if expression");
+	}
+
+	while (*p == ' ' || *p == '\t')
+		p++;
+
+	/*
+	 * Copy right operand.
+	 */
+	n = 0;
+
+	while (*p &&
+		*p != '\n' &&
+		*p != ';') {
+
+		if (n < MAX_DEFINE_VALUE - 1)
+			right[n++] = *p;
+
+		p++;
+	}
+
+	while (n > 0 &&
+		(right[n - 1] == ' ' || right[n - 1] == '\t'))
+		n--;
+
+	right[n] = '\0';
+
+	if (!right[0])
+		error(".if requires a right-hand operand");
+
+	if (!if_value(left, &left_value))
+		left_value = 0;
+
+	if (!if_value(right, &right_value))
+		right_value = 0;
+
+	if (strcmp(op, "=") == 0 ||
+		strcmp(op, "==") == 0)
+		return left_value == right_value;
+
+	if (strcmp(op, "!=") == 0)
+		return left_value != right_value;
+
+	if (strcmp(op, "<") == 0)
+		return left_value < right_value;
+
+	if (strcmp(op, "<=") == 0)
+		return left_value <= right_value;
+
+	if (strcmp(op, ">") == 0)
+		return left_value > right_value;
+
+	if (strcmp(op, ">=") == 0)
+		return left_value >= right_value;
+
+	return 0;
+}
+
+
+/*
+ * Process .define.
+ *
+ *     .define NAME
+ *     .define NAME value
+ */
+static void if_process_define(char* p) {
+	char name[MAX_DEFINE_NAME];
+	char value[MAX_DEFINE_VALUE];
+	int n;
+	int d;
+
+	while (*p == ' ' || *p == '\t')
+		p++;
+
+	n = 0;
+
+	while (*p &&
+		!isspace((unsigned char)*p) &&
+		*p != '\n' &&
+		n < MAX_DEFINE_NAME - 1)
+		name[n++] = *p++;
+
+	name[n] = '\0';
+
+	if (!name[0])
+		error(".define requires a name");
+
+	while (*p == ' ' || *p == '\t')
+		p++;
+
+	n = 0;
+
+	while (*p &&
+		*p != '\n' &&
+		*p != ';' &&
+		n < MAX_DEFINE_VALUE - 1)
+		value[n++] = *p++;
+
+	while (n > 0 &&
+		(value[n - 1] == ' ' || value[n - 1] == '\t'))
+		n--;
+
+	value[n] = '\0';
+
+	/*
+	 * No value means TRUE.
+	 */
+	if (!value[0])
+		strcpy_s(value, sizeof(value), "1");
+
+	d = if_find_define(name);
+
+	if (d < 0) {
+
+		if (if_define_count >= MAX_DEFINES)
+			error("Too many .define directives");
+
+		d = if_define_count++;
+
+		strcpy_s(if_defines[d].name,
+			sizeof(if_defines[d].name), name);
+	}
+
+	strcpy_s(if_defines[d].value,
+		sizeof(if_defines[d].value), value);
+}
+
+
+/*
+ * Process .if.
+ */
+static void if_process_if(const char* expression) {
+	int parent_active;
+	int condition_true;
+
+	if (if_depth >= MAX_IF_DEPTH)
+		error("Too many nested .if directives");
+
+	parent_active = if_is_active();
+
+	/*
+	 * We must still evaluate nested .if syntax, but a nested
+	 * block can never become active if its parent is inactive.
+	 */
+	if (parent_active)
+		condition_true = if_expression(expression);
+	else
+		condition_true = 0;
+
+	if_stack[if_depth].parent_active = parent_active;
+	if_stack[if_depth].condition_true = condition_true;
+	if_stack[if_depth].active =
+		parent_active && condition_true;
+	if_stack[if_depth].else_seen = 0;
+
+	if_depth++;
+}
+
+
+/*
+ * Process .else.
+ */
+static void if_process_else(void) {
+	if (if_depth == 0)
+		error(".else without .if");
+
+	if (if_stack[if_depth - 1].else_seen)
+		error("Multiple .else directives");
+
+	if_stack[if_depth - 1].else_seen = 1;
+
+	if_stack[if_depth - 1].active =
+		if_stack[if_depth - 1].parent_active &&
+		!if_stack[if_depth - 1].condition_true;
+}
+
+
+/*
+ * Process .endif.
+ */
+static void if_process_endif(void) {
+	if (if_depth == 0)
+		error(".endif without .if");
+
+	if_depth--;
+}
+
+
+/*
+ * Examine the beginning of a source line for one of our four
+ * conditional directives.
+ *
+ * Return:
+ *
+ *     1 = line was a conditional directive and was processed
+ *     0 = not one of our directives
+ */
+static int if_process_directive(char* line) {
+	char directive[16];
+	char* p;
+	int n;
+
+	p = line;
+
+	while (*p == ' ' || *p == '\t')
+		p++;
+
+	if (*p != '.')
+		return 0;
+
+	p++;
+
+	n = 0;
+
+	while (isalpha((unsigned char)*p) &&
+		n < (int)sizeof(directive) - 1)
+		directive[n++] = (char)tolower((unsigned char)*p++);
+
+	directive[n] = '\0';
+
+	if (_stricmp(directive, "if") == 0) {
+
+		if_process_if(p);
+		return 1;
+	}
+
+	if (_stricmp(directive, "else") == 0) {
+
+		if_process_else();
+		return 1;
+	}
+
+	if (_stricmp(directive, "endif") == 0) {
+
+		if_process_endif();
+		return 1;
+	}
+
+	if (_stricmp(directive, "define") == 0) {
+
+		if (if_is_active())
+			if_process_define(p);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+#endif
+
+
+
 /*************************  global variables  ************/
 
 const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSRRORSTXLDXDECINC";
@@ -134,7 +714,7 @@ int presymnum = 0;
 int secsiz = 0;
 short linlen = 0;	// length of present line in text buffer
 int cnt = 0;
-short pass = 0;
+
 short labflg = 0;
 short orgflg = 0;
 short cpfflg = 0;
@@ -824,6 +1404,38 @@ int main(int argc, char* argv[]) {
 
 				*lnbfptr++ = '\n';
 				*lnbfptr = '\0';
+
+#if IF_ELSE_ENDIF
+
+				/*
+				 * Reset .define/.if state when changing from pass 1 to pass 2.
+				 *
+				 * This is deliberately called for every line.  It only does
+				 * anything when 'pass' changes.
+				 */
+				if_new_pass();
+
+
+				/*
+				 * Process .define, .if, .else and .endif before the normal
+				 * label/opcode processing.
+				 */
+				if (if_process_directive(txtptr))
+					continue;
+
+
+				/*
+				 * If the current conditional section is inactive, ignore
+				 * this line completely.
+				 *
+				 * .if/.else/.endif were handled above, so nested conditionals
+				 * continue to work even inside an inactive section.
+				 */
+				if (!if_is_active())
+					continue;
+
+#endif
+
 
 
 				/**********  Test first character of line ***********/

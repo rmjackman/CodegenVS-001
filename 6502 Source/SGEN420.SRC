@@ -8,6 +8,9 @@
 * Assemble using the CODEGEN Macro ASSEMBLER for PC
 *
 	VERIFY
+	
+.define COLORS 1	
+	
 * Use the CPFL directive to compare the generated code with another file
 
 *	CPFL SGEN416.LOAorig
@@ -1083,9 +1086,13 @@ YY	RTS		YY is in PICTAB
 ********************************************
 *** Address-table for Menu
 PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW
+.if COLORS
 	DFW fBLANK,DECOL1,INCOL1,INPT,DECOL2,INCOL2	
-*	DFW fBLANK,INPT,INPT,INPT,INPT,INPT
 	DFW INPT,INPT,LBRACK,RBRACK
+.else
+	DFW fBLANK,INPT,INPT,INPT,INPT,INPT
+	DFW INPT,INPT,INPT,INPT
+.endif	
 	DFW fSTAR,fPL,fCOMMA,fMI,fPERIOD,fSLASH
 	DFW f6to0,f1to5,f1to5,f1to5,f1to5,f1to5
 	DFW f6to0,f6to0,f6to0,f6to0,YY
@@ -1096,7 +1103,8 @@ PICTAB	DFW fESC,fARROW,fARROW,fARROW,fARROW
 	DFW RReADR,SSAVE,TTRACE,UUTILITY,0
 * one-line-flag
 OLNFG	DFB 0
-*#
+
+.if COLORS
 DECOL1	DEC PKT
 	DEC PKT
 	JMP DSI
@@ -1118,9 +1126,9 @@ RBRACK	LDA COLOR2
 	SBC #16
 	STA PKT+1
 	JMP DSI
+.endif	
 	
-	
-*#
+
 *** Trace next lines ***
 fBLANK	INC TF
 	MovAW AD,ADV
@@ -4737,9 +4745,11 @@ loop	LDA DLB-1,Y
 PRMEN	PRINT
 	DFB CLS
 	ASC "/ . RET BRK  + - = *  <  > ?"
-	ASC " ; , (0..9) "! "
-*	DFB '"'
+	ASC " ; , (0..9) "
+
+.if COLORS
 	ASC /!" $% ()/
+.endif
 	DFB 0
 	RTS
 *** Device placeholder
