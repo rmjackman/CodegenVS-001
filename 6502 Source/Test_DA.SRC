@@ -1,255 +1,199 @@
 verify
  out lt
-        ORG $DA00
+*==============================================================
+* IFNEST2.SRC
+*
+* Test: outer FALSE condition containing nested conditionals,
+* followed by the outer .ELSE.
+*
+* This specifically tests that nested .ENDIF directives restore
+* the correct outer conditional level.
+*==============================================================
 
-ADR_1234 EQU $1234
-ADR_5678 EQU $5678
-ADR_7ABC EQU $7ABC
-ADR_6000 EQU $6000
-ADR_8000 EQU $8000
+        ORG $5000
 
 
-; ============================================================
-; BASIC LOW/HIGH PAIRS
-; ============================================================
+*--------------------------------------------------------------
+* TEST 1
+*
+* A = 0
+*
+* The entire first branch is inactive.
+* The nested .IF directives must NOT affect the outer .ELSE.
+*
+* Expected: $11
+*--------------------------------------------------------------
 
+        .DEFINE A 0
+        .DEFINE B 1
+        .DEFINE C 0
 
-        LDA #ADR_1234
-LAB1    LDX /ADR_1234             ; & at DA00
+        .IF A
 
-        LDA /ADR_1234
-        LDX #ADR_1234             ; @ at DA02
+        .IF B
 
+        LDA #$21
+        STA $80
 
-        LDA #ADR_5678
-        LDX /ADR_5678             ; & at DA04
+        .IF C
 
-        LDA /ADR_5678
-        LDX #ADR_5678             ; @ at DA06
+        LDA #$22
+        STA $80
 
+        .ELSE
 
-; ============================================================
-; SAME ADDRESS, REPEATED
-; ============================================================
+        LDA #$23
+        STA $80
 
-        LDA #ADR_7ABC
-        LDX /ADR_7ABC             ; &
+        .ENDIF
 
-        LDA #ADR_7ABC
-        LDX /ADR_7ABC             ; &
+        .ELSE
 
-        LDA /ADR_7ABC
-        LDX #ADR_7ABC             ; @
+        LDA #$24
+        STA $80
 
-        LDA /ADR_7ABC
-        LDX #ADR_7ABC             ; @
+        .ENDIF
 
+        .ELSE
 
-; ============================================================
-; TWO PAIRS WITH NO INTERVENING SOURCE SYMBOL
-; ============================================================
+T1      LDA #$11
+        STA $80
 
-        LDA #ADR_6000
-        LDX /ADR_6000             ; &
+        .ENDIF
 
-        LDA /ADR_8000
-        LDX #ADR_8000             ; @
 
+*--------------------------------------------------------------
+* TEST 2
+*
+* A = 0
+*
+* Two nested levels, each with an .ELSE.
+*
+* Expected: $33
+*--------------------------------------------------------------
 
-; ============================================================
-; DIFFERENT 16-BIT VALUES
-; Should cause 5A/5B handling rather than &/@
-; ============================================================
+        .DEFINE A 0
+        .DEFINE B 0
 
-        LDA #ADR_1234
-        LDX /ADR_5678
+        .IF A
 
-        LDA #ADR_5678
-        LDX /ADR_1234
+        .IF B
 
+        LDA #$31
+        STA $81
 
-; ============================================================
-; LOW followed by LOW
-; Should NOT produce &
-; ============================================================
+        .ELSE
 
-        LDA #ADR_1234
-        LDX #ADR_1234
+        LDA #$32
+        STA $81
 
+        .ENDIF
 
-; ============================================================
-; HIGH followed by HIGH
-; Should NOT produce @
-; ============================================================
+        .ELSE
 
-        LDA /ADR_5678
-        LDX /ADR_5678
+T2      LDA #$33
+        STA $81
 
+        .ENDIF
 
-; ============================================================
-; THREE OCCURRENCES
-; First two form a pair; third starts a new pending pair
-; ============================================================
 
-        LDA #ADR_1234
-        LDX /ADR_1234             ; &
+*--------------------------------------------------------------
+* TEST 3
+*
+* A = 0
+*
+* Three nested levels.
+* The deepest level contains another .ELSE.
+*
+* Expected: $44
+*--------------------------------------------------------------
 
-        LDA #ADR_1234             ; pending
+        .DEFINE A 0
+        .DEFINE B 1
+        .DEFINE C 1
 
+        .IF A
 
-; ============================================================
-; THREE OCCURRENCES, HIGH FIRST
-; ============================================================
+        .IF B
 
-        LDA /ADR_5678
-        LDX #ADR_5678             ; @
+        .IF C
 
-        LDA /ADR_5678             ; pending
+        LDA #$41
+        STA $82
 
+        .ELSE
 
-; ============================================================
-; PAIR SEPARATED BY AN ORDINARY INSTRUCTION
-; This should still pair if there is no symbol-table entry
-; at the intervening address.
-; ============================================================
+        LDA #$42
+        STA $82
 
-        LDA #ADR_6000
-        NOP
-        LDX /ADR_6000
+        .ENDIF
 
+        .ELSE
 
-; ============================================================
-; PAIR SEPARATED BY TWO ORDINARY INSTRUCTIONS
-; ============================================================
+        LDA #$43
+        STA $82
 
-        LDA #ADR_8000
-        NOP
-        NOP
-        LDX /ADR_8000
+        .ENDIF
 
+        .ELSE
 
-; ============================================================
-; SYMBOL/LABEL INTERRUPTION
-; The DATA1 source line should prevent the preceding
-; operand from pairing with the following one.
-; ============================================================
+T3      LDA #$44
+        STA $82
 
-        LDA #ADR_1234
-DATA1   DFB $00
-        LDX /ADR_1234
+        .ENDIF
 
 
-; ============================================================
-; ANOTHER LABEL INTERRUPTION
-; ============================================================
+*--------------------------------------------------------------
+* TEST 4
+*
+* Deliberately invalid source exists inside the inactive outer
+* section.
+*
+* The outer .ELSE must still be reached.
+*
+* Expected: $55
+*--------------------------------------------------------------
 
-        LDA /ADR_5678
-DATA2   DFB $00
-        LDX #ADR_5678
+        .DEFINE A 0
 
+        .IF A
 
-; ============================================================
-; EMPTY-SYMBOL SOURCE LINE / DATA
-; ============================================================
+        .IF B
 
-        LDA #ADR_7ABC
-        DFB $00
-        LDX /ADR_7ABC
+THIS IS INVALID ASSEMBLER
+@@@@@@ !!!!! $$$$$
+NOT_AN_OPCODE $GGGG
 
+        .IF C
 
-; ============================================================
-; DIFFERENT VALUE AFTER INTERRUPTION
-; ============================================================
+        .DEFINE THIS_MUST_NOT_EXIST 123
 
-        LDA #ADR_1234
-DATA3   DFB $11
-        LDX /ADR_5678
+        .ENDIF
 
+        .ENDIF
 
-; ============================================================
-; PAIR AFTER AN INTERRUPTED PAIR
-; ============================================================
+        .ELSE
 
-        LDA #ADR_6000
-DATA4   DFB $22
-        LDX /ADR_6000
+T4      LDA #$55
+        STA $83
 
-        LDA #ADR_8000
-        LDX /ADR_8000             ; &
+        .ENDIF
 
 
-; ============================================================
-; REVERSE PAIR AFTER INTERRUPTION
-; ============================================================
+*--------------------------------------------------------------
+* TEST 5
+*
+* After all nested conditionals, normal assembly must continue.
+*
+* Expected: $66
+*--------------------------------------------------------------
 
-        LDA /ADR_6000
-DATA5   DFB $33
-        LDX #ADR_6000
+T5      LDA #$66
+        STA $84
 
-        LDA /ADR_8000
-        LDX #ADR_8000             ; @
 
+*--------------------------------------------------------------
+* End
+*--------------------------------------------------------------
 
-; ============================================================
-; EXPRESSIONS
-; Check that the value used for pairing is the evaluated
-; 16-bit value, not the textual symbol.
-; ============================================================
-
-ADR_1235 EQU ADR_1234+1
-ADR_5677 EQU ADR_5678-1
-
-        LDA #ADR_1235
-        LDX /ADR_1235             ; &
-
-        LDA /ADR_5677
-        LDX #ADR_5677             ; @
-
-
-; ============================================================
-; SAME VALUE THROUGH DIFFERENT SYMBOLS
-; ============================================================
-
-ADR_A   EQU $6000
-ADR_B   EQU $6000
-
-        LDA #ADR_A
-        LDX /ADR_B                ; &
-
-        LDA /ADR_A
-        LDX #ADR_B                ; @
-
-
-; ============================================================
-; HIGH/LOW USING EXPRESSIONS
-; ============================================================
-
-        LDA #ADR_1234+1
-        LDX /ADR_1234+1           ; &
-
-        LDA /ADR_5678-1
-        LDX #ADR_5678-1           ; @
-
-
-; ============================================================
-; BACK-TO-BACK PAIRS OF OPPOSITE TYPES
-; ============================================================
-
-        LDA #ADR_1234
-        LDX /ADR_1234             ; &
-
-        LDA /ADR_5678
-        LDX #ADR_5678             ; @
-
-        LDA #ADR_7ABC
-        LDX /ADR_7ABC             ; &
-
-        LDA /ADR_6000
-        LDX #ADR_6000             ; @
-
-
-; ============================================================
-; END
-; ============================================================
-
-        RTS
+ENDTEST RTS

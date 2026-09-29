@@ -742,7 +742,7 @@ int skip_line_numbers_flg = 0;
 #if NEW_DIRECT_ADDRESSING		
 int16_t pc_sav1 = 0;
 bool lo_fg_sav = 0;
-bool first_NNsymbol_flg = 1;
+bool pending_NN_pair_flg = 0;
 
 #endif
 short lo_fg = 0;
@@ -1194,12 +1194,12 @@ int main(int argc, char* argv[]) {
 #define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 0
 #if HI_LO_INTERRUPT_AT_SYMTAB_ENTRY
 				if (pass == 2){
-					if (!first_NNsymbol_flg &&
+					if (pending_NN_pair_flg &&
 						next_entry_addr != 0 &&
 						pc == next_entry_addr) {
 
 						sr_5a_5b();
-						first_NNsymbol_flg = true;
+						pending_NN_pair_flg = false;
 					}
 				}
 #endif
@@ -2690,13 +2690,13 @@ int main(int argc, char* argv[]) {
 
 						if (intval > 255) {
 
-							if (first_NNsymbol_flg) {
+							if (!pending_NN_pair_flg) {
 
 								intval_sav = intval;
 								pc_sav1 = pc;
 								lo_fg_sav = lo_fg;
 
-								first_NNsymbol_flg = false;
+								pending_NN_pair_flg = true;
 
 							}
 							else {
@@ -2710,7 +2710,7 @@ int main(int argc, char* argv[]) {
 									pc_sav1 = pc;
 									lo_fg_sav = lo_fg;
 
-									first_NNsymbol_flg = false;
+									pending_NN_pair_flg = true;
 								}
 								else {
 									if (lo_fg_sav)
@@ -2718,7 +2718,7 @@ int main(int argc, char* argv[]) {
 									else
 										sectyp_at(pc_sav1, '@');
 
-									first_NNsymbol_flg = true;
+									pending_NN_pair_flg = false;
 								}
 							}
 						}
@@ -2806,10 +2806,10 @@ int main(int argc, char* argv[]) {
 
 								char tp = (lo_fg) ? '&' : '@';
 
-								if (first_NNsymbol_flg) {
+								if (!pending_NN_pair_flg) {
 									sectyp(tp);
 								}
-								first_NNsymbol_flg = !first_NNsymbol_flg;
+								pending_NN_pair_flg = !pending_NN_pair_flg;
 
 #endif
 							}
@@ -4728,10 +4728,10 @@ void sectyp(char line_type) {
 		section_type = line_type;
 
 		if (pass == 2) {
-			if (!first_NNsymbol_flg) {
+			if (pending_NN_pair_flg && pc != pc_sav1 + 2) {
 
 				sr_5a_5b();
-				first_NNsymbol_flg = true;
+				pending_NN_pair_flg = false;
 			}
 		}
 
