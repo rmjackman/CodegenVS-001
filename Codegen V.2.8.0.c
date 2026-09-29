@@ -4728,7 +4728,7 @@ void sectyp(char line_type) {
 		section_type = line_type;
 
 		if (pass == 2) {
-			if (pending_NN_pair_flg && pc != pc_sav1 + 2) {
+			if (pending_NN_pair_flg /* && pc != pc_sav1*/) {
 
 				sr_5a_5b();
 				pending_NN_pair_flg = false;
