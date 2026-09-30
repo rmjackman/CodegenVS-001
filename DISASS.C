@@ -978,7 +978,7 @@ void adnmw2(uint16_t ska) {
 
 	if (sss[isav].ofst > 0 &&
 		ska >= sss[isav].symadr &&
-		ska - sss[isav].symadr <= (uint8_t)sss[isav].ofst) {
+		ska - sss[isav].symadr <= sss[isav].ofst) {
 
 		/* Positive offset: SYMBOL+1 ... SYMBOL+ofst */
 
@@ -992,15 +992,15 @@ void adnmw2(uint16_t ska) {
 		pts_p("%X", offset);
 	}
 
-	else if (sss[i].ofst < 0 &&
-		ska <= sss[i].symadr &&
-		sss[i].symadr - ska <= -(int)sss[i].ofst & 127) {
+	else if (sss[isav].ofst < 0 &&
+		ska <= sss[isav].symadr &&
+		sss[isav].symadr - ska <= -(int)sss[isav].ofst) {
 
 		/* Negative offset: SYMBOL-1 ... SYMBOL-n */
 
-		offset = sss[i].symadr - ska;
+		offset = sss[isav].symadr - ska;
 
-		pts_p("%s-", sss[i].symbol);
+		pts_p("%s-", sss[isav].symbol);
 
 		if (offset > 9)
 			ptc('$');
@@ -1010,11 +1010,13 @@ void adnmw2(uint16_t ska) {
 
 	else {
 		/* No applicable symbol offset */
+
 		if (ska > 9)
 			ptc('$');
 
 		pts_p("%X", ska);
 	}
+
 
 #else
 

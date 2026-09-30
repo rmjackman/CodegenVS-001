@@ -140,7 +140,7 @@ TV	EPZ $9E
 GTC	EPZ $A0	Main menu get char(A-U, f.keys)
 HF	EPZ $A1
 LSsav	EPZ $A2
-STABEPZ	EPZ $A3
+
 
 ZF	EPZ $A7	head flag
 CONSTFG	EPZ $A8	constants flag eg. COPN EQU 3
@@ -213,10 +213,10 @@ COLDST	EQU $244
 TABMAP	EQU $2A3
 INVFLG	EQU $2B6
 SHFLOK	EQU $2BE
-COLOR0	EQU $2C4
+*COLOR0	EQU $2C4
 COLOR1	EQU $2C5
 COLOR2	EQU $2C6
-COLOR3	EQU $2C7
+*COLOR3	EQU $2C7
 COLOR4	EQU $2C8
 KRPDEL	EQU $2D9
 KEYREP	EQU $2DA
@@ -3151,7 +3151,7 @@ endif	LDA DFG		write to disk?
 	LDA PRF		to Atari printer
 	BEQ PRND
 
-PRLA	MovlB ROWCRS,19	Atari Printer. Get line from screen
+	MovlB ROWCRS,19	Atari Printer. Get line from screen
 	LDX #$20		E:
 	MovlBX ICAX1,13
 	ICBadrl LN		set address to LN
@@ -5590,7 +5590,7 @@ loop	CKCONSTY
 	  LDA (ADR1),Y
 	  PHB
 	  WHeadCmt	SGEN412
-+	  PRL
+	  PRL
 	  AddaB ADR1,ADR1OF
 	  JMP loop
 

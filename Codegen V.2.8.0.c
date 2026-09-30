@@ -928,8 +928,7 @@ int main(int argc, char* argv[]) {
 		char tmptyp;
 		fpos_t pos1;
 		bool star_flg = 0;
-		uint16_t next_entry_addr = NULL;
-
+		
 		bool li_flg = 0;
 
 		if (verif_flg == 0) {
@@ -1190,19 +1189,6 @@ int main(int argc, char* argv[]) {
 					include_flg = 0;
 					skip_line_numbers();
 				}
-
-#define HI_LO_INTERRUPT_AT_SYMTAB_ENTRY 0
-#if HI_LO_INTERRUPT_AT_SYMTAB_ENTRY
-				if (pass == 2){
-					if (pending_NN_pair_flg &&
-						next_entry_addr != 0 &&
-						pc == next_entry_addr) {
-
-						sr_5a_5b();
-						pending_NN_pair_flg = false;
-					}
-				}
-#endif
 
 				/*********** Print line to LIS file if requested*************/
 
@@ -3130,8 +3116,8 @@ int main(int argc, char* argv[]) {
 				 */
 				if (differing_types) {
 
-					printf("WARNING -- different section types for "
-						"address $%04X\n", sss[i].symadr);
+					printf("WARNING -- differing section types '%c' and '%c' for "
+						"address $%04X\n", sectype, sss[j].symtyp, sss[i].symadr);
 				}
 
 
@@ -5052,10 +5038,11 @@ void sourcgen_symtab() {
 		perror("Error writing to file");
 	int i;
 	for (i = 0; i < symnum; i++) {
+		fprintf(stream2, "%x ", i);
 		if (sss[i].symtyp)
 			fprintf(stream2, "%c ", sss[i].symtyp);
 		else fprintf(stream2, "  ");
-		fprintf(stream2, "%x %d ",i, sss[i].ofst);
+		fprintf(stream2, "%d ",sss[i].ofst);
 		//if (sss[i].comment[0])
 			//fprintf(stream2, "*** %s\n", sss[i].comment);
 		list_label_f2(i);

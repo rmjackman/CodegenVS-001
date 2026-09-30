@@ -1,199 +1,143 @@
 verify
  out lt
-*==============================================================
-* IFNEST2.SRC
-*
-* Test: outer FALSE condition containing nested conditionals,
-* followed by the outer .ELSE.
-*
-* This specifically tests that nested .ENDIF directives restore
-* the correct outer conditional level.
-*==============================================================
+        ORG $4000
+
+; ============================================================
+; 1. FIRST LINE HAS LABEL, SECOND LINE NO LABEL
+;    Expected: &/@
+;
+;    YL1 is at $5000
+; ============================================================
+
+T1:     LDA #YL1
+        LDA #YL1:HI
+
+
+; ============================================================
+; 2. FIRST LINE NO LABEL, SECOND LINE NO LABEL
+;    Expected: &/@
+;
+;    YL2 is at $5001
+; ============================================================
+
+        LDA #YL2
+        LDA #YL2:HI
+
+
+; ============================================================
+; 3. FIRST LINE HAS LABEL, INTERVENING LABEL
+;    Expected: sr_5a_5b
+;
+;    YL3 is at $5002
+; ============================================================
+
+T3:     LDA #YL3
+
+MID3:   NOP
+
+        LDA #YL3:HI
+
+
+; ============================================================
+; 4. FIRST LINE NO LABEL, INTERVENING LABEL
+;    Expected: sr_5a_5b
+;
+;    YL4 is at $5003
+; ============================================================
+
+        LDA #YL4
+
+MID4:   NOP
+
+        LDA #YL4:HI
+
+
+; ============================================================
+; 5. FIRST LINE HAS LABEL, SECOND LINE HAS LABEL
+;    Expected: sr_5a_5b
+;
+;    YL5 is at $5004
+; ============================================================
+
+T5:     LDA #YL5
+T5B:    LDA #YL5:HI
+
+
+; ============================================================
+; 6. FIRST LINE NO LABEL, SECOND LINE HAS LABEL
+;    Expected: sr_5a_5b
+;
+;    YL6 is at $5005
+; ============================================================
+
+        LDA #YL6
+T6B:    LDA #YL6:HI
+
+
+; ============================================================
+; 7. TWO INTERVENING LABELS
+;    Expected: sr_5a_5b
+;
+;    YL7 is at $5006
+; ============================================================
+
+T7:     LDA #YL7
+
+MID7A:  NOP
+MID7B:  NOP
+
+        LDA #YL7:HI
+
+
+; ============================================================
+; 8. HI FIRST, LO SECOND, NO LABEL AFTER FIRST ADDRESS
+;    Expected: &/@
+;
+;    YL8 is at $5007
+; ============================================================
+
+T8:     LDA #YL8:HI
+        LDA #YL8
+
+
+; ============================================================
+; 9. HI FIRST, INTERVENING LABEL
+;    Expected: sr_5a_5b
+;
+;    YL9 is at $5008
+; ============================================================
+
+T9:     LDA #YL9:HI
+
+MID9:   NOP
+
+        LDA #YL9
+
+
+; ============================================================
+; 10. HI FIRST, SECOND LINE HAS LABEL
+;     Expected: sr_5a_5b
+;
+;     YL10 is at $5009
+; ============================================================
+
+T10:    LDA #YL10:HI
+T10B:   LDA #YL10
+
+
+; ============================================================
+; TARGET LABELS
+; ============================================================
 
         ORG $5000
 
-
-*--------------------------------------------------------------
-* TEST 1
-*
-* A = 0
-*
-* The entire first branch is inactive.
-* The nested .IF directives must NOT affect the outer .ELSE.
-*
-* Expected: $11
-*--------------------------------------------------------------
-
-        .DEFINE A 0
-        .DEFINE B 1
-        .DEFINE C 0
-
-        .IF A
-
-        .IF B
-
-        LDA #$21
-        STA $80
-
-        .IF C
-
-        LDA #$22
-        STA $80
-
-        .ELSE
-
-        LDA #$23
-        STA $80
-
-        .ENDIF
-
-        .ELSE
-
-        LDA #$24
-        STA $80
-
-        .ENDIF
-
-        .ELSE
-
-T1      LDA #$11
-        STA $80
-
-        .ENDIF
-
-
-*--------------------------------------------------------------
-* TEST 2
-*
-* A = 0
-*
-* Two nested levels, each with an .ELSE.
-*
-* Expected: $33
-*--------------------------------------------------------------
-
-        .DEFINE A 0
-        .DEFINE B 0
-
-        .IF A
-
-        .IF B
-
-        LDA #$31
-        STA $81
-
-        .ELSE
-
-        LDA #$32
-        STA $81
-
-        .ENDIF
-
-        .ELSE
-
-T2      LDA #$33
-        STA $81
-
-        .ENDIF
-
-
-*--------------------------------------------------------------
-* TEST 3
-*
-* A = 0
-*
-* Three nested levels.
-* The deepest level contains another .ELSE.
-*
-* Expected: $44
-*--------------------------------------------------------------
-
-        .DEFINE A 0
-        .DEFINE B 1
-        .DEFINE C 1
-
-        .IF A
-
-        .IF B
-
-        .IF C
-
-        LDA #$41
-        STA $82
-
-        .ELSE
-
-        LDA #$42
-        STA $82
-
-        .ENDIF
-
-        .ELSE
-
-        LDA #$43
-        STA $82
-
-        .ENDIF
-
-        .ELSE
-
-T3      LDA #$44
-        STA $82
-
-        .ENDIF
-
-
-*--------------------------------------------------------------
-* TEST 4
-*
-* Deliberately invalid source exists inside the inactive outer
-* section.
-*
-* The outer .ELSE must still be reached.
-*
-* Expected: $55
-*--------------------------------------------------------------
-
-        .DEFINE A 0
-
-        .IF A
-
-        .IF B
-
-THIS IS INVALID ASSEMBLER
-@@@@@@ !!!!! $$$$$
-NOT_AN_OPCODE $GGGG
-
-        .IF C
-
-        .DEFINE THIS_MUST_NOT_EXIST 123
-
-        .ENDIF
-
-        .ENDIF
-
-        .ELSE
-
-T4      LDA #$55
-        STA $83
-
-        .ENDIF
-
-
-*--------------------------------------------------------------
-* TEST 5
-*
-* After all nested conditionals, normal assembly must continue.
-*
-* Expected: $66
-*--------------------------------------------------------------
-
-T5      LDA #$66
-        STA $84
-
-
-*--------------------------------------------------------------
-* End
-*--------------------------------------------------------------
-
-ENDTEST RTS
+YL1:    NOP
+YL2:    NOP
+YL3:    NOP
+YL4:    NOP
+YL5:    NOP
+YL6:    NOP
+YL7:    NOP
+YL8:    NOP
+YL9:    NOP
+YL10:   NOP
