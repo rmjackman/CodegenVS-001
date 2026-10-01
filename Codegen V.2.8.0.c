@@ -31,6 +31,7 @@
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
+#define DETERMINE_IF_CONSTANT_NEW 1 // Constants are determined through context in opc # instead of EQU vs. EPZ
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -932,7 +933,7 @@ int main(int argc, char* argv[]) {
 		bool star_flg = 0;
 		
 		bool li_flg = 0;
-		int first_adr_symnum;
+		int first_adr_symnum = 0;
 
 		if (verif_flg == 0) {
 
@@ -1898,12 +1899,18 @@ int main(int argc, char* argv[]) {
 								sss[symnum].symadr = i;
 
 								if (_stricmp(opcode, "EQU") == 0) {
-									if (i < 256)
+									if (i < 256) {
 #if SORT_EQU_EPZ
 										sss[symnum].symtyp = ']';
 #else
 										sss[symnum].symtyp = '#';
+
 #endif
+
+#if DETERMINE_IF_CONSTANT_NEW
+										sss[symnum].symtyp = '#';
+#endif
+									}
 #if EQU_IN_SECTION
 									else
 										sss[symnum].symtyp = '{';
@@ -2652,6 +2659,18 @@ int main(int argc, char* argv[]) {
 							symfg &&
 							syms_in_expr == 1) {
 
+#if DETERMINE_IF_CONSTANT_NEW
+							for (i = 0; i < symnum; i++) {
+
+								if (sss[i].symadr == intval &&
+									strstr(operand, sss[i].symbol) != NULL) {
+
+									sss[i].symtyp = ']';
+									sectyp('[');
+									break;
+								}
+							}
+#else
 							for (i = 0; i < symnum; i++) {
 
 								if (sss[i].symadr == intval &&
@@ -2661,7 +2680,7 @@ int main(int argc, char* argv[]) {
 									break;
 								}
 							}
-
+#endif
 							if (i == symnum)
 								sectyp('(');
 						}
@@ -3001,7 +3020,7 @@ int main(int argc, char* argv[]) {
 
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 #if SORT_EQU_EPZ
-			first_adr_symnum = first_adr_symnum = sort_equ_epz();
+			first_adr_symnum = sort_equ_epz();
 #endif // SORT_EQU_EPZ
 			
 		} 
