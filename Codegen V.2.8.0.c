@@ -21,7 +21,7 @@
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr before starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See cdgn_global.h for examples.
-#define SORT_EQU_EPZ 0		//Place EQU constants before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
+#define SORT_EQU_EPZ 1		//Place EQU constants before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
@@ -85,6 +85,8 @@ void skip_line_numbers();
 int is_in_string(char* start, char* pos);
 void sr_5a_5b();
 void print_symbol_table();
+int sort_equ_epz();
+
 
 short pass = 0;
 
@@ -930,6 +932,7 @@ int main(int argc, char* argv[]) {
 		bool star_flg = 0;
 		
 		bool li_flg = 0;
+		int first_adr_symnum;
 
 		if (verif_flg == 0) {
 
@@ -2997,6 +3000,9 @@ int main(int argc, char* argv[]) {
 #endif
 
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
+#if SORT_EQU_EPZ
+			first_adr_symnum = first_adr_symnum = sort_equ_epz();
+#endif // SORT_EQU_EPZ
 			
 		} 
 		
@@ -3008,35 +3014,7 @@ int main(int argc, char* argv[]) {
 
 
 
-#if SORT_EQU_EPZ
 
-			int scan;
-			int insert = 0;
-			int lastzp = 0;
-			ssstype ssstemp;
-
-			while (lastzp < symnum&& sss[lastzp].symadr <= 0xFF)
-				lastzp++;
-
-			lastzp--;
-
-			if (lastzp >= 0) {
-
-				for (scan = 0; scan <= lastzp; scan++) {
-
-					if (sss[scan].symtyp == ']') {
-
-						ssstemp = sss[scan];
-
-						for (i = scan; i > insert; i--)
-							sss[i] = sss[i - 1];
-
-						sss[insert++] = ssstemp;
-					}
-				}
-			}
-
-#endif // SORT_EQU_EPZ
 
 
 
@@ -3049,9 +3027,9 @@ int main(int argc, char* argv[]) {
 /* Remove unneeded symbols */
 
 			puts("");
-			symnum = 0;
+			symnum = first_adr_symnum;
 
-			for (i = 0; i < symnumext; i++) {
+			for (i = first_adr_symnum; i < symnumext; i++) {
 
 				int sectype = 0;
 				int differing_types = 0;
@@ -3091,7 +3069,7 @@ int main(int argc, char* argv[]) {
 				 * a warning.
 				 ****************************************************************/
 
-				for (j = 0; j < symnumext; j++) {
+				for (j = first_adr_symnum; j < symnumext; j++) {
 
 					if (sss[j].macf == MACRO)
 						continue;
@@ -3131,7 +3109,7 @@ int main(int argc, char* argv[]) {
 				 * address is encountered.
 				 ****************************************************************/
 
-				for (j = 0; j < symnum; j++) {
+				for (j = first_adr_symnum; j < symnum; j++) {
 
 					if (sss[j].symadr > sss[i].symadr)
 						break;
@@ -5167,3 +5145,37 @@ void print_symbol_table() {
 			sss[i].symbol);
 	}
 }
+
+#if SORT_EQU_EPZ
+int sort_equ_epz() {
+
+	int scan;
+	int insert = 0;
+	int lastzp = 0;
+	int i;
+	ssstype ssstemp;
+
+	while (lastzp < symnum&& sss[lastzp].symadr <= 0xFF)
+		lastzp++;
+
+	lastzp--;
+
+	if (lastzp >= 0) {
+
+		for (scan = 0; scan <= lastzp; scan++) {
+
+			if (sss[scan].symtyp == ']') {
+
+				ssstemp = sss[scan];
+
+				for (i = scan; i > insert; i--)
+					sss[i] = sss[i - 1];
+
+				sss[insert++] = ssstemp;
+			}
+		}
+	}
+	return insert;/* number of entries moved */
+}
+
+#endif // SORT_EQU_EPZ

@@ -21,7 +21,7 @@
 
 #define ASC_STRING_LENGTH 21 //23
 #define DFB_BYTES_PER_LINE 8
-#define SHOW_LO 0 // Show ':L'
+#define SHOW_LO 1 // Show ':L'
 
 //The following switches 1,2,3,5,6,7 correspond aproximately to the output menu switches in SOURCGEN
 #define PRINT_DISS_LINNUM 1		// 0. Set to 1 for correct line numbering in DBG and in MADS.LST files
