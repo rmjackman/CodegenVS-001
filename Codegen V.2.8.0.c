@@ -21,7 +21,6 @@
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr before starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See cdgn_global.h for examples.
-#define SORT_EQU_EPZ 1		//Place EQU constants before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
@@ -31,7 +30,10 @@
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
-#define DETERMINE_IF_CONSTANT_NEW 1 // Constants are determined through context in opc # instead of EQU vs. EPZ
+#define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
+#define CONST_BY_EQU_VS_EPZ 1		// Set to 0 for SOURCGEN 3.2
+#define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
+									// Set to 0 for SOURCGEN 3.2
 
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
@@ -1900,16 +1902,14 @@ int main(int argc, char* argv[]) {
 
 								if (_stricmp(opcode, "EQU") == 0) {
 									if (i < 256) {
-#if SORT_EQU_EPZ
+#if CONST_BY_EQU_VS_EPZ
 										sss[symnum].symtyp = ']';
 #else
-										sss[symnum].symtyp = '#';
+										sss[symnum].symtyp = '#'; // constant determined by EQU
 
 #endif
 
-#if DETERMINE_IF_CONSTANT_NEW
-										sss[symnum].symtyp = '#';
-#endif
+
 									}
 #if EQU_IN_SECTION
 									else
@@ -2658,19 +2658,8 @@ int main(int argc, char* argv[]) {
 							intval < 256 &&
 							symfg &&
 							syms_in_expr == 1) {
-
-#if DETERMINE_IF_CONSTANT_NEW
-							for (i = 0; i < symnum; i++) {
-
-								if (sss[i].symadr == intval &&
-									strstr(operand, sss[i].symbol) != NULL) {
-
-									sss[i].symtyp = ']';
-									sectyp('[');
-									break;
-								}
-							}
-#else
+#if CONST_BY_EQU_VS_EPZ							
+							//constants determined by EQU
 							for (i = 0; i < symnum; i++) {
 
 								if (sss[i].symadr == intval &&
@@ -2681,6 +2670,26 @@ int main(int argc, char* argv[]) {
 								}
 							}
 #endif
+#if CONST_BY_IMMEDIATE_ADDR
+							for (i = 0; i < symnum; i++) {
+
+								if (sss[i].symadr == intval &&
+									strstr(operand, sss[i].symbol) != NULL) {
+#if CONST_BY_EQU_VS_EPZ
+									if (sss[i].symtyp != ']') {
+										printf(BYELLOW "\nWarning:" YELLOW " Zero page symbol " BYELLOW "%s" YELLOW ", defined using EPZ,\n ", operand);
+										printf("used in immediate addressing at" BYELLOW " line %i\n" RESET, linnum);
+									}
+#endif
+									sss[i].symtyp = ']';
+									sss[i].ofst = 1; // use offset byte to indicate at least one reference
+									sectyp('[');
+									break;
+								}
+							}
+
+#endif 
+
 							if (i == symnum)
 								sectyp('(');
 						}
@@ -3027,7 +3036,16 @@ int main(int argc, char* argv[]) {
 		
 /***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
 
+		for (size_t i = 0; i < first_adr_symnum; i++) {
+			if (sss[i].ofst == 0) {
+				printf(BYELLOW "Warning:" YELLOW "The single-byte constant " BYELLOW " % s" YELLOW ", defined using EQU,\n", sss[i].symbol);
+				printf("was possibly not used in any immediate-adressing statement.\n" RESET);
+			}
 
+		}
+		
+		
+		
 		if (verif_flg == 0 || verif_flg == 1) {
 
 
@@ -3113,8 +3131,8 @@ int main(int argc, char* argv[]) {
 				 */
 				if (differing_types) {
 
-					printf("WARNING -- differing section types '%c' and '%c' for "
-						"address $%04X\n", sectype, sss[j].symtyp, sss[i].symadr);
+					printf(BYELLOW "WARNING -- differing section types '%c' and '%c' for "
+						"address $%04X\n" RESET, sectype, sss[j].symtyp, sss[i].symadr);
 				}
 
 

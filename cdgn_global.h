@@ -25,8 +25,8 @@
 //#define SRC_FILENAME "C:\\Users\\Lloyd\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
-#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
+#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 #define EQU_IN_SECTION 1
@@ -142,3 +142,17 @@ void dbg_sym(DbgContext* ctx,
 void dbg_close(DbgContext* ctx);
 
 #endif /* DBG_H */
+
+#define RESET   "\x1b[0m"
+#define RED     "\x1b[31m"
+#define GREEN   "\x1b[32m"
+#define YELLOW  "\x1b[33m"
+#define BLUE    "\x1b[34m"
+#define MAGENTA "\x1b[35m"
+#define CYAN    "\x1b[36m"
+#define WHITE   "\x1b[37m"
+
+#define BRED    "\x1b[91m"
+#define BGREEN  "\x1b[92m"
+#define BYELLOW "\x1b[93m"
+#define BBLUE   "\x1b[94m"
