@@ -65,6 +65,7 @@ typedef struct {
 	char symtyp;
 	char word_or_byte;// 0 = byte, 1 = word
 	uint16_t frequency;
+    int8_t frequ_constant; // 0 = not used in any immediate addressing or DFB, 1 = used
 }	ssstype;
 
 ssstype sss[MAXSYMS];
