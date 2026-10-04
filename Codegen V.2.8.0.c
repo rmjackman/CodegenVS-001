@@ -34,7 +34,7 @@
 #define CONST_BY_EQU_VS_EPZ 1		// Set to 0 for SOURCGEN 3.2
 #define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
-#define NEW_SYMTOI1 1
+
 /**************************  define  *****************/
 #define MAX_BIN_SIZ 0x1ffff
 
@@ -748,7 +748,7 @@ int skip_line_numbers_flg = 0;
 int16_t pc_sav1 = 0;
 bool lo_fg_sav = 0;
 bool pending_NN_pair_flg = 0;
-int const_flg;
+int const_flg = 0;
 
 #endif
 short lo_fg = 0;
@@ -764,7 +764,7 @@ char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
 char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
 char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { {0} };
 
-
+ssstype* sssptr;
 
 
 ssstype	sss[MAXSYMS] = { 0 };
@@ -833,6 +833,7 @@ char current_global[MAX_LABEL_SIZE] = "";
 char stand_alone_label[MAX_LABEL_SIZE] = "";
 bool pc_overflow_flg = false;
 bool force_pc_listing_flg = 0;
+int skip_frequency = 0;
 
 /****************************    main()     ****************/
 
@@ -937,6 +938,8 @@ int main(int argc, char* argv[]) {
 		
 		bool li_flg = 0;
 		int first_adr_symnum = 0;
+
+		memset(sss, 0, sizeof sss);
 
 		if (verif_flg == 0) {
 
@@ -2638,10 +2641,13 @@ int main(int argc, char* argv[]) {
 						(operand[1] == '>' || operand[1] == '<'))
 						txtptr++;
 #endif
+					if (!pending_NN_pair_flg) 
+						const_flg = 1;
 
 					intval = expresstoi_p2();
-					if (intval <256 && symfg && syms_in_expr == 1)
-						const_flg = 1;
+
+					const_flg = 0;
+											
 					uint8_t nn_byte = (uint8_t)intval;
 
 					if (operand[0] == '#' &&
@@ -2684,8 +2690,9 @@ int main(int argc, char* argv[]) {
 										printf("used in immediate addressing at" BYELLOW " line %i\n" RESET, linnum);
 									}
 #endif
+									
 									sss[i].symtyp = ']';
-									sss[i].frequ_constant++; // use status byte to indicate at least one immediate addressing of this symbol
+									
 									sectyp('[');
 									break;
 								}
@@ -2749,7 +2756,7 @@ int main(int argc, char* argv[]) {
 
 					toxlbuf((char)data[cnt][NN]);
 					toxlbuf(nn_byte);
-					const_flg = 0;
+					
 					continue;
 				}
 
@@ -3041,11 +3048,11 @@ int main(int argc, char* argv[]) {
 
 #if CONST_BY_EQU_VS_EPZ && CONST_BY_IMMEDIATE_ADDR
 		for (size_t i = 0; i < first_adr_symnum; i++) {// Test single-byte constants
-			printf(YELLOW "%s frequ_constant = %d frequency = %d\n" RESET,sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
-			if (sss[i].frequ_constant == 0) {
+			printf(BYELLOW "%s i=%d frequ_constant = %d frequency = %d\n" RESET,sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
+			/*if (sss[i].frequ_constant == 0) {
 				printf(BYELLOW "Warning:" YELLOW "The single-byte constant " BYELLOW " % s" YELLOW ", defined using EQU,\n", sss[i].symbol);
 				printf("was possibly not used in any immediate-adressing statement.\n" RESET);
-			}
+			}*/
 
 		}
 #endif		
@@ -4202,19 +4209,19 @@ uint32_t expresstoi_p2() {
 					  If evaluation is not possible, the value returned is NOTFOUND
 					  */
 
-
 uint32_t symtoi1() {
 	char strbeg[MAX_LABEL_SIZE] = { 0 };
 	char* ptr;
 	char ch = 0;
 	unsigned int i = 0, chrcnt = 0;
+	uint32_t result;
 	ssstype* sssptr;
 	bool unary_LT = 0;
 	bool unary_GT = 0;
+
 	ptr = strbeg;
 	ch = *txtptr;
 	symfg = 0;
-
 
 
 	if (ch == '*')					/* *:program counter) */
@@ -4223,103 +4230,177 @@ uint32_t symtoi1() {
 		return(pc);
 	}
 
-	if (ch == '#') {				//  skip '#'
+	if (ch == '#') {				// skip '#'
 		txtptr++;
 		ch = *txtptr;
 	}
+
 #if !ATMAS_II_COMPATIBLE
 
-
 	if (ch == '<') {
+		unary_LT = 1;
 		txtptr++;
-		uint32_t result = symtoi1(strbeg);
-		result &= 0xFF;
-		return(result);
+		ch = *txtptr;
 	}
-	if (ch == '>') {
+	else if (ch == '>') {
+		unary_GT = 1;
 		txtptr++;
-		uint32_t result = symtoi1(strbeg);
-		result >>= 8;
-		return(result);
+		ch = *txtptr;
 	}
+
 #endif
-	if (isdigit(ch))				/*  :Decimal */
+
+	if (isdigit(ch))				/* :Decimal */
 	{
 		while (isdigit(*txtptr))
 			*ptr++ = *txtptr++;
 		*ptr = '\0';
-		return(atoi(strbeg));
+
+		result = atoi(strbeg);
+
+#if !ATMAS_II_COMPATIBLE
+		if (unary_LT)
+			result &= 0xFF;
+		else if (unary_GT)
+			result >>= 8;
+#endif
+
+		return(result);
 	}
-	if (ch == '%')					/*  %:Binary */
+
+	if (ch == '%')					/* %:Binary */
 	{
 		txtptr++;
-		if (!(*txtptr == '0' || *txtptr == '1')) error("Binary digit 0 or 1 expected.");
+
+		if (!(*txtptr == '0' || *txtptr == '1'))
+			error("Binary digit 0 or 1 expected.");
+
 		ch = 0;
 		chrcnt = 1;
+
 		while (*txtptr == '0' || *txtptr == '1') {
-			if (chrcnt++ > 8) error("Too many binary digits. Maximum number of digits is 8. e.g. %10010011");
+			if (chrcnt++ > 8)
+				error("Too many binary digits. Maximum number of digits is 8. e.g. %10010011");
+
 			ch <<= 1;
 			ch += *txtptr++ - '0';
 		}
-		return(ch);
+
+		result = ch;
+
+#if !ATMAS_II_COMPATIBLE
+		if (unary_LT)
+			result &= 0xFF;
+		else if (unary_GT)
+			result >>= 8;
+#endif
+
+		return(result);
 	}
-	if (ch == '$')					/*  $:Hex */
+
+	if (ch == '$')					/* $:Hex */
 	{
 		txtptr++;
-		if (isxdigit(*txtptr) == 0) error("Hexidecimal digit expected");
+
+		if (isxdigit(*txtptr) == 0)
+			error("Hexidecimal digit expected");
+
 		chrcnt = 1;
+
 		while (isxdigit(*txtptr)) {
-			if (chrcnt++ > 4) error("Too many hexdecimal digits. Maximum number of digits is 4 eg. $1234.");
+			if (chrcnt++ > 4)
+				error("Too many hexdecimal digits. Maximum number of digits is 4 eg. $1234.");
+
 			*ptr++ = *txtptr++;
 		}
+
 		*ptr = '\0';
-		if (sscanf_s(strbeg, "%x", &i) < 0) err("scanning string.");
-		return(i);
+
+		if (sscanf_s(strbeg, "%x", &i) < 0)
+			err("scanning string.");
+
+		result = i;
+
+#if !ATMAS_II_COMPATIBLE
+		if (unary_LT)
+			result &= 0xFF;
+		else if (unary_GT)
+			result >>= 8;
+#endif
+
+		return(result);
 	}
-	if (*txtptr == '\'')			/*  ':ASCII character */
+
+	if (*txtptr == '\'')			/* ':ASCII character */
 	{
 		txtptr++;
-		ch = *txtptr++;
+		result = (unsigned char)*txtptr++;
+
 		if (*txtptr == '\'')
 			txtptr++;
-		return(ch);
+
+#if !ATMAS_II_COMPATIBLE
+		if (unary_LT)
+			result &= 0xFF;
+		else if (unary_GT)
+			result >>= 8;
+#endif
+
+		return(result);
 	}
 
 	switch (ch) {
-	case '+': strcpy_s(strbeg, sizeof(strbeg), "plus"); break;
-	case '-': strcpy_s(strbeg, sizeof(strbeg), "minus"); break;
-	default: //label
-		if (isspace(*txtptr)) error("Ilegal space, tab, or end of line");
+
+	case '+':
+		strcpy_s(strbeg, sizeof(strbeg), "plus");
+		break;
+
+	case '-':
+		strcpy_s(strbeg, sizeof(strbeg), "minus");
+		break;
+
+	default:						// label
+
+		if (isspace(*txtptr))
+			error("Ilegal space, tab, or end of line");
+
 #if ATMAS_II_COMPATIBLE
+
 		if (!(isalpha(*txtptr)))
 			error("Label must begin with a letter");
+
 		while (isalnum(*txtptr))
 			*ptr++ = (char)(*txtptr++);
-		*ptr = '\0';//label
+
+		*ptr = '\0';				// label
+
 #else
+
 		if (!(isalpha(*txtptr) || *txtptr == '.'))
 			error("Label must begin with a letter or period");
+
 		while (isalnum(*txtptr) || *txtptr == '.' || *txtptr == '_')
 			*ptr++ = *txtptr++;
 
-		*ptr = '\0';//label
+		*ptr = '\0';				// label
+
 #endif
 	}
 
-	//printf ("opcode: %s\tstrbeg: %s\n",operand,strbeg);
+	//printf ("opcode: %s\tstrbeg: %s\n",operand, strbeg);
 
 	if (pass == 1) {
-		if (find_symad_flg) {
 
+		if (find_symad_flg) {
 			return(symtoi3(strbeg));
 		}
 	}
 	else /* pass == 2 */
 	{
 
-
 #if !ATMAS_II_COMPATIBLE
-		if (*strbeg == '.') { // local label, must be appended to previous global label
+
+		if (*strbeg == '.') {		// local label, must be appended to previous global label
 			char temp[MAX_LABEL_SIZE];
 
 			strcpy_s(temp, sizeof(temp), strbeg);
@@ -4330,46 +4411,93 @@ uint32_t symtoi1() {
 			strcpy_s(strbeg, MAX_LABEL_SIZE, current_global);
 			strcat_s(strbeg, MAX_LABEL_SIZE, temp);
 		}
-#endif
-		if (_stricmp(strbeg, "do") == 0) sprintf_s(strbeg, sizeof(strbeg), "do%u", donum);
-		if (_stricmp(strbeg, "loop") == 0) sprintf_s(strbeg, sizeof(strbeg), "loop%u", loopnum);
-		if (_stricmp(strbeg, "minus") == 0) sprintf_s(strbeg, sizeof(strbeg), "minu%u", minusnum);
-		if (_stricmp(strbeg, "plus") == 0) sprintf_s(strbeg, sizeof(strbeg), "plus%u", plusnum);
-		if (_stricmp(strbeg, "skip") == 0) sprintf_s(strbeg, sizeof(strbeg), "skip%u", skipnum);
-		if (_stricmp(strbeg, "cont") == 0) sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
-		if (_stricmp(strbeg, "endif") == 0) sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
 
-		if ((sssptr = bsearch(strbeg, sss, symnum, sizeof(ssstype), _stricmp)) != 0) {
+#endif
+
+		if (_stricmp(strbeg, "do") == 0)
+			sprintf_s(strbeg, sizeof(strbeg), "do%u", donum);
+
+		if (_stricmp(strbeg, "loop") == 0)
+			sprintf_s(strbeg, sizeof(strbeg), "loop%u", loopnum);
+
+		if (_stricmp(strbeg, "minus") == 0)
+			sprintf_s(strbeg, sizeof(strbeg), "minu%u", minusnum);
+
+		if (_stricmp(strbeg, "plus") == 0)
+			sprintf_s(strbeg, sizeof(strbeg), "plus%u", plusnum);
+
+		if (_stricmp(strbeg, "skip") == 0)
+			sprintf_s(strbeg, sizeof(strbeg), "skip%u", skipnum);
+
+		if (_stricmp(strbeg, "cont") == 0)
+			sprintf_s(strbeg, sizeof(strbeg), "cont%u", contnum);
+
+		if (_stricmp(strbeg, "endif") == 0)
+			sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
+
+
+		if ((sssptr = bsearch(strbeg, sss, symnum,
+			sizeof(ssstype), _stricmp)) != 0) {
+
 			if (maclevel)
 				sssptr->macf = MACRO_LAB;
 			else
 				sssptr->macf = SYMBOL;
 
 			char* txtptr_tmp = txtptr;
-			if (*txtptr == '+' && (isdigit(txtptr[1]) || txtptr[1] == '$'))	//e.g. LDA SYMBOL+2
+
+			if (*txtptr == '+' &&
+				(isdigit(txtptr[1]) || txtptr[1] == '$'))	// e.g. LDA SYMBOL+2
 			{
-				uint8_t ofst_candidate = expresstoi(txtptr);					// e.g. SYMBOL+2-7+$10
-				if (ofst_candidate > sssptr->ofst && ofst_candidate < 128)		// if offset > than what is already set
-					sssptr->ofst = ofst_candidate;								// Set offset
+				uint8_t ofst_candidate = expresstoi(txtptr);		// e.g. SYMBOL+2-7+$10
+
+				if (ofst_candidate > sssptr->ofst &&
+					ofst_candidate < 128)						// if offset > than what is already set
+					sssptr->ofst = ofst_candidate;				// Set offset
 			}
-			else if ((*txtptr == '-') && (!isalpha(txtptr[1])))			//e.g. LDA SYMBOL-3
-				if ((signed char)(256 - (txtptr[1] - '0')) < sssptr->ofst)		// if offset < than what is already set
+
+			else if ((*txtptr == '-') &&
+				(!isalpha(txtptr[1])))							// e.g. LDA SYMBOL-3
+				if ((signed char)(256 - (txtptr[1] - '0')) < sssptr->ofst)
 					sssptr->ofst = (signed char)(256 - (txtptr[1] - '0')); // Set offset
 
+
 			txtptr = txtptr_tmp;
+
 			symfg = 1;
-			if (pass == 2)
-				sssptr->frequency++;
+
+			if (pass == 2 && !skip_frequency) {
+				sssptr->frequency++; // This is correct
+
+				if (const_flg) {
+					sssptr->frequ_constant++; // This is correct for DFB but not yet for opc #
+					const_flg = 0;
+				}
+			}
 			syms_in_expr++;
-			return(sssptr->symadr);
+
+			result = sssptr->symadr;
+
+#if !ATMAS_II_COMPATIBLE
+
+			if (unary_LT)
+				result &= 0xFF;
+			else if (unary_GT)
+				result >>= 8;
+
+#endif
+
+			return(result);
 		}
 		else {
 			error("label undefined");
 		}
 	}
+
 	return(NOTFOUND);
 }
 // end symtoi1
+
 
 /********* chkopc    returns the position (0, 1, 2,.. ) of opc in string
 						returns -1 if not found
@@ -4964,6 +5092,7 @@ bool contains_word_icase(const char* list, const char* word) {
 void emit_byte() {// emit bytes for DFB directive
 	
 	const_flg = 1;
+	
 	txtptr++;
 
 	if (*txtptr == '%') {
@@ -4974,8 +5103,10 @@ void emit_byte() {// emit bytes for DFB directive
 	}
 	else if (isalpha((unsigned char)*txtptr)) {// if symbol, check if it is a special character . or _
 		char* txtptr_save = txtptr;
+		skip_frequency = 1;
 		unsigned char byte = (unsigned char)symtoi1();
-
+		
+		skip_frequency = 0;
 		if (memchr(esc_ch_tab, byte, 16))
 			sectyp(',');
 		else
@@ -4989,6 +5120,9 @@ void emit_byte() {// emit bytes for DFB directive
 
 	toxlbuf((char)expresstoi_p2());
 	const_flg = 0;
+	//if (symfg && syms_in_expr == 1)
+		//sssptr->frequ_constant++;
+	
 }
 
 void emit_ascii_string() {

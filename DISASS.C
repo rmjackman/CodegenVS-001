@@ -34,7 +34,7 @@
 #define SHOW_JSR          1		// 7. 
 #define PRINT_OPC_BYTES   0		// 8.
 
-#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
+#define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.
 
 uint16_t seg_start_address;
 uint8_t* opcodeptr;
