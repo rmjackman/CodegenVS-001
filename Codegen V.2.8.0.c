@@ -749,6 +749,7 @@ int16_t pc_sav1 = 0;
 bool lo_fg_sav = 0;
 bool pending_NN_pair_flg = 0;
 int const_flg = 0;
+bool frequency_disabled = false;
 
 #endif
 short lo_fg = 0;
@@ -4454,8 +4455,13 @@ uint32_t symtoi1() {
 			if (*txtptr == '+' &&
 				(isdigit(txtptr[1]) || txtptr[1] == '$'))	// e.g. LDA SYMBOL+2
 			{
-				
+				bool old_frequency_disabled = frequency_disabled;
+
+				frequency_disabled = true;
+
 				uint8_t ofst_candidate = expresstoi(txtptr);		// e.g. SYMBOL+2-7+$10
+
+				frequency_disabled = old_frequency_disabled;
 
 				if (ofst_candidate > sssptr->ofst &&
 					ofst_candidate < 128)						// if offset > than what is already set
@@ -4472,10 +4478,10 @@ uint32_t symtoi1() {
 
 			symfg = 1;
 
-			if (strcmp("DOSMENU", sssptr->symbol) == 0)
+			if (strcmp("cMENITL", sssptr->symbol) == 0)
 				pc = pc;
 			
-			if (pass == 2 && !skip_frequency) {
+			if (pass == 2 && !skip_frequency && !frequency_disabled) {
 
 				sssptr->frequency++;
 
