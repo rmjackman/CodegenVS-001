@@ -32,7 +32,7 @@
 #define IF_ELSE_ENDIF 1
 #define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
 #define CONST_BY_EQU_VS_EPZ 1		// Set to 0 for SOURCGEN 3.2
-#define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
+#define CONST_BY_IMMEDIATE_ADDR 0 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
 
 /**************************  define  *****************/
@@ -2668,7 +2668,8 @@ int main(int argc, char* argv[]) {
 							symfg &&
 							syms_in_expr == 1) {
 #if CONST_BY_EQU_VS_EPZ							
-							//constants determined by EQU
+							/* Determine if the symbol is a constant by EQU vs. EPZ */
+
 							for (i = 0; i < symnum; i++) {
 
 								if (sss[i].symadr == intval &&
@@ -2679,6 +2680,7 @@ int main(int argc, char* argv[]) {
 								}
 							}
 #endif
+
 #if CONST_BY_IMMEDIATE_ADDR
 							for (i = 0; i < symnum; i++) {
 
@@ -3046,9 +3048,12 @@ int main(int argc, char* argv[]) {
 		
 /***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
 
-#if CONST_BY_EQU_VS_EPZ && CONST_BY_IMMEDIATE_ADDR
+#if CONST_BY_EQU_VS_EPZ || CONST_BY_IMMEDIATE_ADDR
 		for (size_t i = 0; i < first_adr_symnum; i++) {// Test single-byte constants
-			printf(BYELLOW "%s i=%d frequ_constant = %d frequency = %d\n" RESET,sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
+			
+			if (sss[i].frequ_constant != sss[i].frequency)
+				printf(BYELLOW "%s i=%d frequ_constant = %d frequency = %d\n" RESET, sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
+			
 			/*if (sss[i].frequ_constant == 0) {
 				printf(BYELLOW "Warning:" YELLOW "The single-byte constant " BYELLOW " % s" YELLOW ", defined using EQU,\n", sss[i].symbol);
 				printf("was possibly not used in any immediate-adressing statement.\n" RESET);
@@ -4449,6 +4454,7 @@ uint32_t symtoi1() {
 			if (*txtptr == '+' &&
 				(isdigit(txtptr[1]) || txtptr[1] == '$'))	// e.g. LDA SYMBOL+2
 			{
+				
 				uint8_t ofst_candidate = expresstoi(txtptr);		// e.g. SYMBOL+2-7+$10
 
 				if (ofst_candidate > sssptr->ofst &&
@@ -4466,14 +4472,17 @@ uint32_t symtoi1() {
 
 			symfg = 1;
 
+			if (strcmp("DOSMENU", sssptr->symbol) == 0)
+				pc = pc;
+			
 			if (pass == 2 && !skip_frequency) {
-				sssptr->frequency++; // This is correct
 
-				if (const_flg) {
-					sssptr->frequ_constant++; // This is correct for DFB but not yet for opc #
-					const_flg = 0;
-				}
+				sssptr->frequency++;
+
+				if (const_flg)
+					sssptr->frequ_constant++;
 			}
+
 			syms_in_expr++;
 
 			result = sssptr->symadr;
@@ -5120,9 +5129,7 @@ void emit_byte() {// emit bytes for DFB directive
 
 	toxlbuf((char)expresstoi_p2());
 	const_flg = 0;
-	//if (symfg && syms_in_expr == 1)
-		//sssptr->frequ_constant++;
-	
+
 }
 
 void emit_ascii_string() {
