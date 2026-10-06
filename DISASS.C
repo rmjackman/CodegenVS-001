@@ -228,6 +228,12 @@ void disassemble(const char* filename) {
 				dbg_sym(&ctx, ctx.next_sym_id++, sss[i].symbol, sss[i].symadr);
 			}
 #endif
+			/* Check for variable overlap */
+			if (sss[i].ofst) {
+				if (sss[i + 1].symadr == sss[i].symadr + 1 && !(sss[i].symtyp == ']')) {
+					printf(BYELLOW "Warning: Variable Overlap at address $%X. %s requires two bytes. Line: %i\n" RESET, sss[i].symadr, sss[i].symbol, diss_linnum);
+				}
+			}
 
 #if SHOW_B_W_FREQUENCY
 

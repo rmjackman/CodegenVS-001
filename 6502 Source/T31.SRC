@@ -176,7 +176,7 @@ WA	EPZ $E8  window address (section of text buffer on screen)
 
 YY	EPZ $EE
 DIF	EPZ $F0
-CHR	EPZ $F1
+
 TEA	EPZ $F2	Text end address ('pointer')
 CNT	EPZ $F4
 PBPTR	EPZ $F6	current position in cPRBF
@@ -185,7 +185,7 @@ LNPNT	EPZ $F8
 PBFPNT	EPZ $FA
 ULFLG	EPZ $FC
 ACTLL	EPZ $FD
-
+CHR	EPZ $FF
 
 *
 

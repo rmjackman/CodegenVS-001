@@ -143,6 +143,7 @@
   <ItemGroup>
     <None Include="6502 Source\SGEN420.SRC" />
     <None Include="6502 Source\T31.SRC" />
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

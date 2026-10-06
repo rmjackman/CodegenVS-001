@@ -31,7 +31,7 @@
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
 #define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
-#define CONST_BY_EQU_VS_EPZ 1		// Set to 0 for SOURCGEN 3.2
+#define CONST_BY_EQU_VS_EPZ 0		// Set to 0 for SOURCGEN 3.2
 #define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
 
@@ -2322,7 +2322,7 @@ int main(int argc, char* argv[]) {
 							pc = pcsv;
 						}
 #endif
-						printf("Segment %4X ", pc);
+						printf("Segment begin: %4X\n", pc);
 						seg_beg_sav = pc;
 
 					}
@@ -3498,7 +3498,7 @@ int main(int argc, char* argv[]) {
 			else
 				printf("\nThe generated LOA file was compared with %s\n", cmp_file);
 			if (mismatch_flg) {
-				puts("");
+				puts("" BRED);
 
 				puts("  ##          ##");
 				puts("    ##      ##");
@@ -3506,13 +3506,13 @@ int main(int argc, char* argv[]) {
 				printf("\a        ##         MISMATCH at address $%X, line %i\n", mismatch_pc - 1, linnum);
 				puts("      ##  ##           See '******' in LIS file");
 				puts("    ##      ##");
-				puts("  ##          ##");
+				puts("  ##          ##" RESET);
 				hit_Enter();
 				if (cpfflg) exit(1);
 			}
 			else {
 				cpfflg = 0;
-				puts("");
+				puts("" BGREEN);
 
 				puts("      o          k       k");
 				puts("    o   o        k     k");
@@ -3520,7 +3520,7 @@ int main(int argc, char* argv[]) {
 				puts(" o         o     k k                They are the same.");
 				puts("  o       o      k   k");
 				puts("    o   o        k     k");
-				puts("      o          k       k");
+				puts("      o          k       k" RESET);
 
 			}
 
@@ -4283,7 +4283,7 @@ uint32_t symtoi1() {
 			result >>= 8;
 #endif
 		if (result > 2 /*&& !syms_in_expr*/ && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
-			printf(BYELLOW "Warning: Decimal address %s used instead of label at line %i\n" RESET, strbeg, linnum);
+			printf(BYELLOW "Warning: Decimal number %s used instead of symbol at line %i\n" RESET, strbeg, linnum);
 
 		return(result);
 	}
@@ -4348,7 +4348,7 @@ uint32_t symtoi1() {
 			result >>= 8;
 #endif
 		if (result > 2 /*&& !syms_in_expr*/ && !syms_in_expr && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
-			printf(BYELLOW "Warning: Hexadecimal address %s used instead of label at line %i\n" RESET, strbeg, linnum);
+			printf(BYELLOW "Warning: Hexadecimal number %s used instead of symbol at line %i\n" RESET, strbeg, linnum);
 		return(result);
 	}
 
