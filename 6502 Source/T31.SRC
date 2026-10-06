@@ -485,8 +485,10 @@ VCEND	STA VCNT2
 	CLC
 	ADC #128
 	STA (YA),Y	Cursor on
+	
+PACTL	EQU $D302	activates joystick
 
-	MovlB $D302,52	PACTL activates joystick
+	MovlB PACTL,52
 	MovlB STICK0,%00001111
 	MovlB CH,255
 	
@@ -2363,12 +2365,19 @@ SCREEN	DFW 0
 ***********************
 *** Colors and Cursor
 ***********************
+*COLOR0	EQU $2C4
+COLOR1	EQU $2C5
+COLOR2	EQU $2C6
+*COLOR3	EQU $2C7
+COLOR4	EQU $2C8
+KRPDEL	EQU $2D9
+KEYREP	EQU $2DA
 
-CLRCSR	MovlB 709,9
-	MovlB 710,192
-	MovlB 712,226
-	MovlB 729,20
-	MovlB 730,3
+CLRCSR	MovlB COLOR1,9
+	MovlB COLOR2,192
+	MovlB COLOR4,226
+	MovlB KRPDEL,20
+	MovlB KEYREP,3
 	RTS
 *
 DEVS	ASC "S:"

@@ -4282,6 +4282,8 @@ uint32_t symtoi1() {
 		else if (unary_GT)
 			result >>= 8;
 #endif
+		if (result > 2 /*&& !syms_in_expr*/ && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
+			printf(BYELLOW "Warning: Decimal address %s used instead of label at line %i\n" RESET, strbeg, linnum);
 
 		return(result);
 	}
@@ -4345,7 +4347,8 @@ uint32_t symtoi1() {
 		else if (unary_GT)
 			result >>= 8;
 #endif
-
+		if (result > 2 /*&& !syms_in_expr*/ && !syms_in_expr && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
+			printf(BYELLOW "Warning: Hexadecimal address %s used instead of label at line %i\n" RESET, strbeg, linnum);
 		return(result);
 	}
 
