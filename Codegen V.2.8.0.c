@@ -32,7 +32,7 @@
 #define IF_ELSE_ENDIF 1
 #define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
 #define CONST_BY_EQU_VS_EPZ 1		// Set to 0 for SOURCGEN 3.2
-#define CONST_BY_IMMEDIATE_ADDR 0 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
+#define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
 
 /**************************  define  *****************/
@@ -765,6 +765,17 @@ char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
 char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
 char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { {0} };
 
+
+#if CONST_BY_EQU_VS_EPZ
+bool const_by_equ_vs_epz = true;
+#else
+bool const_by_equ_vs_epz = false;
+#endif
+#if CONST_BY_IMMEDIATE_ADDR
+bool const_by_imm_addr = true;
+#else
+bool const_by_imm_addr = false;
+#endif
 ssstype* sssptr;
 
 
@@ -1907,13 +1918,8 @@ int main(int argc, char* argv[]) {
 
 								if (_stricmp(opcode, "EQU") == 0) {
 									if (i < 256) {
-#if CONST_BY_EQU_VS_EPZ
-										sss[symnum].symtyp = ']';
-#else
-										sss[symnum].symtyp = '#'; // constant determined by EQU
 
-#endif
-
+										sss[symnum].symtyp = const_by_equ_vs_epz ? ']' : '#';
 
 									}
 #if EQU_IN_SECTION
@@ -2642,7 +2648,7 @@ int main(int argc, char* argv[]) {
 						(operand[1] == '>' || operand[1] == '<'))
 						txtptr++;
 #endif
-					if (!pending_NN_pair_flg) 
+					//if (!pending_NN_pair_flg) 
 						const_flg = 1;
 
 					intval = expresstoi_p2();
@@ -2668,40 +2674,42 @@ int main(int argc, char* argv[]) {
 							intval < 256 &&
 							symfg &&
 							syms_in_expr == 1) {
-#if CONST_BY_EQU_VS_EPZ							
+
 							/* Determine if the symbol is a constant by EQU vs. EPZ */
+							if (const_by_equ_vs_epz) {
+								
+								for (i = 0; i < symnum; i++) {
 
-							for (i = 0; i < symnum; i++) {
+									if (sss[i].symadr == intval &&
+										sss[i].symtyp == ']') {
 
-								if (sss[i].symadr == intval &&
-									sss[i].symtyp == ']') {
-
-									sectyp('[');
-									break;
-								}
-							}
-#endif
-
-#if CONST_BY_IMMEDIATE_ADDR
-							for (i = 0; i < symnum; i++) {
-
-								if (sss[i].symadr == intval &&
-									strstr(operand, sss[i].symbol) != NULL) {
-#if CONST_BY_EQU_VS_EPZ
-									if (sss[i].symtyp != ']') {
-										printf(BYELLOW "\nWarning:" YELLOW " Zero page symbol " BYELLOW "%s" YELLOW ", defined using EPZ,\n ", operand);
-										printf("used in immediate addressing at" BYELLOW " line %i\n" RESET, linnum);
+										sectyp('[');
+										break;
 									}
-#endif
-									
-									sss[i].symtyp = ']';
-									
-									sectyp('[');
-									break;
 								}
 							}
+							/* Determine if the symbol is a constant by immediate addressing and DFB */
+							if (const_by_imm_addr) {
+								for (i = 0; i < symnum; i++) {
 
-#endif 
+									if (sss[i].symadr == intval &&
+										strstr(operand, sss[i].symbol) != NULL) {
+
+										if (const_by_equ_vs_epz) {
+											if (sss[i].symtyp != ']') {
+												printf(BYELLOW "\nWarning:" YELLOW " The zero-page symbol " BYELLOW "%s" YELLOW ", which was defined using EPZ,\n ", operand);
+												printf("is used in an immediate addressing or DFB statemant at" BYELLOW " line %i\n" RESET, linnum);
+											}
+										}
+
+										sss[i].symtyp = ']';
+
+										sectyp('[');
+										break;
+									}
+								}
+
+							}
 
 							if (i == symnum)
 								sectyp('(');
@@ -3049,19 +3057,23 @@ int main(int argc, char* argv[]) {
 		
 /***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
 
-#if CONST_BY_EQU_VS_EPZ || CONST_BY_IMMEDIATE_ADDR
-		for (size_t i = 0; i < first_adr_symnum; i++) {// Test single-byte constants
-			
-			if (sss[i].frequ_constant != sss[i].frequency)
-				printf(BYELLOW "%s i=%d frequ_constant = %d frequency = %d\n" RESET, sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
-			
-			/*if (sss[i].frequ_constant == 0) {
-				printf(BYELLOW "Warning:" YELLOW "The single-byte constant " BYELLOW " % s" YELLOW ", defined using EQU,\n", sss[i].symbol);
-				printf("was possibly not used in any immediate-adressing statement.\n" RESET);
-			}*/
+		if (const_by_equ_vs_epz || const_by_imm_addr) {
+			for (size_t i = 0; i < first_adr_symnum; i++) {
+				// Test single-byte constants
 
+				if (sss[i].frequ_constant != sss[i].frequency)
+					printf(BYELLOW "%s i=%zu frequ_constant = %d frequency = %d\n" RESET,
+						sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
+
+				if (sss[i].frequ_constant == 0) {
+					printf(BYELLOW "Warning:" YELLOW
+						"The single-byte constant " BYELLOW "%s" YELLOW
+						", which was defined using EQU,\n", sss[i].symbol);
+
+					printf("was possibly not used in any immediate-addressing or DFB statement.\n" RESET);
+				}
+			}
 		}
-#endif		
 		
 		
 		if (verif_flg == 0 || verif_flg == 1) {
@@ -4478,7 +4490,7 @@ uint32_t symtoi1() {
 
 			symfg = 1;
 
-			if (strcmp("cMENITL", sssptr->symbol) == 0)
+			if (strcmp("ADR1", sssptr->symbol) == 0)
 				pc = pc;
 			
 			if (pass == 2 && !skip_frequency && !frequency_disabled) {
