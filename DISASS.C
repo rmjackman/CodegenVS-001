@@ -1035,7 +1035,7 @@ void adnmw2(uint16_t ska) {
 		pts_p("+%d", offset);
 	}
 
-	else if ((sss[i].symadr - ska == 1) && (sss[i].symbol[0])) {
+	else if ((sss[i].symadr - ska == 1) && (sss[i].symbol[0]) && label_equ_flg == 0) {
 
 		pts_p("%s", sss[i].symbol);
 		pts("-1");
