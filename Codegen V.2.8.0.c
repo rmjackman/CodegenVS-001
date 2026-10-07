@@ -3072,6 +3072,9 @@ int main(int argc, char* argv[]) {
 
 					printf("was possibly not used in any immediate-addressing or DFB statement.\n" RESET);
 				}
+				if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency)
+					printf(BYELLOW "%s i=%zu frequ_constant = %d frequency = %d Constant is used in direct addressing\n" RESET,
+						sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
 			}
 		}
 		
