@@ -10,12 +10,12 @@
 
 #include "cdgn_global.h"
 
-#define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
+
 #define USE_SYMTAB_OFFSET 0		// Use symbol table offsets
 #define MAX_SEGMENTS 256
 #define LINE_BUFFER_SIZE 1000
 
-#define LIST_TO_CONSOLE 1
+#define LIST_TO_CONSOLE 0
 #define SHOW_SECTYP_AND_ADDRESS 0
 
 
@@ -954,7 +954,7 @@ void adnmw2(uint16_t ska) {
 
 	isav = i = symtab_init;
 
-	printf("i = %d, ska = %04X symnum = %d\n", i, ska, symnum);
+	//printf("i = %d, ska = %04X symnum = %d\n", i, ska, symnum);
 
 	while (i <= symnum && sss[i].symadr <= ska) {
 
