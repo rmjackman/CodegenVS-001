@@ -11,11 +11,11 @@
 #include "cdgn_global.h"
 
 #define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
-#define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
+#define USE_SYMTAB_OFFSET 0		// Use symbol table offsets
 #define MAX_SEGMENTS 256
 #define LINE_BUFFER_SIZE 1000
 
-#define LIST_TO_CONSOLE 0
+#define LIST_TO_CONSOLE 1
 #define SHOW_SECTYP_AND_ADDRESS 0
 
 
@@ -253,7 +253,8 @@ void disassemble(const char* filename) {
 		}
 	}
 
-	
+/*********      Write segments                  *********/
+
 	for (segment = 1; segment <= number_of_segments; segment++) {
 
 		printf("Writing segment %d\n", segment);
@@ -953,7 +954,7 @@ void adnmw2(uint16_t ska) {
 
 	isav = i = symtab_init;
 
-	//printf("i = %d, ska = %04X symnum = %d\n", i, ska, symnum);
+	printf("i = %d, ska = %04X symnum = %d\n", i, ska, symnum);
 
 	while (i <= symnum && sss[i].symadr <= ska) {
 
@@ -966,7 +967,7 @@ void adnmw2(uint16_t ska) {
 				return;
 			}
 		}
-
+		
 		i++;
 	}
 
@@ -1028,7 +1029,7 @@ void adnmw2(uint16_t ska) {
 
 	offset = ska - sss[isav].symadr;
 
-	if (offset <= SYMBOL_OFFSET) {
+	if (offset <= SYMBOL_OFFSET && label_equ_flg == 0) {
 
 		pts_p("%s", sss[isav].symbol);
 		pts_p("+%d", offset);
