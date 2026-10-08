@@ -26,7 +26,7 @@
 
 
 #define ROUND_TRIP_VERIFICATION 1
-#define LIS_TO_CONSOLE 1
+#define LIS_TO_CONSOLE 1	// MADS .LI directive
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
@@ -891,12 +891,15 @@ int main(int argc, char* argv[]) {
 	short verif_flg = 0; // 0 = no verification, 1 = verification, 2 = round trip verification
 	uint16_t seg_beg_sav = 0;
 
+
+
+
 #if ROUND_TRIP_VERIFICATION
 
 	for (;;) {		// beginning of long loop for verif_flg == 2
 		if (verif_flg == 2) {
-			puts("\n\n*******************************************************\n");
-			puts("Starting round trip verification:\n");
+			puts( "\n\n*******************************************************\n");
+			puts(BBLUE "Starting round trip verification:\n" RESET);
 		}
 
 
@@ -956,6 +959,8 @@ int main(int argc, char* argv[]) {
 		if (verif_flg == 0) {
 
 
+
+
 			/******************** File ******************************/
 			puts("***********************************************************************");
 			puts("*                                                                     *");
@@ -973,6 +978,25 @@ int main(int argc, char* argv[]) {
 			puts("*                                                                     *");
 			puts("***********************************************************************\n");
 
+			printf("\n--- CODEGEN SETTINGS ---\n");
+
+			SHOW_SETTING(ATARI800);
+			SHOW_SETTING(DISASSEMBLE);
+			SHOW_SETTING(SHOW_POSTFIX);
+			SHOW_SETTING(DELETE_TEMP_ATR);
+			SHOW_SETTING(IMBED_SRC_FILENAME);
+			SHOW_SETTING(COMMENTS);
+			SHOW_SETTING(COMMENTS2);
+			SHOW_SETTING(ROUND_TRIP_VERIFICATION);
+			SHOW_SETTING(LIS_TO_CONSOLE);
+			SHOW_SETTING(NEW_DIRECT_ADDRESSING);
+			SHOW_SETTING(ALLOW_OPCODE_AT_LINE_BEGIN);
+			SHOW_SETTING(IF_ELSE_ENDIF);
+			SHOW_SETTING(SORT_EQU_EPZ);
+			SHOW_SETTING(CONST_BY_EQU_VS_EPZ);
+			SHOW_SETTING(CONST_BY_IMMEDIATE_ADDR);
+
+			printf("-------------------------\n\n");
 
 			/********************* Source File *********************/
 
@@ -1037,7 +1061,7 @@ int main(int argc, char* argv[]) {
 		}//end of if (verif_flg == 0)
 
 
-		printf("Source file: %s -- ", src_filename);
+		printf( BBLUE "Source file: %s -- " RESET, src_filename);
 
 		if (fopen_s(&stream, src_filename, "r") != 0) {
 			printf("Can't open %s\n", src_filename);
@@ -3389,7 +3413,7 @@ int main(int argc, char* argv[]) {
 				exit(1);
 			}
 
-			printf("\nSaving binary file %s\n", loafilename);
+			printf(BBLUE"\nSaving binary file %s\n" RESET, loafilename);
 			txtsiz = fwrite(xlbuf, 1, xlbfptr - xlbuf, stream);
 			if (txtsiz != xlbfptr - xlbuf)
 				file_err("Can't save", loafilename);

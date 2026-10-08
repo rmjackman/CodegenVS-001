@@ -80,6 +80,32 @@ bool label_equ_flg = false;
 void disassemble(const char* filename) {
 
 
+#define SHOW_SETTING(name) \
+    printf("%-28s %s\n", #name, (name) ? "ON" : "OFF")
+
+	printf("\n--- DISASSEMBLER SETTINGS ---\n");
+
+	SHOW_SETTING(USE_SYMTAB_OFFSET);
+	printf("%-28s %d\n", "MAX_SEGMENTS", MAX_SEGMENTS);
+	printf("%-28s %d\n", "LINE_BUFFER_SIZE", LINE_BUFFER_SIZE);
+
+	SHOW_SETTING(LIST_TO_CONSOLE);
+	SHOW_SETTING(SHOW_SECTYP_AND_ADDRESS);
+
+	printf("%-28s %d\n", "ASC_STRING_LENGTH", ASC_STRING_LENGTH);
+	printf("%-28s %d\n", "DFB_BYTES_PER_LINE", DFB_BYTES_PER_LINE);
+	SHOW_SETTING(SHOW_LO);
+
+	SHOW_SETTING(PRINT_DISS_LINNUM);
+	SHOW_SETTING(ADDR_LEFT_COMMENT);
+	SHOW_SETTING(SHOW_LEFT_COMMENT);
+	SHOW_SETTING(PRINT_PCADDRESS_BYTES);
+	SHOW_SETTING(SKA_AS_COMMENT);
+	SHOW_SETTING(SHOW_RH_COMMENT);
+	SHOW_SETTING(SHOW_JSR);
+	SHOW_SETTING(PRINT_OPC_BYTES);
+
+	printf("-----------------------------\n\n");
 
 
 	char ch;
@@ -118,7 +144,7 @@ void disassemble(const char* filename) {
 		perror("Error opening output file");
 		return;
 	}
-	printf("Create %s with Symbolic Disassembler\n", output_filename);
+	printf(BBLUE "Create %s with Symbolic Disassembler\n" RESET, output_filename);
 
 	if (fopen_s(&madslstfile, "MADS.LST", "w") != 0) {
 		perror("Error opening MADS.LST");

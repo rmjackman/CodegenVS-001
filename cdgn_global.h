@@ -29,6 +29,9 @@
 #define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
+#define SHOW_SETTING(name) \
+    printf("%-28s %s\n", #name, (name) ? "ON" : "OFF")
+
 #define EQU_IN_SECTION 1
 #define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
 
