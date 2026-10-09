@@ -1172,18 +1172,13 @@ int main(int argc, char* argv[]) {
 
 
 		/********* Main loop -- passes **********/
-		for (pass = 0; pass <= 2; pass++) {
+		for (pass = 1; pass <= 2; pass++) {
 			/***************************************/
-
-			
 
 #if ATARI800
 			sgndtbptr1 = sgndtbptr2 = sgndtb;
 #endif
 			printf("\n  pass %d\n", pass);
-			if (pass == 0) {
-				printf("\nParsing lines with EQU and EPZ.\n");
-			}
 			linptr = txtptr = txtbuf;
 			xlbfptr = xlbuf;
 			orgflg = 0;
@@ -1736,12 +1731,6 @@ int main(int argc, char* argv[]) {
 					* ptr = '\0';
 				}
 
-				if (pass == 0 &&
-					_stricmp(opcode, "EQU") != 0 &&
-					_stricmp(opcode, "EPZ") != 0) {
-					continue;
-				}
-
 
 				/*
 				 * For a normal opcode, a space must follow it.
@@ -1944,7 +1933,7 @@ int main(int argc, char* argv[]) {
 							txtptr++;
 						i = expresstoi();
 
-						if (pass == 0) {
+						if (pass == 1) {
 							if (i != NOTFOUND) {
 								strcpy_s(sss[symnum].symbol,
 									sizeof(sss[symnum].symbol), label);
@@ -1971,7 +1960,6 @@ int main(int argc, char* argv[]) {
 								}
 
 								symnum++;
-								symnumext = symnum;
 							}
 						}
 						continue;
@@ -3028,7 +3016,7 @@ int main(int argc, char* argv[]) {
 
 
 			}// end toxlbuf  end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf
-			if(pass > 0) printf("to %4X\n", (uint16_t)(pc - 1));		/*write last segment end address NDAD */
+			printf("to %4X\n", (uint16_t)(pc - 1));		/*write last segment end address NDAD */
 			if (seg_beg_sav >= (uint16_t)(pc - 1))
 				error("Program counter overflow: Segment end must be greater than segment begin");
 
@@ -4495,8 +4483,6 @@ uint32_t symtoi1() {
 		if (_stricmp(strbeg, "endif") == 0)
 			sprintf_s(strbeg, sizeof(strbeg), "endi%u", endifnum);
 
-		if (pass == 0)
-			qsort(sss, symnum, sizeof(ssstype), _stricmp);
 
 		if ((sssptr = bsearch(strbeg, sss, symnum,
 			sizeof(ssstype), _stricmp)) != 0) {
