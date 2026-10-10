@@ -754,6 +754,7 @@ bool frequency_disabled = false;
 #endif
 short lo_fg = 0;
 int intval = 0, intval_sav = 0;
+uint16_t operand_symval = 0;
 
 char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
@@ -2706,8 +2707,9 @@ int main(int argc, char* argv[]) {
 
 									if (sss[i].symadr == intval &&
 										sss[i].symtyp == ']') {
-
+										operand_symval = sss[i].symadr;
 										sectyp('[');
+
 										break;
 									}
 								}
@@ -2728,7 +2730,10 @@ int main(int argc, char* argv[]) {
 
 										sss[i].symtyp = ']';
 
+										operand_symval = sss[i].symadr;
+
 										sectyp('[');
+										
 										break;
 									}
 								}
@@ -3096,9 +3101,32 @@ int main(int argc, char* argv[]) {
 
 					printf("was possibly not used in any immediate-addressing or DFB statement.\n" RESET);
 				}
-				if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency)
-					printf(BYELLOW "%s i=%zu frequ_constant = %d frequency = %d Constant is used in direct addressing\n" RESET,
-						sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
+				if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency) {
+					printf(BYELLOW "%s is used in direct addressing.\n", sss[i].symbol);
+					printf("Assuming %s to represent an address rather than a constant.\n", sss[i].symbol);
+					printf("Changing ']' to '#' and deleting section type '[' from lines with this symbol.\n" RESET);
+
+					sss[i].symtyp = '#';
+
+
+
+					for (size_t j = 0; j < symnumext; j++) {
+
+						if (sss[j].symtyp == '[') {
+							
+							if (sss[j].oper_symval == sss[i].symadr) {
+
+								sss[j].symtyp = '(';
+							}
+						}
+
+					}
+
+					qsort(sss, symnum, sizeof(ssstype), ssscmpadr);
+
+					first_adr_symnum = sort_equ_epz();
+
+				}
 			}
 		}
 		
@@ -4898,7 +4926,8 @@ void sectyp(char line_type) {
 		for (int i = 0; i < symnum; i++) {
 			if (sss[i].symadr == pc) {
 				sss[i].symtyp = line_type;
-
+				sss[i].oper_symval = operand_symval;
+				
 				return;
 			}
 		}
@@ -4908,6 +4937,7 @@ void sectyp(char line_type) {
 		else {
 			sss[symnumext].symtyp = line_type;
 			sss[symnumext++].symadr = pc;
+			sss[symnumext - 1].oper_symval = operand_symval;
 		}
 		return;
 	}/* end if */
@@ -5252,8 +5282,11 @@ void sourcgen_symtab() {
 	int i;
 	for (i = 0; i < symnum; i++) {
 		fprintf(stream2, "%x ", i);
-		if (sss[i].symtyp)
+		if (sss[i].symtyp){
 			fprintf(stream2, "%c ", sss[i].symtyp);
+			fprintf(stream2, "--$%x-- ", sss[i].oper_symval);
+
+		}
 		else fprintf(stream2, "  ");
 		fprintf(stream2, "%d ",sss[i].ofst);
 		//if (sss[i].comment[0])

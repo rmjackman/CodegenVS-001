@@ -70,8 +70,8 @@ typedef struct {
 	char word_or_byte;// 0 = byte, 1 = word
 	uint16_t frequency;
     int8_t frequ_constant; // 0 = not used in any immediate addressing or DFB, 1 = used
+	uint16_t oper_symval; // The value of the symbol in the operand, if any
 }	ssstype;
-
 ssstype sss[MAXSYMS];
 uint16_t symnum, symnumext;
 
