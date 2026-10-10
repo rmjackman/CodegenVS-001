@@ -67,7 +67,7 @@
 	INCLUDE if_while_macros.src
 	INCLUDE Macros.SRC
 ***************************************************************
-X	EQU $57	*increase by 1 for extra page in the segment at ORG 5100
+XXX	EQU $57	*increase by 1 for extra page in the segment at ORG 5100
 *		*The size of the symbol table will be decreased by one page.
 ***************************************************************
 COPN	EQU 3	Disk open
@@ -300,9 +300,9 @@ PORTB	EQU $D301
 	DFW GENBEG	RUNAD
 	DFW BEGIN	INITAD
 
-*** BLAB	X*256 hardware write-only -- max $56 bytes
+*** BLAB	XXX*256 hardware write-only -- max $56 bytes
 
-	ORG X*256+$56	$5756	
+	ORG XXX*256+$56	$5756	
 
 
 *** If found, could be D:,F:,P:,S:etc ***
@@ -369,8 +369,8 @@ LN	EQU $5090
 OSV	EQU $50E0	Obtained File-save
 FTV	EQU $50F0
 
-*segment 5100 56DA -- Inrease X by 1 to add a page of room for this segment
-*X=57  
+*segment 5100 56DA -- Inrease XXX by 1 to add a page of room for this segment
+*XXX=57  
 *  5700: DLB ------  segment 5756 -------------------- 57FF
 
 SEGTAB0	EQU $1C00	4 pages (enough for 256 segments)
@@ -396,20 +396,20 @@ PKT	DFB 9	COLOR1
 	DFB 20	KRPDEL
 	DFB 3	KEYREP	
 *** 'write-only' registers between $D000 and $D4FF. set by H.HEAD
-DLB	DFB X		57
+DLB	DFB XXX		57
 DLE	DFW 0
 *** Head Label table begin Hi byte
-ZLB	DFB X+1		58
+ZLB	DFB XXX+1		58
 ZLE	DFW 0
-BLB	DFB X+4		5b
+BLB	DFB XXX+4		5b
 BLE	DFW 0
 *** J-label table begin Hi bytef
-JLB	DFB X+$C		63	
+JLB	DFB XXX+$C		63	
 *** J-label # bytes in use
 JLE	DFW 0
-TLB	DFB X+$11	68
+TLB	DFB XXX+$11	68
 TLE	DFW 0
-SYMTAB	DFB X+$17	6f
+SYMTAB	DFB XXX+$17	6f
 *** symbol table length
 SYTL	DFW 0
 RAMTOPSV	DFB $BC		Don't change this!

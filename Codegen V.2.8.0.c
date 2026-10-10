@@ -31,7 +31,7 @@
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
 #define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
-#define CONST_BY_EQU_VS_EPZ 0		// Set to 0 for SOURCGEN 3.2
+#define CONST_BY_EQU_VS_EPZ 1		// Set to 0 for SOURCGEN 3.2
 #define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
 
@@ -3102,9 +3102,9 @@ int main(int argc, char* argv[]) {
 					printf("was possibly not used in any immediate-addressing or DFB statement.\n" RESET);
 				}
 				if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency) {
-					printf(BYELLOW "%s is used in direct addressing.\n", sss[i].symbol);
+					printf(BYELLOW "%s" YELLOW " is used in direct addressing.\n", sss[i].symbol);
 					printf("Assuming %s to represent an address rather than a constant.\n", sss[i].symbol);
-					printf("Changing ']' to '#' and deleting section type '[' from lines with this symbol.\n" RESET);
+					printf("Changing ']' to '#' and deleting section type '[' from lines with this symbol.\n\n" RESET);
 
 					sss[i].symtyp = '#';
 
@@ -3173,8 +3173,15 @@ int main(int argc, char* argv[]) {
 					(sss[i].macf == MACRO_UNUSED)) &&
 					sss[i].symbol[0])
 
-					printf("Unused symbol: %4X %s\n",
-						sss[i].symadr, sss[i].symbol);
+					if (!(
+						isxdigit((unsigned char)sss[i].symbol[0]) &&
+						isxdigit((unsigned char)sss[i].symbol[1]) &&
+						(sss[i].symbol[2] == '\0' ||
+							(sss[i].symbol[2] == ':' && sss[i].symbol[3] == '\0'))
+						)) {
+						printf(BYELLOW "Unused symbol: %4X %s\n" RESET,
+							sss[i].symadr, sss[i].symbol);
+					}
 
 
 				/****************************************************************
@@ -3216,7 +3223,7 @@ int main(int argc, char* argv[]) {
 				 */
 				if (differing_types) {
 
-					printf(BYELLOW "WARNING -- differing section types '%c' and '%c' for "
+					printf(BYELLOW "Warning: " YELLOW "Different section types '%c' and '%c' for "
 						"address $%04X\n" RESET, sectype, sss[j].symtyp, sss[i].symadr);
 				}
 
@@ -4338,7 +4345,7 @@ uint32_t symtoi1() {
 			result >>= 8;
 #endif
 		if (result > SYMBOL_OFFSET /*&& !syms_in_expr*/ && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
-			printf(BYELLOW "Warning: Decimal number %s used instead of symbol at line %i\n" RESET, strbeg, linnum);
+			printf(BYELLOW "Warning: %s " YELLOW "used instead of symbol at " BYELLOW "line %i\n" RESET, strbeg, linnum);
 
 		return(result);
 	}
@@ -4403,7 +4410,7 @@ uint32_t symtoi1() {
 			result >>= 8;
 #endif
 		if (result > SYMBOL_OFFSET /*&& !syms_in_expr*/ && !syms_in_expr && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
-			printf(BYELLOW "Warning: Hexadecimal number %s used instead of symbol at line %i\n" RESET, strbeg, linnum);
+			printf(BYELLOW "Warning: $%s " YELLOW "used instead of symbol at " BYELLOW "line %i\n" RESET, strbeg, linnum);
 		return(result);
 	}
 
@@ -5284,7 +5291,6 @@ void sourcgen_symtab() {
 		fprintf(stream2, "%x ", i);
 		if (sss[i].symtyp){
 			fprintf(stream2, "%c ", sss[i].symtyp);
-			fprintf(stream2, "--$%x-- ", sss[i].oper_symval);
 
 		}
 		else fprintf(stream2, "  ");
