@@ -161,3 +161,25 @@ void dbg_close(DbgContext* ctx);
 #define BGREEN  "\x1b[92m"
 #define BYELLOW "\x1b[93m"
 #define BBLUE   "\x1b[94m"
+
+#define MAX_WARNINGS 1000
+#define WARNING_TEXT_LEN 256
+
+typedef struct {
+    char filename[MAX_FILENAME_LEN + 1];
+    int line;
+    char message[WARNING_TEXT_LEN];
+} warning_entry;
+
+void warnings_init(void);
+
+void record_warning(
+    const char* filename,
+    int line,
+    const char* message);
+
+void review_warnings(void);
+
+void open_notepadpp_line(
+    const char* filename,
+    int line);

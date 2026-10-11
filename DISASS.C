@@ -256,8 +256,19 @@ void disassemble(const char* filename) {
 #endif
 			/* Check for variable overlap */
 			if (sss[i].ofst) {
-				if (sss[i + 1].symadr == sss[i].symadr + 1 && !(sss[i].symtyp == ']')) {
-					printf(BYELLOW "Warning: Variable Overlap at address $%X. %s requires two bytes. Line: %i\n" RESET, sss[i].symadr, sss[i].symbol, diss_linnum);
+				if (sss[i + 1].symadr == sss[i].symadr + 1 && sss[i].symtyp != ']') {
+					char warning_text[WARNING_TEXT_LEN];
+
+					printf(BYELLOW
+						"Warning: Variable Overlap at address $%X. %s requires two bytes. Line: %i\n"
+						RESET,
+						sss[i].symadr, sss[i].symbol, diss_linnum);
+
+					sprintf_s(warning_text, sizeof(warning_text),
+						"Variable Overlap at address $%X. %s requires two bytes",
+						sss[i].symadr, sss[i].symbol);
+
+					record_warning(output_filename, diss_linnum, warning_text);
 				}
 			}
 

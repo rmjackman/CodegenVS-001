@@ -2725,8 +2725,20 @@ int main(int argc, char* argv[]) {
 
 										if (const_by_equ_vs_epz) {
 											if (sss[i].symtyp != ']') {
-												printf(BYELLOW "\nWarning:" YELLOW " The zero-page symbol " BYELLOW "%s" YELLOW ", which was defined using EPZ,\n ", operand);
-												printf("is used in an immediate addressing or DFB statemant at" BYELLOW " line %i\n" RESET, linnum);
+												char warning_text[WARNING_TEXT_LEN];
+
+												printf(BYELLOW "\nWarning:" YELLOW " The zero-page symbol "
+													BYELLOW "%s" YELLOW ", which was defined using EPZ,\n ",
+													operand);
+												printf("is used in an immediate addressing or DFB statement at"
+													BYELLOW " line %i\n" RESET, linnum);
+
+												sprintf_s(warning_text, sizeof(warning_text),
+													"The zero-page symbol %s, which was defined using EPZ, "
+													"is used in an immediate addressing or DFB statement",
+													operand);
+
+												record_warning(src_filename, linnum, warning_text);
 											}
 										}
 
@@ -3608,6 +3620,8 @@ int main(int argc, char* argv[]) {
 			//	free(xlbuf);
 			//	free(xlram);
 
+			review_warnings();
+
 					/*************Run Atari800 Emulator **************************************************/
 
 			if (*emul_filename) {
@@ -3617,8 +3631,11 @@ int main(int argc, char* argv[]) {
 				printf("Please close the emulator before re-running Codegen.\n");
 
 				if (system(emul_filename)) puts("Emulator not found");
+				review_warnings();
 			}
 			else
+		
+			
 				hit_Enter();
 
 
@@ -3635,6 +3652,9 @@ int main(int argc, char* argv[]) {
 		}
 	}//end of long loop for verif_flg == 2
 #endif	
+	printf("\nDEBUG: About to review warnings.\n");
+	review_warnings();
+	
 
 	hit_Enter();
 
@@ -4345,9 +4365,25 @@ uint32_t symtoi1() {
 		else if (unary_GT)
 			result >>= 8;
 #endif
-		if (result > SYMBOL_OFFSET /*&& !syms_in_expr*/ && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
-			printf(BYELLOW "Warning: %s " YELLOW "used instead of symbol at " BYELLOW "line %i\n" RESET, strbeg, linnum);
+		if (result > SYMBOL_OFFSET
+			/*&& !syms_in_expr*/
+			&& pass == 2
+			&& !const_flg
+			&& !strstr(opcode, "EQU")
+			&& !strstr(opcode, "EPZ")
+			&& !strstr(opcode, "ORG")) {
 
+			char warning_text[WARNING_TEXT_LEN];
+
+			printf(BYELLOW "Warning: %s " YELLOW
+				"used instead of symbol at " BYELLOW "line %i\n" RESET,
+				strbeg, linnum);
+
+			sprintf_s(warning_text, sizeof(warning_text),
+				"%s used instead of symbol", strbeg);
+
+			record_warning(src_filename, linnum, warning_text);
+		}
 		return(result);
 	}
 
@@ -4621,62 +4657,7 @@ int chkopc(const unsigned char* opcstring) {
 // end chkopc
 
 
-void open_notepadpp_line(const char* filename, int line) {
-	char npp_path[MAX_PATH];
-	char fullpath[MAX_PATH];
-	char command[2 * MAX_PATH + 100];
 
-	STARTUPINFOA si = { 0 };
-	PROCESS_INFORMATION pi = { 0 };
-
-	si.cb = sizeof(si);
-
-	// Locate Notepad++
-	strcpy_s(npp_path, sizeof(npp_path),
-		"C:\\Program Files\\Notepad++\\notepad++.exe");
-
-	if (GetFileAttributesA(npp_path) == INVALID_FILE_ATTRIBUTES) {
-		strcpy_s(npp_path, sizeof(npp_path),
-			"C:\\Program Files (x86)\\Notepad++\\notepad++.exe");
-	}
-
-	if (GetFileAttributesA(npp_path) == INVALID_FILE_ATTRIBUTES) {
-		printf("\nNotepad++ executable not found.\n");
-		return;
-	}
-
-	// Convert source filename to an absolute path
-	DWORD len = GetFullPathNameA(
-		filename, MAX_PATH, fullpath, NULL);
-
-	if (len == 0 || len >= MAX_PATH) {
-		printf("\nCannot resolve source filename: %s\n", filename);
-		return;
-	}
-
-	// Build the Notepad++ command
-	int n = snprintf(command, sizeof(command),
-		"\"%s\" -n%d \"%s\"",
-		npp_path, line, fullpath);
-
-	if (n < 0 || (size_t)n >= sizeof(command)) {
-		printf("\nNotepad++ command is too long.\n");
-		return;
-	}
-
-	if (CreateProcessA(
-		NULL, command,
-		NULL, NULL, FALSE, 0,
-		NULL, NULL, &si, &pi)) {
-
-		CloseHandle(pi.hThread);
-		CloseHandle(pi.hProcess);
-	}
-	else {
-		printf("\nUnable to launch Notepad++. Error: %lu\n",
-			GetLastError());
-	}
-}
 
 
 /********* error **********/

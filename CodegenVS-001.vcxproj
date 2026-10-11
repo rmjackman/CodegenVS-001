@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Codegen V.2.8.0.c" />
+    <ClCompile Include="codegen_disass_shared.c" />
     <ClCompile Include="DISASDAT.C">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
