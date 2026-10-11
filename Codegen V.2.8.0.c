@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <windows.h>
+#include <conio.h>
 
 #include "cdgn_global.h"
 
@@ -2896,7 +2898,7 @@ int main(int argc, char* argv[]) {
 
 
 
-				operno = ERROR;
+				operno = OP_ERROR;
 
 				sectyp(';');
 
@@ -2994,7 +2996,7 @@ int main(int argc, char* argv[]) {
 				if (cnt < 0 || cnt >= 21 || operno < 0 || operno >= 13)
 					error("Index out of bounds in data array");
 
-				if (operno == ERROR)
+				if (operno == OP_ERROR)
 					error("Illegal addressing");
 				if (pass == 2)
 					if (*xlbfptr != (char)data[cnt][operno]) {
@@ -3119,7 +3121,6 @@ int main(int argc, char* argv[]) {
 								sss[j].symtyp = '(';
 							}
 						}
-
 					}
 
 					qsort(sss, symnum, sizeof(ssstype), ssscmpadr);
@@ -4619,11 +4620,72 @@ int chkopc(const unsigned char* opcstring) {
 }
 // end chkopc
 
+
+void open_notepadpp_line(const char* filename, int line) {
+	char npp_path[MAX_PATH];
+	char fullpath[MAX_PATH];
+	char command[2 * MAX_PATH + 100];
+
+	STARTUPINFOA si = { 0 };
+	PROCESS_INFORMATION pi = { 0 };
+
+	si.cb = sizeof(si);
+
+	// Locate Notepad++
+	strcpy_s(npp_path, sizeof(npp_path),
+		"C:\\Program Files\\Notepad++\\notepad++.exe");
+
+	if (GetFileAttributesA(npp_path) == INVALID_FILE_ATTRIBUTES) {
+		strcpy_s(npp_path, sizeof(npp_path),
+			"C:\\Program Files (x86)\\Notepad++\\notepad++.exe");
+	}
+
+	if (GetFileAttributesA(npp_path) == INVALID_FILE_ATTRIBUTES) {
+		printf("\nNotepad++ executable not found.\n");
+		return;
+	}
+
+	// Convert source filename to an absolute path
+	DWORD len = GetFullPathNameA(
+		filename, MAX_PATH, fullpath, NULL);
+
+	if (len == 0 || len >= MAX_PATH) {
+		printf("\nCannot resolve source filename: %s\n", filename);
+		return;
+	}
+
+	// Build the Notepad++ command
+	int n = snprintf(command, sizeof(command),
+		"\"%s\" -n%d \"%s\"",
+		npp_path, line, fullpath);
+
+	if (n < 0 || (size_t)n >= sizeof(command)) {
+		printf("\nNotepad++ command is too long.\n");
+		return;
+	}
+
+	if (CreateProcessA(
+		NULL, command,
+		NULL, NULL, FALSE, 0,
+		NULL, NULL, &si, &pi)) {
+
+		CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+	}
+	else {
+		printf("\nUnable to launch Notepad++. Error: %lu\n",
+			GetLastError());
+	}
+}
+
+
 /********* error **********/
+
 
 void error(char* errstr) {
 	size_t len;
 	char partstr[100];
+	char response;
 
 	if (stream2 != NULL) {
 		if (strpbrk(outflgs, "Tt"))
@@ -4649,9 +4711,17 @@ void error(char* errstr) {
 		printf("Error in macro:\n%s", linbuf[maclevel]);
 	}
 
+	printf("\n\nOpen this line in Notepad++? (Y/N): ");
+	response = (char)_getch();
+	printf("%c\n", response);
+
+	if (response == 'Y' || response == 'y')
+		open_notepadpp_line(src_filename, linnum);
+
 	hit_Enter();
 	exit(linnum);
 }
+// end error
 // end error
 
 

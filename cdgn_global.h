@@ -96,7 +96,7 @@ char abofst[];
 char opertytb[];
 unsigned char esc_ch_tab[];
 
-enum { OPC, NN, AA, AAAA, AAX, AAAAX, AAY, AAAAY, BAAXB, BAABY, BRA, BAAAAB, ERROR };
+enum { OPC, NN, AA, AAAA, AAX, AAAAX, AAY, AAAAY, BAAXB, BAABY, BRA, BAAAAB, OP_ERROR };
 #define Q OPC
 
 unsigned char oprndlen[256];
