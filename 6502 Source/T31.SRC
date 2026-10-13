@@ -214,7 +214,6 @@ JMPBEG	JMP BEGIN
 
 DLLNBF	DFW $81A0	$7CA0+$500	max 80
 
-
 SSP	DFW 960		screen space
 PRVXA	DFW $4000	default: text buffer begin.
 VECTOR	DFW 0
@@ -249,6 +248,7 @@ C0FLG	ASC % 0%
  
 MSFLAG	DFB 0		mouse flag
 EXPTFLG	DFB 0		export flag
+
 LL	DFW 40
 ROW	DFB 0
 COL	DFB 0

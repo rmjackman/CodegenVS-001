@@ -33,7 +33,7 @@
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
 #define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
-#define CONST_BY_EQU_VS_EPZ 1		// Set to 0 for SOURCGEN 3.2
+#define CONST_BY_EQU_VS_EPZ 0		// Set to 0 for SOURCGEN 3.2
 #define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
 
@@ -3631,7 +3631,7 @@ int main(int argc, char* argv[]) {
 				printf("Please close the emulator before re-running Codegen.\n");
 
 				if (system(emul_filename)) puts("Emulator not found");
-				review_warnings();
+				
 			}
 			else
 		
@@ -3652,7 +3652,7 @@ int main(int argc, char* argv[]) {
 		}
 	}//end of long loop for verif_flg == 2
 #endif	
-	printf("\nDEBUG: About to review warnings.\n");
+	
 	review_warnings();
 	
 
@@ -4446,8 +4446,25 @@ uint32_t symtoi1() {
 		else if (unary_GT)
 			result >>= 8;
 #endif
-		if (result > SYMBOL_OFFSET /*&& !syms_in_expr*/ && !syms_in_expr && pass == 2 && !const_flg && !strstr(opcode, "EQU") && !strstr(opcode, "EPZ") && !strstr(opcode, "ORG"))
-			printf(BYELLOW "Warning: $%s " YELLOW "used instead of symbol at " BYELLOW "line %i\n" RESET, strbeg, linnum);
+		if (result > SYMBOL_OFFSET
+			&& !syms_in_expr
+			&& pass == 2
+			&& !const_flg
+			&& !strstr(opcode, "EQU")
+			&& !strstr(opcode, "EPZ")
+			&& !strstr(opcode, "ORG")) {
+
+			char warning_text[WARNING_TEXT_LEN];
+
+			printf(BYELLOW "Warning: $%s " YELLOW
+				"used instead of symbol at " BYELLOW "line %i\n" RESET,
+				strbeg, linnum);
+
+			sprintf_s(warning_text, sizeof(warning_text),
+				"$%s used instead of symbol", strbeg);
+
+			record_warning(src_filename, linnum, warning_text);
+		}
 		return(result);
 	}
 
@@ -4595,7 +4612,8 @@ uint32_t symtoi1() {
 			if (strcmp("ADR1", sssptr->symbol) == 0)
 				pc = pc;
 			
-			if (pass == 2 && !skip_frequency && !frequency_disabled) {
+			if (pass == 2 && !skip_frequency && !frequency_disabled &&
+				(!pending_NN_pair_flg || maclevel == 0)) {
 
 				sssptr->frequency++;
 

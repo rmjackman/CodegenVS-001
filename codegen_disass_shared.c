@@ -140,34 +140,56 @@ void review_warnings(void) {
             warnings[i].message);
     }
 
+    number = 1;
+
+    HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    DWORD written;
+
+    printf("Enter warning number to open in Notepad++ "
+        "(0 or Q to finish) [%ld]: ", number);
+    fflush(stdout);
+
     for (;;) {
-        printf("\nEnter warning number to open in Notepad++ "
-            "(0 or Q to finish): ");
+        /* Save the prompt's starting position. */
+        GetConsoleScreenBufferInfo(hOutput, &csbi);
+        COORD prompt_pos = csbi.dwCursorPosition;
 
-        if (fgets(input, sizeof(input), stdin) == NULL) {
-            break;
+        char input[32] = "";
+        int pos = 0;
+        int ch;
+
+        while ((ch = _getch()) != '\r' && ch != '\n') {
+            if (ch == 'q' || ch == 'Q') {
+                goto finished;
+            }
+
+            if (ch == '\b') {
+                if (pos > 0) {
+                    pos--;
+                    printf("\b \b");
+                    fflush(stdout);
+                }
+            }
+            else if (ch >= '0' && ch <= '9' &&
+                pos < (int)sizeof(input) - 1) {
+                input[pos++] = (char)ch;
+                putchar(ch);
+                fflush(stdout);
+            }
         }
 
-        /* Allow the user to quit with Q. */
-        if (tolower((unsigned char)input[0]) == 'q') {
-            break;
-        }
+        input[pos] = '\0';
 
-        number = strtol(input, &endptr, 10);
+        if (pos > 0) {
+            char* endptr;
+            long value = strtol(input, &endptr, 10);
 
-        if (endptr == input) {
-            printf("Please enter a warning number, 0, or Q.\n");
-            continue;
-        }
+            if (*endptr != '\0') {
+                continue;
+            }
 
-        /* Reject extra non-whitespace characters. */
-        while (isspace((unsigned char)*endptr)) {
-            endptr++;
-        }
-
-        if (*endptr != '\0') {
-            printf("Invalid input.\n");
-            continue;
+            number = value;
         }
 
         if (number == 0) {
@@ -175,13 +197,39 @@ void review_warnings(void) {
         }
 
         if (number < 1 || number > warning_count) {
-            printf("Enter a number between 1 and %d, or 0 to finish.\n",
+            printf("\nEnter a number between 1 and %d, or 0 to finish.\n",
                 warning_count);
-            continue;
+            number = 1;
+        }
+        else {
+            warning_entry* warning = &warnings[number - 1];
+            open_notepadpp_line(warning->filename, warning->line);
+
+            number++;
+            if (number > warning_count) {
+                number = 0;
+            }
         }
 
-        warning_entry* warning = &warnings[number - 1];
+        /* Clear the previous prompt line using the Windows API. */
+        GetConsoleScreenBufferInfo(hOutput, &csbi);
 
-        open_notepadpp_line(warning->filename, warning->line);
+        COORD clear_pos = { 0, csbi.dwCursorPosition.Y };
+        DWORD line_length = csbi.dwSize.X;
+
+        FillConsoleOutputCharacterA(
+            hOutput, ' ', line_length, clear_pos, &written);
+
+        FillConsoleOutputAttribute(
+            hOutput, csbi.wAttributes, line_length, clear_pos, &written);
+
+        SetConsoleCursorPosition(hOutput, clear_pos);
+
+        printf("Enter warning number to open in Notepad++ "
+            "(0 or Q to finish) [%ld]: ", number);
+        fflush(stdout);
     }
+
+finished:
+    ;
 }
