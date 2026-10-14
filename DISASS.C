@@ -260,15 +260,15 @@ void disassemble(const char* filename) {
 					char warning_text[WARNING_TEXT_LEN];
 
 					printf(BYELLOW
-						"Warning: Variable Overlap: %s=$%X. %s+1 is used, but $%X is %s. Line: %i\n"
+						"Warning: Variable Overlap: %s+1 and %s both used for $%X. Line: %i\n"
 						RESET,
-						sss[i].symbol, sss[i].symadr, sss[i].symbol, sss[i+1].symadr, sss[i+1].symbol, diss_linnum);
+						sss[i].symbol, sss[i+1].symbol, sss[i+1].symadr, diss_linnum+2);
 
 					sprintf_s(warning_text, sizeof(warning_text),
-						"Overlap: %s=$%X. %s+1 is used, but $%X is %s",
-						sss[i].symbol, sss[i].symadr, sss[i].symbol, sss[i + 1].symadr, sss[i + 1].symbol);
+						"Overlap: %s+1 and %s both used for $%X.",
+						sss[i].symbol, sss[i + 1].symbol, sss[i + 1].symadr);
 
-					record_warning(output_filename, diss_linnum, warning_text);
+					record_warning(output_filename, diss_linnum+2, warning_text);
 				}
 			}
 

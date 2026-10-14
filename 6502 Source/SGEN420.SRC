@@ -8,6 +8,7 @@
 * Assemble using the CODEGEN Macro ASSEMBLER for PC
 *
 	VERIFY
+	EQUCONST		Byte: EQU for constant, EPZ for address
 	
 .define COLORS 1	
 	

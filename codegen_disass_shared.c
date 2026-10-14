@@ -233,3 +233,21 @@ void review_warnings(void) {
 finished:
     ;
 }
+
+
+int enable_ansi_colors(void) {
+    HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD mode;
+
+    if (hOutput == NULL || hOutput == INVALID_HANDLE_VALUE)
+        return 0;
+
+    if (!GetConsoleMode(hOutput, &mode))
+        return 0;
+
+    if (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+        return 1;
+
+    return SetConsoleMode(
+        hOutput, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+}

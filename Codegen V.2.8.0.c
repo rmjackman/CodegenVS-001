@@ -27,14 +27,12 @@
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
 
-#define ROUND_TRIP_VERIFICATION 1
 #define LIS_TO_CONSOLE 1	// MADS .LI directive
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
 #define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
-#define CONST_BY_EQU_VS_EPZ 0		// Set to 0 for SOURCGEN 3.2
-#define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
+#define CONST_BY_IMMEDIATE_ADDR 0 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
 
 /**************************  define  *****************/
@@ -761,6 +759,7 @@ uint16_t operand_symval = 0;
 char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
 char src_filename[MAX_FILENAME_LEN + 1] = { 0 };
+char src_filename_sav[MAX_FILENAME_LEN + 1] = { 0 };
 char opcode[MAX_LABEL_SIZE + 1] = { 0 }, operand[MAX_FILENAME_LEN + 1] = { 0 };
 bool line_beg_opc_flg = 0;
 char outflgs[MAX_LABEL_SIZE + 1] = { 0 };
@@ -768,12 +767,8 @@ char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
 char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
 char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { {0} };
 
-
-#if CONST_BY_EQU_VS_EPZ
-bool const_by_equ_vs_epz = true;
-#else
 bool const_by_equ_vs_epz = false;
-#endif
+
 #if CONST_BY_IMMEDIATE_ADDR
 bool const_by_imm_addr = true;
 #else
@@ -818,7 +813,7 @@ static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDI
 #if !ATMAS_II_COMPATIBLE
 "ascii text db byte dw word fill = *= IN OF HX DA DAT ";
 #endif
-static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY ";
+static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY EQUCONST";
 
 static const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
 static unsigned short bradat[] = { 0x10,0x30,0x50,0x70,0x90,0xb0,0xd0,0xf0 };
@@ -856,6 +851,8 @@ int skip_frequency = 0;
 int main(int argc, char* argv[]) {
 	/*xlram_codetpy = malloc (0xffff); /* each address could be assigned a flag used in symtyp
 				Addresses in normal code which do not coincide with an opcode are assigned zero */
+
+	enable_ansi_colors();
 
 	xlram = (char*)malloc(0x10000);
 	if (xlram == NULL) {
@@ -897,7 +894,7 @@ int main(int argc, char* argv[]) {
 
 
 
-#if ROUND_TRIP_VERIFICATION
+
 
 	for (;;) {		// beginning of long loop for verif_flg == 2
 		if (verif_flg == 2) {
@@ -906,7 +903,7 @@ int main(int argc, char* argv[]) {
 		}
 
 
-#endif
+
 
 		//int braoffset = 0;
 		int pos = 0;
@@ -990,13 +987,11 @@ int main(int argc, char* argv[]) {
 			SHOW_SETTING(IMBED_SRC_FILENAME);
 			SHOW_SETTING(COMMENTS);
 			SHOW_SETTING(COMMENTS2);
-			SHOW_SETTING(ROUND_TRIP_VERIFICATION);
 			SHOW_SETTING(LIS_TO_CONSOLE);
 			SHOW_SETTING(NEW_DIRECT_ADDRESSING);
 			SHOW_SETTING(ALLOW_OPCODE_AT_LINE_BEGIN);
 			SHOW_SETTING(IF_ELSE_ENDIF);
 			SHOW_SETTING(SORT_EQU_EPZ);
-			SHOW_SETTING(CONST_BY_EQU_VS_EPZ);
 			SHOW_SETTING(CONST_BY_IMMEDIATE_ADDR);
 
 			printf("-------------------------\n\n");
@@ -1236,6 +1231,9 @@ int main(int argc, char* argv[]) {
 					linnum = linnum_sav;
 					txtptr = txtptr_sav;
 					include_flg = 0;
+					strcpy_s(src_filename, sizeof(src_filename), src_filename_sav);
+					//strcpy_s(src_filename, sizeof(src_filename), include_filename);
+
 					skip_line_numbers();
 				}
 
@@ -1258,10 +1256,7 @@ int main(int argc, char* argv[]) {
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), prnlnbuf);
 
 						fprintf(stream2, "%s", prnlnbufbeg);	//print line to LIS file
-#if LIS_TO_CONSOLE						
-						if (li_flg)
-							printf("%s", prnlnbufbeg);	//print line of LIS file to console
-#endif
+
 						if (cpfflg)
 							if (mismatchln_flg[0])
 								fprintf(stream2, "%s\n", cmpflbytln[0]);
@@ -2135,18 +2130,33 @@ int main(int argc, char* argv[]) {
 
 				/***************** Assembler Directives *****************/
 
+				/* EQUCONST */
+
+				if (_stricmp(opcode, "EQUCONST") == 0) {
+
+					const_by_equ_vs_epz = true;
+
+					continue;
+				}
 				/* LI */
 
 				if (_stricmp(opcode, "LI") == 0) {
 
 					find_operand();
 
-					if (_stricmp(operand, "ON") == 0)
-						li_flg = 1;
-					else if (_stricmp(operand, "OFF") == 0)
-						li_flg = 0;
-					else
-						error("Invalid operand");
+					if (_stricmp(operand, "ON") == 0) {
+						char* txtptr_sav = txtptr;
+						char* endptr;
+
+						txtptr = strstr(txtptr, "\n") + 1;
+						endptr = strstr(txtptr, ".LI OFF");
+
+						if (!endptr)
+							endptr = txtptr + strlen(txtptr);
+
+						printf("%.*s\n", (int)(endptr - txtptr), txtptr);
+						txtptr = txtptr_sav;
+					}
 					continue;
 				}
 
@@ -2209,7 +2219,8 @@ int main(int argc, char* argv[]) {
 					*txtendptr++ = '\0';
 					txtptr_sav = linbegptr + linlen;
 					linnum_sav = linnum;
-
+					strcpy_s(src_filename_sav, sizeof(src_filename_sav), src_filename);
+					strcpy_s(src_filename, sizeof(src_filename), include_filename);
 					linbegptr = includebuf;
 					linlen = 0;
 					linnum = 0;
@@ -2256,14 +2267,14 @@ int main(int argc, char* argv[]) {
 					smttoimg_flg = 1;
 					continue;
 				}
-#if ROUND_TRIP_VERIFICATION
+
 				/* VERIFY */
 
 				if (_stricmp(opcode, "VERIFY") == 0) {
 					verif_flg = 1;
 					continue;
 				}
-#endif
+
 				/* CPFL */
 
 				if (_stricmp(opcode, "CPFL") == 0) {
@@ -3104,46 +3115,53 @@ int main(int argc, char* argv[]) {
 			for (size_t i = 0; i < first_adr_symnum; i++) {
 				// Test single-byte constants
 
-				if (sss[i].frequ_constant != sss[i].frequency)
-					printf(BYELLOW "%s i=%zu frequ_constant = %d frequency = %d\n" RESET,
-						sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
-
-				if (sss[i].frequ_constant == 0) {
-					printf(BYELLOW "Warning:" YELLOW
-						"The single-byte constant " BYELLOW "%s" YELLOW
-						", which was defined using EQU,\n", sss[i].symbol);
-
-					printf("was possibly not used in any immediate-addressing or DFB statement.\n" RESET);
-				}
-				if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency) {
-					printf(BYELLOW "%s" YELLOW " is used in direct addressing.\n", sss[i].symbol);
-					printf("Assuming %s to represent an address rather than a constant.\n", sss[i].symbol);
-					printf("Changing ']' to '#' and deleting section type '[' from lines with this symbol.\n\n" RESET);
-
-					sss[i].symtyp = '#';
+				if (sss[i].frequency) {
 
 
 
-					for (size_t j = 0; j < symnumext; j++) {
+					if (sss[i].frequ_constant != sss[i].frequency)
+						printf(BYELLOW "%s i=%zu frequ_constant = %d frequency = %d\n" RESET,
+							sss[i].symbol, i, sss[i].frequ_constant, sss[i].frequency);
 
-						if (sss[j].symtyp == '[') {
-							
-							if (sss[j].oper_symval == sss[i].symadr) {
+					if (sss[i].frequ_constant == 0) {
+						printf(BYELLOW "Warning:" YELLOW
+							"The single-byte constant " BYELLOW "%s" YELLOW
+							", which was defined using EQU,\n", sss[i].symbol);
 
-								sss[j].symtyp = '(';
+						printf("was possibly not used in any immediate-addressing or DFB statement.\n" RESET);
+					}
+					if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency) {
+						printf(BYELLOW "%s" YELLOW " is used in direct addressing.\n", sss[i].symbol);
+						printf("Assuming %s to represent an address rather than a constant.\n", sss[i].symbol);
+						printf("Changing ']' to '#' and deleting section type '[' from lines with this symbol.\n\n" RESET);
+
+						sss[i].symtyp = '#';
+
+
+
+						for (size_t j = 0; j < symnumext; j++) {
+
+							if (sss[j].symtyp == '[') {
+
+								if (sss[j].oper_symval == sss[i].symadr) {
+
+									sss[j].symtyp = '(';
+								}
 							}
 						}
+
+						qsort(sss, symnum, sizeof(ssstype), ssscmpadr);
+
+						first_adr_symnum = sort_equ_epz();
 					}
-
-					qsort(sss, symnum, sizeof(ssstype), ssscmpadr);
-
-					first_adr_symnum = sort_equ_epz();
-
+				}
+				else {
+					printf(BYELLOW "%s" YELLOW " is no longer used.\n", sss[i].symbol);
 				}
 			}
+
+
 		}
-		
-		
 		if (verif_flg == 0 || verif_flg == 1) {
 
 
@@ -3167,7 +3185,7 @@ int main(int argc, char* argv[]) {
 			for (i = first_adr_symnum; i < symnumext; i++) {
 
 				int sectype = 0;
-				int differing_types = 0;
+
 				int duplicate = 0;
 				int dupnum = -1;
 				int j;
@@ -3225,20 +3243,14 @@ int main(int argc, char* argv[]) {
 
 					if (sectype == 0)
 						sectype = sss[j].symtyp;
-					else if (sectype != sss[j].symtyp)
-						differing_types = 1;
+
+					/*else if (sectype != sss[j].symtyp)
+
+						printf(BYELLOW "Warning: " YELLOW "Different section types '%c' and '%c' for "
+							"address $%04X\n" RESET, sectype, sss[j].symtyp, sss[i].symadr);*/
 				}
 
 
-				/*
-				 * Warn if different non-zero section types were found
-				 * for the same address.
-				 */
-				if (differing_types) {
-
-					printf(BYELLOW "Warning: " YELLOW "Different section types '%c' and '%c' for "
-						"address $%04X\n" RESET, sectype, sss[j].symtyp, sss[i].symadr);
-				}
 
 
 				/****************************************************************
@@ -3515,7 +3527,7 @@ int main(int argc, char* argv[]) {
 				exit(1);
 			}
 			
-			printf("Saving symbol-file %s\n", smbfilename);
+			printf(BBLUE "Saving symbol-file %s\n" RESET, smbfilename);
 
 			fputc(0xfb, stream);
 			fputc(0x00, stream);
@@ -3644,14 +3656,14 @@ int main(int argc, char* argv[]) {
 
 			/***************************************************************/
 
-#if ROUND_TRIP_VERIFICATION
+
 		if (verif_flg == 1) {
 			verif_flg = 2;
 			strcpy_s(src_filename, sizeof(src_filename), "AUTORUN.SRC");
 			strcpy_s(cmp_file, sizeof(cmp_file), loafilename);
 		}
 	}//end of long loop for verif_flg == 2
-#endif	
+	
 	
 	review_warnings();
 	
@@ -4611,7 +4623,7 @@ uint32_t symtoi1() {
 
 			if (strcmp("ADR1", sssptr->symbol) == 0)
 				pc = pc;
-			
+
 			if (pass == 2 && !skip_frequency && !frequency_disabled &&
 				(!pending_NN_pair_flg || maclevel == 0)) {
 

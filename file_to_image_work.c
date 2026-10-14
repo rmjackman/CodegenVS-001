@@ -243,7 +243,7 @@ open_disk_image_file:
 
 
 		
-		printf("\nDisk image: %s\n", diskimage_name);
+		printf(BBLUE "\nDisk image: %s\n" RESET, diskimage_name);
 		
 		
 		
@@ -809,7 +809,7 @@ open_disk_image_file:
 	/**************** Write directory entry *************************************/
 
 	printf("Position %d in directory is free.\n", filpos_in_dir);
-	printf("Writing %s to disk image\n", fs);
+	printf(BBLUE "Writing %s to disk image\n" RESET, fs);
 
 	sec = findfree(0);	// determine sec, and change bit to 0 in VTOC when found
 

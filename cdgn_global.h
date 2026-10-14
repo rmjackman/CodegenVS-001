@@ -25,9 +25,9 @@
 //#define SRC_FILENAME "C:\\Users\\Lloyd\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
-#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
+#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 #define SHOW_SETTING(name) \
     printf("%-28s %s\n", #name, (name) ? "ON" : "OFF")
@@ -147,6 +147,8 @@ void dbg_sym(DbgContext* ctx,
 void dbg_close(DbgContext* ctx);
 
 #endif /* DBG_H */
+
+int enable_ansi_colors(void);
 
 #define RESET   "\x1b[0m"
 #define RED     "\x1b[31m"
