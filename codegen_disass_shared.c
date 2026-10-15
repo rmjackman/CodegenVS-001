@@ -130,7 +130,7 @@ void review_warnings(void) {
         return;
     }
 
-    printf("\n\nRecorded warnings: %d\n\n", warning_count);
+    printf(BYELLOW "\n\nRecorded warnings: %d\n\n", warning_count);
 
     for (int i = 0; i < warning_count; i++) {
         printf("%4d. %s:%d: %s\n",
@@ -231,7 +231,7 @@ void review_warnings(void) {
     }
 
 finished:
-    ;
+    printf(RESET); ;
 }
 
 

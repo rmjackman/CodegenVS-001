@@ -27,12 +27,11 @@
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
 
 
-#define LIS_TO_CONSOLE 1	// MADS .LI directive
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
 #define IF_ELSE_ENDIF 1
 #define SORT_EQU_EPZ 1		//Place EQU constants ( ] ) before EPZ addresses in symtab. !!! Set to 0 for SOURCGEN 3.2 !!!
-#define CONST_BY_IMMEDIATE_ADDR 0 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
+#define CONST_BY_IMMEDIATE_ADDR 1 // Constants ( ] ) are determined by use in opc # instead of EQU vs. EPZ
 									// Set to 0 for SOURCGEN 3.2
 
 /**************************  define  *****************/
@@ -987,7 +986,6 @@ int main(int argc, char* argv[]) {
 			SHOW_SETTING(IMBED_SRC_FILENAME);
 			SHOW_SETTING(COMMENTS);
 			SHOW_SETTING(COMMENTS2);
-			SHOW_SETTING(LIS_TO_CONSOLE);
 			SHOW_SETTING(NEW_DIRECT_ADDRESSING);
 			SHOW_SETTING(ALLOW_OPCODE_AT_LINE_BEGIN);
 			SHOW_SETTING(IF_ELSE_ENDIF);
@@ -4706,7 +4704,7 @@ void error(char* errstr) {
 		stream2 = NULL;
 	}
 
-	printf("\n\nERROR --\n%s\nat ", errstr);
+	printf(BRED "\n\nERROR --" BYELLOW "\n % s\nat ", errstr);
 	if (pc)
 		printf("address $%X, ", pc);
 	printf("line %d\n\n\a", linnum);
