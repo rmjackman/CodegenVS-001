@@ -1846,7 +1846,7 @@ int main(int argc, char* argv[]) {
 						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
 						{
 
-							if ((!contains_word_icase("EQU EPZ ORG", opcode) &&
+							/*if ((!contains_word_icase("EQU EPZ ORG", opcode) &&
 								(strlen(opcode) == 3))) {	// regular opcode
 
 								if (force_pc_listing_flg || pc != pc_sav) {
@@ -1861,7 +1861,7 @@ int main(int argc, char* argv[]) {
 							}
 							else {
 								sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
-							}
+							}*/
 
 							size_t len = strlen(prnlnbuf);
 							size_t rem = sizeof(prnlnbuf) - len;
@@ -4780,8 +4780,12 @@ void toxlbuf(uint8_t ch) {
 
 			sprintf_s(tempstr, sizeof(tempstr), " %02X", ch & 0xFF);
 
-			if (bytcnt == 1)
-				sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc - 1);
+			if (bytcnt == 1) {
+				if (_stricmp(opcode, "ORG") != 0)
+					sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc - 1);
+				else
+					sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
+			}
 			
 			if (bytcnt <= LSTBYTES)
 				strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), tempstr);
