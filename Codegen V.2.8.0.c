@@ -88,6 +88,7 @@ int is_in_string(char* start, char* pos);
 void sr_5a_5b();
 void print_symbol_table();
 int sort_equ_epz();
+void find_pc_line(uint16_t address);
 
 
 short pass = 0;
@@ -749,6 +750,7 @@ bool lo_fg_sav = 0;
 bool pending_NN_pair_flg = 0;
 int const_flg = 0;
 bool frequency_disabled = false;
+short verif_flg = 0; // 0 = no verification, 1 = verification, 2 = round trip verification
 
 #endif
 short lo_fg = 0;
@@ -777,6 +779,18 @@ ssstype* sssptr;
 
 
 ssstype	sss[MAXSYMS] = { 0 };
+
+
+#define MAX_PCLINES    10000
+#define MAX_PCLINE_LEN (2 * MAX_LABEL_SIZE + MAX_FILENAME_LEN + 3)
+
+typedef struct {
+	uint16_t address;
+	char line[MAX_PCLINE_LEN];
+} pc_line_t;
+
+pc_line_t pc_table[MAX_PCLINES];
+int pc_table_count = 0;
 
 int ssscmpadr(const ssstype* dummy1, const ssstype* dummy2);
 
@@ -887,7 +901,7 @@ int main(int argc, char* argv[]) {
 	char* labptr;
 
 
-	short verif_flg = 0; // 0 = no verification, 1 = verification, 2 = round trip verification
+	
 	uint16_t seg_beg_sav = 0;
 
 
@@ -1253,7 +1267,20 @@ int main(int argc, char* argv[]) {
 						/* Append the source line */
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), prnlnbuf);
 
-						fprintf(stream2, "%s", prnlnbufbeg);	//print line to LIS file
+						fprintf(stream2, "%s", prnlnbufbeg);
+
+						/* Save source lines with a genuine PC address */
+						if (prnlnbufbeg[0] != ' ' &&
+							prnlnbufbeg[0] != '\0' &&
+							pc_table_count < MAX_PCLINES) {
+
+							pc_table[pc_table_count].address = pc_sav;
+
+							strcpy_s(pc_table[pc_table_count].line,
+								sizeof(pc_table[pc_table_count].line), prnlnbuf);
+
+							pc_table_count++;
+						}
 
 						if (cpfflg)
 							if (mismatchln_flg[0])
@@ -1862,7 +1889,7 @@ int main(int argc, char* argv[]) {
 							else {
 								sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
 							}*/
-
+							pc_sav = pc;
 							size_t len = strlen(prnlnbuf);
 							size_t rem = sizeof(prnlnbuf) - len;
 
@@ -2742,6 +2769,8 @@ int main(int argc, char* argv[]) {
 												printf("is used in an immediate addressing or DFB statement at"
 													BYELLOW " line %i\n" RESET, linnum);
 
+												//find_pc_line(sss[i].symadr);
+
 												sprintf_s(warning_text, sizeof(warning_text),
 													"The zero-page symbol %s, which was defined using EPZ, "
 													"is used in an immediate addressing or DFB statement",
@@ -3108,6 +3137,14 @@ int main(int argc, char* argv[]) {
 		} 
 		
 /***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
+
+		/** print PC table 
+		for (int i = 0; i < pc_table_count; i++) {
+			printf("%04X: %s",
+				pc_table[i].address,
+				pc_table[i].line);
+		}**/
+
 
 		if (const_by_equ_vs_epz || const_by_imm_addr) {
 			for (size_t i = 0; i < first_adr_symnum; i++) {
@@ -4386,9 +4423,11 @@ uint32_t symtoi1() {
 			char warning_text[WARNING_TEXT_LEN];
 
 			printf(BYELLOW "Warning: %s " YELLOW
-				"used instead of symbol at " BYELLOW "line %i\n" RESET,
+				"used instead of Symbol at " BYELLOW "line %i\n" RESET,
 				strbeg, linnum);
 
+			find_pc_line(pc - 1);
+			find_pc_line(pc + 1);
 			sprintf_s(warning_text, sizeof(warning_text),
 				"%s used instead of symbol", strbeg);
 
@@ -4469,6 +4508,10 @@ uint32_t symtoi1() {
 			printf(BYELLOW "Warning: $%s " YELLOW
 				"used instead of symbol at " BYELLOW "line %i\n" RESET,
 				strbeg, linnum);
+
+			if (verif_flg == 2)
+				find_pc_line(pc);
+			
 
 			sprintf_s(warning_text, sizeof(warning_text),
 				"$%s used instead of symbol", strbeg);
@@ -5536,3 +5579,16 @@ int sort_equ_epz() {
 }
 
 #endif // SORT_EQU_EPZ
+
+void find_pc_line(uint16_t address) {
+	for (int i = 0; i < pc_table_count; i++) {
+		if (pc_table[i].address == address) {
+			printf(BRED "%04X: %s\n" RESET,
+				pc_table[i].address,
+				pc_table[i].line);
+			return;
+		}
+	}
+
+	printf(BRED "No source line found for address %04X\n" RESET, address);
+}
