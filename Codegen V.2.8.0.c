@@ -2769,7 +2769,7 @@ int main(int argc, char* argv[]) {
 												printf("is used in an immediate addressing or DFB statement at"
 													BYELLOW " line %i\n" RESET, linnum);
 
-												//find_pc_line(sss[i].symadr);
+												find_pc_line(sss[i].symadr);
 
 												sprintf_s(warning_text, sizeof(warning_text),
 													"The zero-page symbol %s, which was defined using EPZ, "
@@ -3168,7 +3168,7 @@ int main(int argc, char* argv[]) {
 					if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency) {
 						printf(BYELLOW "%s" YELLOW " is used in direct addressing.\n", sss[i].symbol);
 						printf("Assuming %s to represent an address rather than a constant.\n", sss[i].symbol);
-						printf("Changing ']' to '#' and deleting section type '[' from lines with this symbol.\n\n" RESET);
+						printf("Changing ']' to '#' and deleting section type '[' from lines with %s.\n\n" RESET, sss[i].symbol);
 
 						sss[i].symtyp = '#';
 
@@ -4509,7 +4509,7 @@ uint32_t symtoi1() {
 				"used instead of symbol at " BYELLOW "line %i\n" RESET,
 				strbeg, linnum);
 
-			if (verif_flg == 2)
+			//if (verif_flg == 2)
 				find_pc_line(pc);
 			
 
@@ -5582,10 +5582,22 @@ int sort_equ_epz() {
 
 void find_pc_line(uint16_t address) {
 	for (int i = 0; i < pc_table_count; i++) {
-		if (pc_table[i].address == address) {
-			printf(BRED "%04X: %s\n" RESET,
-				pc_table[i].address,
-				pc_table[i].line);
+		if(verif_flg==2){
+			if (pc_table[i].address == address) {
+				printf(BRED "%04X:\t%s\n" RESET,
+					pc_table[i].address,
+					pc_table[i].line);
+				return;
+			}
+
+		}
+		else {
+
+			if (pc)
+				printf(BRED "%X:\t", pc);
+			//printf(BRED "line %d\n\n\a" RESET, linnum);
+			print_visible(linbuf[0]);
+			printf(RESET);
 			return;
 		}
 	}

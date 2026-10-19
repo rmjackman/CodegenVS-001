@@ -1097,7 +1097,7 @@ uint16_t findfree(uint16_t sc) {
 void err(char* errstr)
 
 {
-	printf("\n\n\aERROR: %s\n", errstr);
+	printf(BRED "\n\n\aERROR: %s\n" RESET, errstr);
 	hit_Enter();
 	exit(1);
 }
@@ -1106,7 +1106,7 @@ void err(char* errstr)
 
 void file_err(char* errstr, char filename[]) {
 
-	printf("\n\n\aERROR: %s %s\n", errstr, filename);
+	printf(BRED "\n\n\aERROR: %s %s\n" RESET, errstr, filename);
 	hit_Enter();
 	exit(1);
 }
