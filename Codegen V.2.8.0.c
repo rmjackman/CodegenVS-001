@@ -901,7 +901,7 @@ int main(int argc, char* argv[]) {
 	char* labptr;
 
 
-	
+
 	uint16_t seg_beg_sav = 0;
 
 
@@ -911,7 +911,7 @@ int main(int argc, char* argv[]) {
 
 	for (;;) {		// beginning of long loop for verif_flg == 2
 		if (verif_flg == 2) {
-			puts( "\n\n*******************************************************\n");
+			puts("\n\n*******************************************************\n");
 			puts(BBLUE "Starting round trip verification:\n" RESET);
 		}
 
@@ -963,7 +963,7 @@ int main(int argc, char* argv[]) {
 		char tmptyp;
 		fpos_t pos1;
 		bool star_flg = 0;
-		
+
 		bool li_flg = 0;
 		int first_adr_symnum = 0;
 
@@ -1071,7 +1071,7 @@ int main(int argc, char* argv[]) {
 		}//end of if (verif_flg == 0)
 
 
-		printf( BBLUE "Source file: %s -- " RESET, src_filename);
+		printf(BBLUE "Source file: %s -- " RESET, src_filename);
 
 		if (fopen_s(&stream, src_filename, "r") != 0) {
 			printf("Can't open %s\n", src_filename);
@@ -1323,8 +1323,7 @@ int main(int argc, char* argv[]) {
 				linlen = (short)(strchr(linbegptr, '\n') + 1L - linbegptr);	// find linlen
 
 				/******* Test line for illegal characters *******/
-				if (!maclevel && pass == 1)
-				{
+				if (!maclevel && pass == 1) {
 					int quote_flg = 0;
 
 					for (cnt = 1; cnt <= linlen; cnt++) {
@@ -1373,7 +1372,7 @@ int main(int argc, char* argv[]) {
 
 							ptr++;
 							labptr = lab;
-							
+
 							while (cnt) {
 								cnt--;
 								*labptr++ = *ptr++;
@@ -1872,23 +1871,6 @@ int main(int argc, char* argv[]) {
 					{
 						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
 						{
-
-							/*if ((!contains_word_icase("EQU EPZ ORG", opcode) &&
-								(strlen(opcode) == 3))) {	// regular opcode
-
-								if (force_pc_listing_flg || pc != pc_sav) {
-									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "%4X:", pc);
-									force_pc_listing_flg = 0;
-								}
-								else {
-									sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "    :");
-								}
-
-								pc_sav = pc;
-							}
-							else {
-								sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
-							}*/
 							pc_sav = pc;
 							size_t len = strlen(prnlnbuf);
 							size_t rem = sizeof(prnlnbuf) - len;
@@ -1947,9 +1929,6 @@ int main(int argc, char* argv[]) {
 					}
 
 					/* EPZ EQU  LABEL AT LINE BEGIN*/
-
-					//if (strcmp(opcode,"=") == 0)
-						//strcpy_s(opcode, sizeof(opcode), "EQU");
 
 					if ((_stricmp(opcode, "EQU") == 0) || (_stricmp(opcode, "EPZ") == 0)) {
 						if (*txtptr == ' ' || *txtptr == '\t') // not for '='
@@ -2040,7 +2019,7 @@ int main(int argc, char* argv[]) {
 						labflg = 1;
 
 #if !ATMAS_II_COMPATIBLE
-					// local label, must be appended to previous label
+						// local label, must be appended to previous label
 						if (*label == '.') {
 							char temp[MAX_LABEL_SIZE];
 
@@ -2079,7 +2058,7 @@ int main(int argc, char* argv[]) {
 					if ((pass == 1) && !(macroflg)) {
 						strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), label);//Add label to symbol table
 						sss[symnum].symadr = pc;
-						
+
 #if COMMENTS
 						i = 0;
 						if (star_flg) {
@@ -2103,7 +2082,7 @@ int main(int argc, char* argv[]) {
 
 #endif
 						symnum++;
-						
+
 					}
 				}
 				/*END LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
@@ -2405,18 +2384,18 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "DFB") == 0) {
 					data_flg = 1;
-					
+
 					do {
 						emit_byte();
 					} while (*txtptr == ',');
-					
+
 					continue;
 				}
 #if !ATMAS_II_COMPATIBLE
 				/* HX */
 
 				if (_stricmp(opcode, "HX") == 0) {
-					
+
 					sectyp('#');
 					data_flg = 1;
 					txtptr++;
@@ -2438,7 +2417,7 @@ int main(int argc, char* argv[]) {
 
 						toxlbuf((char)((hi << 4) | lo));
 
-						
+
 						txtptr += 2;
 					}
 
@@ -2712,12 +2691,12 @@ int main(int argc, char* argv[]) {
 						txtptr++;
 #endif
 					//if (!pending_NN_pair_flg) 
-						const_flg = 1;
+					const_flg = 1;
 
 					intval = expresstoi_p2();
 
 					const_flg = 0;
-											
+
 					uint8_t nn_byte = (uint8_t)intval;
 
 					if (operand[0] == '#' &&
@@ -2740,7 +2719,7 @@ int main(int argc, char* argv[]) {
 
 							/* Determine if the symbol is a constant by EQU vs. EPZ */
 							if (const_by_equ_vs_epz) {
-								
+
 								for (i = 0; i < symnum; i++) {
 
 									if (sss[i].symadr == intval &&
@@ -2785,7 +2764,7 @@ int main(int argc, char* argv[]) {
 										operand_symval = sss[i].symadr;
 
 										sectyp('[');
-										
+
 										break;
 									}
 								}
@@ -2819,7 +2798,7 @@ int main(int argc, char* argv[]) {
 
 							}
 							else {
-								if (//labflg ||
+								if (labflg ||
 									intval_sav != intval ||
 									lo_fg_sav == lo_fg) {
 
@@ -2848,7 +2827,7 @@ int main(int argc, char* argv[]) {
 
 					toxlbuf((char)data[cnt][NN]);
 					toxlbuf(nn_byte);
-					
+
 					continue;
 				}
 
@@ -3133,17 +3112,17 @@ int main(int argc, char* argv[]) {
 #if SORT_EQU_EPZ
 			first_adr_symnum = sort_equ_epz();
 #endif // SORT_EQU_EPZ
-			
-		} 
-		
-/***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
 
-		/** print PC table 
-		for (int i = 0; i < pc_table_count; i++) {
-			printf("%04X: %s",
-				pc_table[i].address,
-				pc_table[i].line);
-		}**/
+		}
+
+		/***** END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES END PASSES ****/
+
+				/** print PC table
+				for (int i = 0; i < pc_table_count; i++) {
+					printf("%04X: %s",
+						pc_table[i].address,
+						pc_table[i].line);
+				}**/
 
 
 		if (const_by_equ_vs_epz || const_by_imm_addr) {
@@ -3403,7 +3382,7 @@ int main(int argc, char* argv[]) {
 			}
 
 #else
-	
+
 			puts("");
 			symnum = 0;
 			for (i = 0; i < symnumext; i++) {
@@ -3446,13 +3425,13 @@ int main(int argc, char* argv[]) {
 
 
 
-/************* Symbol table to LIS file ***********/
+			/************* Symbol table to LIS file ***********/
 
 			if (strpbrk(outflgs, "Nn")) {
 				fprintf(stream2, "\n\n**** Symbol table *****\n\n");
 				for (i = 0; i < symnumext; i++) {
-					
-						list_label_f(i);
+
+					list_label_f(i);
 				}
 			}
 
@@ -3554,14 +3533,14 @@ int main(int argc, char* argv[]) {
 				else
 					strcat_s(smbfilename, sizeof(smbfilename), ".SMT");
 			}
-			
+
 
 			if (fopen_s(&stream, smbfilename, "wb") != 0) {
 				perror("Error opening file");
 				hit_Enter();
 				exit(1);
 			}
-			
+
 			printf(BBLUE "Saving symbol-file %s\n" RESET, smbfilename);
 
 			fputc(0xfb, stream);
@@ -3574,7 +3553,7 @@ int main(int argc, char* argv[]) {
 			fputc(0, stream);
 			secsiz = 0;
 			fgetpos(stream, &pos2);
-			
+
 			/*for (i = 0; i < symnum; i++) {// turned off temporarilly because it alters the simbol table prior to disassembly
 				lensv = fptsmb(i);
 				secsiz += lensv;
@@ -3587,7 +3566,7 @@ int main(int argc, char* argv[]) {
 
 			//end Save SMT
 
-			
+
 
 			/******************* Save to image ************************************/
 
@@ -3610,7 +3589,7 @@ int main(int argc, char* argv[]) {
 				}
 			}
 			// end Save to image
-			
+
 			/****************** Result of comparison with LOA file made in pass2 ********************/
 		}
 		//else {//verif_flg == 1;
@@ -3669,7 +3648,7 @@ int main(int argc, char* argv[]) {
 
 			review_warnings();
 
-					/*************Run Atari800 Emulator **************************************************/
+			/*************Run Atari800 Emulator **************************************************/
 
 			if (*emul_filename) {
 				strcat_s(emul_filename, sizeof(emul_filename), " ");
@@ -3678,11 +3657,11 @@ int main(int argc, char* argv[]) {
 				printf("Please close the emulator before re-running Codegen.\n");
 
 				if (system(emul_filename)) puts("Emulator not found");
-				
+
 			}
 			else
-		
-			
+
+
 				hit_Enter();
 
 
@@ -3698,10 +3677,10 @@ int main(int argc, char* argv[]) {
 			strcpy_s(cmp_file, sizeof(cmp_file), loafilename);
 		}
 	}//end of long loop for verif_flg == 2
-	
-	
+
+
 	review_warnings();
-	
+
 
 	hit_Enter();
 
@@ -4426,8 +4405,8 @@ uint32_t symtoi1() {
 				"used instead of Symbol at " BYELLOW "line %i\n" RESET,
 				strbeg, linnum);
 
-			find_pc_line(pc - 1);
-			find_pc_line(pc + 1);
+			find_pc_line(pc); //??? not tested for verif_flg == 2
+			
 			sprintf_s(warning_text, sizeof(warning_text),
 				"%s used instead of symbol", strbeg);
 
@@ -4510,8 +4489,8 @@ uint32_t symtoi1() {
 				strbeg, linnum);
 
 			//if (verif_flg == 2)
-				find_pc_line(pc);
-			
+			find_pc_line(pc);
+
 
 			sprintf_s(warning_text, sizeof(warning_text),
 				"$%s used instead of symbol", strbeg);
@@ -4829,7 +4808,7 @@ void toxlbuf(uint8_t ch) {
 				else
 					sprintf_s(prnlnbufbeg, sizeof(prnlnbufbeg), "     ");
 			}
-			
+
 			if (bytcnt <= LSTBYTES)
 				strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), tempstr);
 			else {
@@ -4838,12 +4817,12 @@ void toxlbuf(uint8_t ch) {
 					prnlnum++;
 
 					if (_stricmp(opcode, "ORG")) { // if not ORG
-						sprintf_s(prnlnbuf2[prnlnum - 1], 
+						sprintf_s(prnlnbuf2[prnlnum - 1],
 							sizeof(prnlnbuf2[prnlnum - 1]),
 							"%4X:", pc - 1);
 					}
 					else { // if ORG
-						sprintf_s(prnlnbuf2[prnlnum - 1], 
+						sprintf_s(prnlnbuf2[prnlnum - 1],
 							sizeof(prnlnbuf2[prnlnum - 1]),
 							"     ");
 					}
@@ -5060,7 +5039,7 @@ void sectyp(char line_type) {
 			if (sss[i].symadr == pc) {
 				sss[i].symtyp = line_type;
 				sss[i].oper_symval = operand_symval;
-				
+
 				return;
 			}
 		}
@@ -5310,9 +5289,9 @@ bool contains_word_icase(const char* list, const char* word) {
 }
 
 void emit_byte() {// emit bytes for DFB directive
-	
+
 	const_flg = 1;
-	
+
 	txtptr++;
 
 	if (*txtptr == '%') {
@@ -5325,7 +5304,7 @@ void emit_byte() {// emit bytes for DFB directive
 		char* txtptr_save = txtptr;
 		skip_frequency = 1;
 		unsigned char byte = (unsigned char)symtoi1();
-		
+
 		skip_frequency = 0;
 		if (memchr(esc_ch_tab, byte, 16))
 			sectyp(',');
@@ -5415,12 +5394,12 @@ void sourcgen_symtab() {
 	int i;
 	for (i = 0; i < symnum; i++) {
 		fprintf(stream2, "%x ", i);
-		if (sss[i].symtyp){
+		if (sss[i].symtyp) {
 			fprintf(stream2, "%c ", sss[i].symtyp);
 
 		}
 		else fprintf(stream2, "  ");
-		fprintf(stream2, "%d ",sss[i].ofst);
+		fprintf(stream2, "%d ", sss[i].ofst);
 		//if (sss[i].comment[0])
 			//fprintf(stream2, "*** %s\n", sss[i].comment);
 		list_label_f2(i);
@@ -5429,8 +5408,7 @@ void sourcgen_symtab() {
 }
 
 
-void sectyp_at(uint16_t address, char line_type)
-{
+void sectyp_at(uint16_t address, char line_type) {
 	if (pass != 2)
 		return;
 
@@ -5481,8 +5459,7 @@ void skip_line_numbers() {
 	}
 }
 
-int is_in_string(char* start, char* pos)
-{
+int is_in_string(char* start, char* pos) {
 	int quote_flg = 0;
 
 	while (start < pos) {
@@ -5582,7 +5559,7 @@ int sort_equ_epz() {
 
 void find_pc_line(uint16_t address) {
 	for (int i = 0; i < pc_table_count; i++) {
-		if(verif_flg==2){
+		if (verif_flg == 2) {
 			if (pc_table[i].address == address) {
 				printf(BRED "%04X:\t%s\n" RESET,
 					pc_table[i].address,

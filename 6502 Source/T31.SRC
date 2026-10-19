@@ -207,7 +207,7 @@ cWORD	EQU $8000	$7B00+$500
 cPRBF	EQU $8010	print buffer
 cCBLKBUF	EQU $8100	copy-block buffer cSSP bytes
 
-cSSP	EQU 960		screen size (SSP also exists)
+*cSSP	EQU 960		screen size (SSP also exists)
 --------------------------------------------------------------------------------
 	ORG $8100+960 to 92EA
 
