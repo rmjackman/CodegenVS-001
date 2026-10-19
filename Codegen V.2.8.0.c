@@ -4401,8 +4401,7 @@ uint32_t symtoi1() {
 
 			char warning_text[WARNING_TEXT_LEN];
 
-			printf(BYELLOW "Warning: %s " YELLOW
-				"used instead of Symbol at " BYELLOW "line %i\n" RESET,
+			printf(BYELLOW "Warning: %s used instead of Symbol at line %i\n" RESET,
 				strbeg, linnum);
 
 			find_pc_line(pc); //??? not tested for verif_flg == 2
@@ -4484,8 +4483,7 @@ uint32_t symtoi1() {
 
 			char warning_text[WARNING_TEXT_LEN];
 
-			printf(BYELLOW "Warning: $%s " YELLOW
-				"used instead of symbol at " BYELLOW "line %i\n" RESET,
+			printf(BYELLOW "Warning: $%s used instead of symbol at line %i\n" RESET,
 				strbeg, linnum);
 
 			//if (verif_flg == 2)
