@@ -32,7 +32,7 @@
 #define SKA_AS_COMMENT    0		// 5. Set to 1 to show SKA as a comment
 #define SHOW_RH_COMMENT   0		// 6. Set to 1 to show right-hand comment
 #define SHOW_JSR          1		// 7. 
-#define PRINT_OPC_BYTES   0		// 8.
+#define PRINT_OPC_BYTES   0		// 8. Places the opcode byte in front of the instruction mnemonic. (Set to 0 when not needed)
 
 #define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.
 
@@ -191,9 +191,9 @@ void disassemble(const char* filename) {
 #if SHOW_JSR
 	flag[7] = 1;
 #endif
-//#if PRINT_OPC_BYTES
-//	flag[8] = 1;
-//#endif
+#if PRINT_OPC_BYTES
+	flag[8] = 1;
+#endif
 
 /********      Init symtab_epz  *******/
 
@@ -516,10 +516,14 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 
 
 	if (sss[sno].symadr == pc) {
-		pts("* ");					//Change this back to pts("* ");
-		ptc(sss[sno].symtyp);
+		pts("*");					//Change this back to pts("* ");
+		
 		if (flag[1]) //ADDR_LEFT_COMMENT
 			pts_p("%X", pc);
+		if (sss[sno].symtyp) {
+			pts("/");
+			ptc(sss[sno].symtyp);
+		}
 
 		if (flag[2]) // SHOW_LEFT_COMMENT
 			if (sss[sno].comment[0])
@@ -700,9 +704,9 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	ptr = abtab + offset;
 	opcodeptr = codeptr;
 
-	//if (flag[8] == 1) { //SHOW_OPCODES
-	//	pts_p(" %X ", *codeptr);
-	//}
+	if (flag[8] == 1) { //SHOW_OPCODES
+		pts_p(" %X ", *codeptr);
+	}
 
 
 

@@ -186,11 +186,12 @@ A1S	EPZ $D2	save ADR1V
 SYA	EPZ $D4
 NWASV	EPZ $D6	third value e.g. for P:
 ADR1SV	EPZ $D8	ADR1-save
+TSTFLL	EPZ $DA
 
 TCT	EPZ $DE	counter
 BT1	EPZ $E0
-BT2	EPZ $E1	(or TSTFLL)
-BT3	EPZ $E2  (or TSTFLL+1)
+BT2	EPZ $E1
+BT3	EPZ $E2
 
 A1	EPZ $E4
 A2	EPZ $E6  (or PNT)
@@ -3674,7 +3675,7 @@ IP	INPT20LS
 *** CIOV returns error number in Y
 DER	JMP IOERR
 *
-TSTFLL	EPZ BT2
+
 *** Place or delete symbol in symbol table
 BLOKR	DTADR12
 
