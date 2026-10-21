@@ -1,4 +1,5 @@
-:00000 	RUNEMUL "C:\Programs Stand Alone\Altirra-4.21\Altirra64.exe"	;DAW
+:00000 *RUNEMUL "C:\Programs Stand Alone\Altirra-4.21\Altirra64.exe"	;DAW
+:00001 RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
 :00010 verify
 :00010 out lt
 :00000 *	CPFL TB

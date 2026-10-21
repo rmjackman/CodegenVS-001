@@ -9,20 +9,22 @@
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\SGEN32_no_macros.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\TEMP.SRC"
 //#define SRC_FILENAME "g:\\My Drive\\CODEGEN-2\\T31.SRC"
- 
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
-#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
-//#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
-//#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"  
 
 //#define SRC_FILENAME "C:\\Users\\Lloyd\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
 //#define SRC_FILENAME "C:\\Users\\Lloyd\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
 //#define SRC_FILENAME "C:\\Users\\Lloyd\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\Lloyd\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
+
+//#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
+//#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
+//#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
+//#define SRC_FILENAME "C:\\Users\\Rick\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
+
+//#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
+//#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\T31.SRC"
+#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
+//#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
@@ -32,7 +34,7 @@
 #define SHOW_SETTING(name) \
     printf("%-28s %s\n", #name, (name) ? "ON" : "OFF")
 
-#define EQU_IN_SECTION 1
+#define EQU_IN_SECTION 1 // The address of a label, defined using EQU, falls within a code segment.
 #define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
 
 #include <stdint.h>

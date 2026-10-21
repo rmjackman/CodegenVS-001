@@ -2742,17 +2742,14 @@ int main(int argc, char* argv[]) {
 											if (sss[i].symtyp != ']') {
 												char warning_text[WARNING_TEXT_LEN];
 
-												printf(BYELLOW "\nWarning:" YELLOW " The zero-page symbol "
-													BYELLOW "%s" YELLOW ", which was defined using EPZ,\n ",
+												printf(BYELLOW "\nWarning: %s was defined using EPZ,\n ",
 													operand);
-												printf("is used after DFB or in an immediate-addressing statement."
-													BYELLOW " Line %i\n" RESET, linnum);
+												printf("but is found after DFB or in an immediate-addressing statement. Line %i\n" RESET, linnum);
 
 												find_pc_line(sss[i].symadr);
 
 												sprintf_s(warning_text, sizeof(warning_text),
-													"The zero-page symbol %s, which was defined using EPZ, "
-													"is used after DFB or in an immediate-addressing statement.",
+													"%s, was defined using EPZ, but is found after DFB or in an immediate-addressing statement.",
 													operand);
 
 												record_warning(src_filename, linnum, warning_text);
@@ -2768,9 +2765,7 @@ int main(int argc, char* argv[]) {
 										break;
 									}
 								}
-
 							}
-
 							if (i == symnum)
 								sectyp('(');
 						}
@@ -5587,7 +5582,7 @@ void find_pc_line(uint16_t address) {
 
 			if (pc)
 				printf(BRED "%X:\t", pc);
-			//printf(BRED "line %d\n\n\a" RESET, linnum);
+			
 			print_visible(linbuf[0]);
 			printf(RESET);
 			return;
