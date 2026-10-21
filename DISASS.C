@@ -28,10 +28,10 @@
 #define ADDR_LEFT_COMMENT 0		// 1.
 #define SHOW_LEFT_COMMENT 0		// 2.
 #define PRINT_PCADDRESS_BYTES  1		// 3. Set to 1 for correct line numbering in DBG and in MADS.LST files
-		// COMMAND				// 4. 
+		// COMMAND				// 4. Relevent in SORCGEN but not Codegen
 #define SKA_AS_COMMENT    0		// 5. Set to 1 to show SKA as a comment
 #define SHOW_RH_COMMENT   0		// 6. Set to 1 to show right-hand comment
-#define SHOW_JSR          1		// 7. 
+#define SHOW_JSR          1		// 7. Optionally precede subroutines with JSR.
 #define PRINT_OPC_BYTES   0		// 8. Places the opcode byte in front of the instruction mnemonic. (Set to 0 when not needed)
 
 #define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.

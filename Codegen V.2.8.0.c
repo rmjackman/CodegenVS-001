@@ -2745,14 +2745,14 @@ int main(int argc, char* argv[]) {
 												printf(BYELLOW "\nWarning:" YELLOW " The zero-page symbol "
 													BYELLOW "%s" YELLOW ", which was defined using EPZ,\n ",
 													operand);
-												printf("is used in an immediate addressing or DFB statement at"
-													BYELLOW " line %i\n" RESET, linnum);
+												printf("is used after DFB or in an immediate-addressing statement."
+													BYELLOW " Line %i\n" RESET, linnum);
 
 												find_pc_line(sss[i].symadr);
 
 												sprintf_s(warning_text, sizeof(warning_text),
 													"The zero-page symbol %s, which was defined using EPZ, "
-													"is used in an immediate addressing or DFB statement",
+													"is used after DFB or in an immediate-addressing statement.",
 													operand);
 
 												record_warning(src_filename, linnum, warning_text);
@@ -2784,6 +2784,22 @@ int main(int argc, char* argv[]) {
 
 							nn_byte = (uint8_t)(intval >> 8);
 							lo_fg = 0;
+
+							if (nn_byte == 0 && symfg) {
+								char warning_text[WARNING_TEXT_LEN];
+
+								printf(BYELLOW "\nWarning: The high-byte, %s, is zero.\n" RESET,
+									operand, linnum);
+
+								find_pc_line(pc);
+
+								sprintf_s(warning_text, sizeof(warning_text),
+									"The high-byte,%s, is zero.",
+									operand);
+
+								record_warning(src_filename, linnum, warning_text);
+							}
+
 						}
 
 						if (intval > 255) {
@@ -2820,6 +2836,7 @@ int main(int argc, char* argv[]) {
 								}
 							}
 						}
+						
 					}
 
 					if (strchr("!&@([", section_type) == 0)
