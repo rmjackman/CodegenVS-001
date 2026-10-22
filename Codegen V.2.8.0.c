@@ -1249,18 +1249,16 @@ int main(int argc, char* argv[]) {
 					skip_line_numbers();
 				}
 
-				/*********** Print line to LIS file if requested*************/
+				/*********** Print line to LIS *************/
 
 				if (strpbrk(outflgs, "Ll")) {
 					if (*prnlnbufbeg || *prnlnbuf) {		// if there's something to print
 
-						/* Pad short lines to full width (unless in do-not-expand-macro mode) */
+						/* Pad short lines to full width */
 						if (bytcnt < LSTBYTES) {
-							if (!strpbrk(outflgs, "Mm")) {
 
-								for (i = LSTBYTES - bytcnt; i > 0; i--)
-									strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "   ");
-							}
+							for (i = LSTBYTES - bytcnt; i > 0; i--)
+								strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "   ");
 						}
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), "\t");
 
@@ -1869,50 +1867,47 @@ int main(int argc, char* argv[]) {
 
 					if (_stricmp(opcode, "MACRO") && _stricmp(opcode, "MEND") && !macroflg) /* Not in macro */
 					{
-						if ((maclevel == 0) || !strpbrk(outflgs, "Mm")) // || macro expanded
-						{
-							pc_sav = pc;
-							size_t len = strlen(prnlnbuf);
-							size_t rem = sizeof(prnlnbuf) - len;
+						pc_sav = pc;
+						size_t len = strlen(prnlnbuf);
+						size_t rem = sizeof(prnlnbuf) - len;
 
-							if (*label) {
+						if (*label) {
 
-								if (_stricmp(label, "minus") == 0) {
-									len += snprintf(prnlnbuf + len, rem, "-");
-								}
-								else if (_stricmp(label, "plus") == 0) {
-									len += snprintf(prnlnbuf + len, rem, "+");
-								}
-								else {
-									len += snprintf(prnlnbuf + len, rem, "%s", label);
-								}
-
-								rem = sizeof(prnlnbuf) - len;
+							if (_stricmp(label, "minus") == 0) {
+								len += snprintf(prnlnbuf + len, rem, "-");
+							}
+							else if (_stricmp(label, "plus") == 0) {
+								len += snprintf(prnlnbuf + len, rem, "+");
+							}
+							else {
+								len += snprintf(prnlnbuf + len, rem, "%s", label);
 							}
 
-							// always add the tab after the label or whitespace
-							len += snprintf(prnlnbuf + len, rem, "\t");
 							rem = sizeof(prnlnbuf) - len;
-
-							// indentation
-							for (int i = 0; i < maclevel; i++) {
-								len += snprintf(prnlnbuf + len, rem, ": ");
-								rem = sizeof(prnlnbuf) - len;
-							}
-
-							char* p = linbuf[maclevel];
-
-							p += strspn(p, " \t");
-
-							if (!line_beg_opc_flg && *label) {
-								/* First token is a label; skip it */
-								p += strcspn(p, " \t");
-								p += strspn(p, " \t");
-							}
-
-							if (*p)
-								snprintf(prnlnbuf + len, rem, "%s", p);
 						}
+
+						// always add the tab after the label or whitespace
+						len += snprintf(prnlnbuf + len, rem, "\t");
+						rem = sizeof(prnlnbuf) - len;
+
+						// indentation
+						for (int i = 0; i < maclevel; i++) {
+							len += snprintf(prnlnbuf + len, rem, ": ");
+							rem = sizeof(prnlnbuf) - len;
+						}
+
+						char* p = linbuf[maclevel];
+
+						p += strspn(p, " \t");
+
+						if (!line_beg_opc_flg && *label) {
+							/* First token is a label; skip it */
+							p += strcspn(p, " \t");
+							p += strspn(p, " \t");
+						}
+
+						if (*p)
+							snprintf(prnlnbuf + len, rem, "%s", p);
 					}
 				}
 				/*************  End of print line to LIS file if requested  *************/
@@ -4806,7 +4801,7 @@ void toxlbuf(uint8_t ch) {
 		}
 
 		/* Hex listing */
-		if (strpbrk(outflgs, "Ll") && !strpbrk(outflgs, "Mm")) {
+		if (strpbrk(outflgs, "Ll")) {
 
 			char tempstr[16];
 
