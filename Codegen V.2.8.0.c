@@ -2685,7 +2685,6 @@ int main(int argc, char* argv[]) {
 						(operand[1] == '>' || operand[1] == '<'))
 						txtptr++;
 #endif
-					//if (!pending_NN_pair_flg) 
 					const_flg = 1;
 
 					intval = expresstoi_p2();
@@ -2694,25 +2693,25 @@ int main(int argc, char* argv[]) {
 
 					uint8_t nn_byte = (uint8_t)intval;
 
-					if (operand[0] == '#' &&
+					if (operand[0] == '#' &&	// e.g. LDA #'A'
 						operand[1] == '\'' &&
 						strlen(operand) == 4)
 
 						sectyp('\'');
 
-					if (operand[0] == '#' &&
+					if (operand[0] == '#' &&	// e.g. LDA #%11000000
 						operand[1] == '%')
 
 						sectyp('!');
 
 					if (pass == 2) {
 
-						if (operand[0] == '#' &&
+						if (operand[0] == '#' &&	// e.g. LDA #>OKTXT where OKTXT is zero-page symbol
 							intval < 256 &&
 							symfg &&
 							syms_in_expr == 1) {
 
-							/* Determine if the symbol is a constant by EQU vs. EPZ */
+							/* Determine if the symbol is a constant by using EQU vs. EPZ */
 							if (const_by_equ_vs_epz) {
 
 								for (i = 0; i < symnum; i++) {
@@ -2726,7 +2725,8 @@ int main(int argc, char* argv[]) {
 									}
 								}
 							}
-							/* Determine if the symbol is a constant by immediate addressing and DFB */
+
+							/* Determine if the symbol is a constant by using immediate addressing and DFB */
 							if (const_by_imm_addr) {
 								for (i = 0; i < symnum; i++) {
 
@@ -2767,7 +2767,7 @@ int main(int argc, char* argv[]) {
 
 						lo_fg = 1;
 
-						if ((*txtptr == ':' &&
+						if ((*txtptr == ':' &&		// e.g. LDA #OKTXT:H
 							txtptr[1] == 'H') ||
 							operand[1] == '>' ||
 							operand[0] == '/') {
