@@ -675,27 +675,27 @@ const unsigned char opcdat[] = "BITSTYLDYCPYCPXORAANDEORADCSTALDACMPSBCASLROLLSR
 
 const unsigned char data[21][15] = {
 
-	/* BIT */{ 0,0,0x24,0x2C,0,0,0,0,0,0xD6,0x67,0x46,0x48,0x4A},
-	/* STY */{ 0,0,0x84,0x8C,0x94,0,0,0,0,0,0xD6,0x67,0x46,0,0},
-	/* LDY */{ 0,0xA0,0xA4,0xAC,0xB4,0xBC,0,0,0,0,0xD6,0x67,0x46,0xD0,0x4A},
-	/* CPY */{ 0,0xC0,0xC4,0xCC,0,0,0,0,0,0,0xD6,0x67,0x46,0,0},
-	/* CPX */{ 0,0xE0,0xE4,0xEC,0,0,0,0,0,0,0xD6,0x67,0x46,0,0},
-	/* ORA */{ 0,9,5,0xD,0x15,0x1D,0,0x19,1,0x11,0xD6,0x67,0x46,0,0},
-	/* AND */{ 0,0x29,0x25,0x2D,0x35,0x3D,0,0x39,0x21,0x31,0xD6,0x67,0x46,0,0},
-	/* EOR */{ 0,0x49,0x45,0x4D,0x55,0x5D,0,0x59,0x41,0x51,0xD6,0x67,0x46,0,0},
-	/* ADC */{ 0,0x69,0x65,0x6D,0x75,0x7D,0,0x79,0x61,0x71,0xD6,0x67,0x46,0xBF,0x4A},
-	/* STA */{ 0,0,0x85,0x8D,0x95,0x9D,0,0x99,0x81,0x91,0xD6,0x67,0x46,0,0},
-	/* LDA */{ 0,0xA9,0xA5,0xAD,0xB5,0xBD,0,0xB9,0xA1,0xB1,0xD6,0x67,0x46,0,0},
-	/* CMP */{ 0,0xC9,0xC5,0xCD,0xD5,0xDD,0,0xD9,0xC1,0xD1,0xD6,0x67,0x46,0,0},
-	/* SBC */{ 0,0xE9,0xE5,0xED,0xF5,0xFD,0,0xF9,0xE1,0xF1,0xD6,0x67,0x46,0x9E,0x49}, // first 10 bytes are possible codes
-	/* ASL */{ 0xA,0,6,0xE,0x16,0x1E,0,0,0,0,0xD6,0x67,0x46,0,0},
-	/* ROL */{ 0x2A,0,0x26,0x2E,0x36,0x3E,0,0,0,0,0xD6,0x67,0x46,0x37,0x4A},
-	/* LSR */{ 0x4A,0,0x46,0x4E,0x56,0x5E,0,0,0,0,0xD6,0x67,0x46,0xF3,0x49},
-	/* ROR */{ 0x6A,0,0x66,0x6E,0x76,0x7E,0,0,0,0,0xD6,0x67,0x46,0x8D,0x49},
-	/* STX */{ 0,0,0x86,0x8E,0,0,0x96,0,0,0,0xD6,0x67,0x46,0x15,0x4A},//In ATMAS Should be $96,0, not 0,$96,  -- STX aa,Y not STX aaaa,Y
-	/* LDX */{ 0,0xA2,0xA6,0xAE,0,0,0xB6,0xBE,0,0,0xD6,0x67,0x46,0,0},
-	/* DEC */{ 0,0,0xC6,0xCE,0xD6,0xDE,0,0,0,0,0xD6,0x67,0x46,0,0},
-	/* INC */{ 0,0,0xE6,0xEE,0xF6,0xFE,0,0,0,0,0,0,0,0,0}
+	/* BIT */{ 0,0,0x24,0x2C,0,0,0,0,0,0xD6,0x67,0x46,0x48,0x4A },
+	/* STY */{ 0,0,0x84,0x8C,0x94,0,0,0,0,0,0xD6,0x67,0x46,0,0 },
+	/* LDY */{ 0,0xA0,0xA4,0xAC,0xB4,0xBC,0,0,0,0,0xD6,0x67,0x46,0xD0,0x4A },
+	/* CPY */{ 0,0xC0,0xC4,0xCC,0,0,0,0,0,0,0xD6,0x67,0x46,0,0 },
+	/* CPX */{ 0,0xE0,0xE4,0xEC,0,0,0,0,0,0,0xD6,0x67,0x46,0,0 },
+	/* ORA */{ 0,9,5,0xD,0x15,0x1D,0,0x19,1,0x11,0xD6,0x67,0x46,0,0 },
+	/* AND */{ 0,0x29,0x25,0x2D,0x35,0x3D,0,0x39,0x21,0x31,0xD6,0x67,0x46,0,0 },
+	/* EOR */{ 0,0x49,0x45,0x4D,0x55,0x5D,0,0x59,0x41,0x51,0xD6,0x67,0x46,0,0 },
+	/* ADC */{ 0,0x69,0x65,0x6D,0x75,0x7D,0,0x79,0x61,0x71,0xD6,0x67,0x46,0xBF,0x4A },
+	/* STA */{ 0,0,0x85,0x8D,0x95,0x9D,0,0x99,0x81,0x91,0xD6,0x67,0x46,0,0 },
+	/* LDA */{ 0,0xA9,0xA5,0xAD,0xB5,0xBD,0,0xB9,0xA1,0xB1,0xD6,0x67,0x46,0,0 },
+	/* CMP */{ 0,0xC9,0xC5,0xCD,0xD5,0xDD,0,0xD9,0xC1,0xD1,0xD6,0x67,0x46,0,0 },
+	/* SBC */{ 0,0xE9,0xE5,0xED,0xF5,0xFD,0,0xF9,0xE1,0xF1,0xD6,0x67,0x46,0x9E,0x49 }, // first 10 bytes are possible codes
+	/* ASL */{ 0xA,0,6,0xE,0x16,0x1E,0,0,0,0,0xD6,0x67,0x46,0,0 },
+	/* ROL */{ 0x2A,0,0x26,0x2E,0x36,0x3E,0,0,0,0,0xD6,0x67,0x46,0x37,0x4A },
+	/* LSR */{ 0x4A,0,0x46,0x4E,0x56,0x5E,0,0,0,0,0xD6,0x67,0x46,0xF3,0x49 },
+	/* ROR */{ 0x6A,0,0x66,0x6E,0x76,0x7E,0,0,0,0,0xD6,0x67,0x46,0x8D,0x49 },
+	/* STX */{ 0,0,0x86,0x8E,0,0,0x96,0,0,0,0xD6,0x67,0x46,0x15,0x4A },//In ATMAS Should be $96,0, not 0,$96,  -- STX aa,Y not STX aaaa,Y
+	/* LDX */{ 0,0xA2,0xA6,0xAE,0,0,0xB6,0xBE,0,0,0xD6,0x67,0x46,0,0 },
+	/* DEC */{ 0,0,0xC6,0xCE,0xD6,0xDE,0,0,0,0,0xD6,0x67,0x46,0,0 },
+	/* INC */{ 0,0,0xE6,0xEE,0xF6,0xFE,0,0,0,0,0,0,0,0,0 }
 };
 
 
@@ -764,9 +764,9 @@ char src_filename_sav[MAX_FILENAME_LEN + 1] = { 0 };
 char opcode[MAX_LABEL_SIZE + 1] = { 0 }, operand[MAX_FILENAME_LEN + 1] = { 0 };
 bool line_beg_opc_flg = 0;
 char outflgs[MAX_LABEL_SIZE + 1] = { 0 };
-char prnlnbuf2[10][PRN_BUF_SIZE] = { {0} };
-char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { {0} };
-char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { {0} };
+char prnlnbuf2[10][PRN_BUF_SIZE] = { { 0 } };
+char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { { 0 } };
+char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { { 0 } };
 
 bool const_by_equ_vs_epz = false;
 
@@ -834,19 +834,19 @@ int intab[] = { 0x40,0,0x20,0x60,0xA0,0xC0,0x80,0xE0 };
 
 static char macdumtab[MAXDUMS][10];		// moved to static
 static char dumbuf[80];						// moved to static
-static char macsymbol[MAXMACSYMS][10] = { {0} };
+static char macsymbol[MAXMACSYMS][10] = { { 0 } };
 static char* macptrtab[MAXMACSYMS] = { 0 };
-static char loclabtb[MAXLOCLABS][5] = { {0} };
+static char loclabtb[MAXLOCLABS][5] = { { 0 } };
 static int labexttab[MAXLOCLABS] = { 0 };			// 0001 to 9999
-static int lclb[MAXMACLEV][MXLBS] = { {0} };		// table of label nos. in present macro
+static int lclb[MAXMACLEV][MXLBS] = { { 0 } };		// table of label nos. in present macro
 static unsigned short lclbnum[MAXMACLEV] = { 0 };
 static char include_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char loafilename[MAX_FILENAME_LEN + 1] = { 0 };
 static char smbfilename[MAX_FILENAME_LEN + 1] = { 0 };
 static char lstfilename[MAX_FILENAME_LEN + 1] = { 0 };
-static char addtoimg_filename[64][20] = { {0} };			//
-static char append_filename[36][20] = { {0} };				//
-static char link_filename[36][20] = { {0} };				//
+static char addtoimg_filename[64][20] = { { 0 } };			//
+static char append_filename[36][20] = { { 0 } };				//
+static char link_filename[36][20] = { { 0 } };				//
 static char linkfile_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char emul_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char pathstr[MAX_FILENAME_LEN + 1] = { 0 };
@@ -1251,7 +1251,7 @@ int main(int argc, char* argv[]) {
 
 				/*********** Print line to LIS *************/
 
-				if (strpbrk(outflgs, "Ll")) {
+				if (strpbrk(outflgs, "Ll") && pass == 2) {
 					if (*prnlnbufbeg || *prnlnbuf) {		// if there's something to print
 
 						/* Pad short lines to full width */
@@ -1656,7 +1656,7 @@ int main(int argc, char* argv[]) {
 
 					if (*p == '\n' || *p == ';' || *p == '\0') {
 
-						if (strpbrk(outflgs, "Ll"))
+						if (strpbrk(outflgs, "Ll") && pass == 2)
 							fprintf(stream2, "%4X:             %s\n", pc, label);
 
 						if (pass == 1) {
@@ -2082,9 +2082,13 @@ int main(int argc, char* argv[]) {
 				}
 				/*END LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN LABEL AT LINE BEGIN*/
 
-				/******************* MEND ********************************/
+				/******************* MEND *********************************/
 
 				if (_stricmp(opcode, "MEND") == 0) {
+
+					if (pass == 2 && strpbrk(outflgs, "Ll") && *label)
+						fprintf(stream2, "                  %s\n", label);
+
 					if (macroflg)
 						macroflg--;
 					else {
@@ -2669,8 +2673,6 @@ int main(int argc, char* argv[]) {
 
 				/* opc #nn */
 
-#if NEW_DIRECT_ADDRESSING
-
 				else if (operand[0] == '#' || operand[0] == '/') {
 
 					syms_in_expr = 0;
@@ -2680,11 +2682,10 @@ int main(int argc, char* argv[]) {
 
 					txtptr++;
 
-#if !ATMAS_II_COMPATIBLE
 					if (operand[0] == '#' &&
 						(operand[1] == '>' || operand[1] == '<'))
 						txtptr++;
-#endif
+
 					const_flg = 1;
 
 					intval = expresstoi_p2();
@@ -2693,25 +2694,25 @@ int main(int argc, char* argv[]) {
 
 					uint8_t nn_byte = (uint8_t)intval;
 
-					if (operand[0] == '#' &&	// e.g. LDA #'A'
+					if (operand[0] == '#' &&
 						operand[1] == '\'' &&
-						strlen(operand) == 4)
+						strlen(operand) == 4)	// e.g. LDA #'A'
 
 						sectyp('\'');
 
-					if (operand[0] == '#' &&	// e.g. LDA #%11000000
-						operand[1] == '%')
+					if (operand[0] == '#' &&
+						operand[1] == '%')		// e.g. LDA #%10001000
 
 						sectyp('!');
 
 					if (pass == 2) {
 
-						if (operand[0] == '#' &&	// e.g. LDA #>OKTXT where OKTXT is zero-page symbol
+						if (operand[0] == '#' &&
 							intval < 256 &&
 							symfg &&
-							syms_in_expr == 1) {
+							syms_in_expr == 1) {	// zero page symbol
 
-							/* Determine if the symbol is a constant by using EQU vs. EPZ */
+							/* Determine if the symbol is a constant by EQU vs. EPZ */
 							if (const_by_equ_vs_epz) {
 
 								for (i = 0; i < symnum; i++) {
@@ -2725,8 +2726,7 @@ int main(int argc, char* argv[]) {
 									}
 								}
 							}
-
-							/* Determine if the symbol is a constant by using immediate addressing and DFB */
+							/* Determine if the symbol is a constant by immediate addressing and DFB */
 							if (const_by_imm_addr) {
 								for (i = 0; i < symnum; i++) {
 
@@ -2767,18 +2767,18 @@ int main(int argc, char* argv[]) {
 
 						lo_fg = 1;
 
-						if ((*txtptr == ':' &&		// e.g. LDA #OKTXT:H
-							txtptr[1] == 'H') ||
-							operand[1] == '>' ||
-							operand[0] == '/') {
+						if ((*txtptr == ':' &&
+							txtptr[1] == 'H') ||	// e.g. LDA #LABEL:H
+							operand[1] == '>' ||	// e.g. LDA #>LABEL
+							operand[0] == '/') {	// e.g. LDA /LABEL
 
 							nn_byte = (uint8_t)(intval >> 8);
 							lo_fg = 0;
 
-							if (nn_byte == 0 && symfg) {
+							if (nn_byte == 0 && symfg) { // e.g. LABEL:H is zero, which is possibly not what the user intended
 								char warning_text[WARNING_TEXT_LEN];
 
-								printf(BYELLOW "\nWarning: The high-byte, %s, is zero.\n" RESET,
+								printf(BYELLOW "\nWarning: The high-byte, %s, is zero. Line %i\n" RESET,
 									operand, linnum);
 
 								find_pc_line(pc);
@@ -2789,9 +2789,10 @@ int main(int argc, char* argv[]) {
 
 								record_warning(src_filename, linnum, warning_text);
 							}
-
 						}
 
+
+						/* If the value is greater than 255, we need to determine if the user intended to use a high byte or low byte. */
 						if (intval > 255) {
 
 							if (!pending_NN_pair_flg) {
@@ -2826,7 +2827,7 @@ int main(int argc, char* argv[]) {
 								}
 							}
 						}
-						
+
 					}
 
 					if (strchr("!&@([", section_type) == 0)
@@ -2838,98 +2839,10 @@ int main(int argc, char* argv[]) {
 					continue;
 				}
 
-#else // END NEW_DIRECT_ADDRESSING begin old routine
-
-				else if (operand[0] == '#') {
-					syms_in_expr = 0;
-					if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
-
-					txtptr++;
-#if !ATMAS_II_COMPATIBLE
-					if (operand[1] == '>' || operand[1] == '<')
-						txtptr++;
-#endif
-					intval = expresstoi_p2();
-
-					if ((operand[1] == '\'') && strlen(operand) == 4)	// e.g. LDA #'A'
-						sectyp('\'');
+				// END_DIRECT_ADDRESSING
 
 
-					if (operand[1] == '%')							// e.g. LDA #%11000000
-						sectyp('!');
-
-					else // all other possibilities
-
-					{
-
-						if (pass == 2) {
-
-							if (intval < 256 && symfg && syms_in_expr == 1) {			// zero page
-								for (i = 0; i < symnum; i++) {
-									if (sss[i].symadr == intval && sss[i].symtyp == ']') {
-										sectyp('[');
-										break;
-									}
-								}
-								if (sss[i].symtyp != ']') { //zero-page address
-									sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
-								}
-							}
-
-							intval_sav = intval;
-							lo_fg = 1;				// default is to use low byte of value
-
-							if ((*txtptr == ':' && txtptr[1] == 'H')	// e.g. LDA #OKTXT:H
-								|| (operand[1] == '>')) {				// e.g. LDA #>OKTXT
-
-								intval >>= 8;
-								lo_fg = 0;							// high byte line will be used
-							}
-							if (intval_sav > 255) {
-#if E_5A_5B
-								sss[symnumext].symadr = pc + 1;
-
-								if (lo_fg) {/* e.g. LDA #LABEL:L */
-
-									sprintf_s(sss[symnumext].symbol,
-										sizeof(sss[symnumext].symbol),
-										"%02X",
-										(unsigned char)(intval_sav >> 8));
-								}
-								else {	/* e.g. LDA #LABEL:H */
-
-									sprintf_s(sss[symnumext].symbol,
-										sizeof(sss[symnumext].symbol),
-										"%02X:",
-										(unsigned char)(intval_sav & 0xFF));
-
-								}
-
-								symnumext++;
-
-#else
-
-								char tp = (lo_fg) ? '&' : '@';
-
-								if (!pending_NN_pair_flg) {
-									sectyp(tp);
-								}
-								pending_NN_pair_flg = !pending_NN_pair_flg;
-
-#endif
-							}
-						}
-					}
-					if (strchr("!&@([", section_type) == 0) //if not one of these
-						sectyp(';');//The above affect only single lines
-					toxlbuf((char)data[cnt][NN]);
-					toxlbuf((char)intval);
-					continue;
-				}
-#endif // END_DIRECT_ADDRESSING
-
-
-				/***********  Commands in data block  ***************/
+							   /***********  Commands in data block  ***************/
 
 
 
@@ -2992,7 +2905,8 @@ int main(int argc, char* argv[]) {
 						default: error("Comma missing after bracket"); break;
 						}
 						break;
-					default: printf("Unexpected character: '%c' -- ", *txtptr); error("Symbol contains illegal character"); break;
+					default: printf("Unexpected character: '%c' -- ", *txtptr);
+						error("Symbol contains illegal character"); break;
 					}
 
 				}
@@ -3184,13 +3098,6 @@ int main(int argc, char* argv[]) {
 
 		}
 		if (verif_flg == 0 || verif_flg == 1) {
-
-
-
-
-
-
-
 
 			/* ... existing cleanup code ... */
 
@@ -3442,10 +3349,8 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-
-
-
 			/* xasm Symbol table. Call using "yr xasm.lab" in debugger console */
+
 			if (strpbrk(outflgs, "Xx")) {
 				if (fopen_s(&stream4, "xasm.lab", "w") != 0) file_err("Can't create LST file", "xasm.lab");
 
@@ -3468,6 +3373,7 @@ int main(int argc, char* argv[]) {
 
 
 			fclose(stream);
+
 			/* APPEND  APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND*/
 			if (*append_filename) {
 				txtsiz = xlbfptr - xlbuf;
@@ -4412,7 +4318,7 @@ uint32_t symtoi1() {
 				strbeg, linnum);
 
 			find_pc_line(pc); //??? not tested for verif_flg == 2
-			
+
 			sprintf_s(warning_text, sizeof(warning_text),
 				"%s used instead of symbol", strbeg);
 
@@ -5577,7 +5483,7 @@ void find_pc_line(uint16_t address) {
 
 			if (pc)
 				printf(BRED "%X:\t", pc);
-			
+
 			print_visible(linbuf[0]);
 			printf(RESET);
 			return;
