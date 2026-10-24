@@ -2094,7 +2094,7 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "MEND") == 0) {
 
-					if (pass == 2 && lstflg && *label && strchr(label, '@') == NULL)
+					if (pass == 2 && lstflg && *label && maclevel)
 						fprintf(lis_stream, "                  %s\n", label);
 
 					if (macroflg)
@@ -3069,7 +3069,7 @@ int main(int argc, char* argv[]) {
 					}
 					if (sss[i].frequ_constant && sss[i].frequ_constant < sss[i].frequency) {
 						printf(BYELLOW "%s" YELLOW " is used in direct addressing.\n", sss[i].symbol);
-						printf("Assuming %s to represent an address rather than a constant.\n", sss[i].symbol);
+						printf("Assuming %s to be an address rather than a constant.\n", sss[i].symbol);
 						printf("Changing ']' to '#' and deleting section type '[' from lines with %s.\n\n" RESET, sss[i].symbol);
 
 						sss[i].symtyp = '#';
