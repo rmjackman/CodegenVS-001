@@ -57,13 +57,15 @@
 *	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
 *	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
 
-* Use the OUT directive to create a text output file with the extension ".LIS"
-*            L: Listing will be creatied. Assembly and CPFL mismatches will be shown.
-*            LM: Macros will not be expanded, and assembly and CPFL mismatches will not be shown.
-*            N: Symbol table will be listed.
-*            T: SOURCGEN symbol table will be listed.
-* OUT can be placed anywhere in the source code. OUT with no parameters terminates the listing.
-	OUT LMT
+
+* A Listing will be written to a file with the extension ".LIS". 
+* Assembly and CPFL mismatches will be shown in the LIS-file.
+
+* Use the OUT directive to create 
+*            N: Symbol table will be appended to the LIS-file. (LABEL = value)
+*            T: SOURCGEN symbol table will be appended to the LIS-file.
+
+	OUT T
 
 	INCLUDE if_while_macros.src
 	INCLUDE Macros.SRC
@@ -2414,7 +2416,7 @@ skip	LDX #127		sg31
 	OPF
 	MovaB A1,SECSZ
 	JMP API
-
+	
 *** Keys 1 to 5
 f1to5	INC TF
 *** Keys 6 to 0

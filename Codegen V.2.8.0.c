@@ -2305,12 +2305,6 @@ int main(int argc, char* argv[]) {
 					if (pass == 2) {
 						find_operand();
 						strcpy_s(outflgs, sizeof(outflgs), operand);
-
-						/*if (*outflgs && !lstflg) {
-							lstflg = 1;
-							if (fopen_s(&lis_stream, lstfilename, "w") != 0) file_err("Can't create LST file", lstfilename);
-							printf("Opening LST file %s\n", lstfilename);
-						}*/
 					}
 					continue;
 				}
