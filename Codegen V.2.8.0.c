@@ -1251,7 +1251,7 @@ int main(int argc, char* argv[]) {
 
 				/*********** Print line to LIS *************/
 
-				if (strpbrk(outflgs, "Ll")) {
+				if (strpbrk(outflgs, "Ll") && pass == 2) {
 					if (*prnlnbufbeg || *prnlnbuf) {		// if there's something to print
 
 						/* Pad short lines to full width */
@@ -1656,7 +1656,7 @@ int main(int argc, char* argv[]) {
 
 					if (*p == '\n' || *p == ';' || *p == '\0') {
 
-						if (strpbrk(outflgs, "Ll"))
+						if (strpbrk(outflgs, "Ll") && pass == 2)
 							fprintf(stream2, "%4X:             %s\n", pc, label);
 
 						if (pass == 1) {
@@ -2085,6 +2085,10 @@ int main(int argc, char* argv[]) {
 				/******************* MEND ********************************/
 
 				if (_stricmp(opcode, "MEND") == 0) {
+
+					if (pass == 2 && strpbrk(outflgs, "Ll") && *label)
+						fprintf(stream2, "                  %s\n", label);
+
 					if (macroflg)
 						macroflg--;
 					else {
@@ -2669,8 +2673,6 @@ int main(int argc, char* argv[]) {
 
 				/* opc #nn */
 
-#if NEW_DIRECT_ADDRESSING
-
 				else if (operand[0] == '#' || operand[0] == '/') {
 
 					syms_in_expr = 0;
@@ -2680,12 +2682,10 @@ int main(int argc, char* argv[]) {
 
 					txtptr++;
 
-#if !ATMAS_II_COMPATIBLE
 					if (operand[0] == '#' &&
 						(operand[1] == '>' || operand[1] == '<'))
 						txtptr++;
-#endif
-					//if (!pending_NN_pair_flg) 
+ 
 					const_flg = 1;
 
 					intval = expresstoi_p2();
@@ -2696,12 +2696,12 @@ int main(int argc, char* argv[]) {
 
 					if (operand[0] == '#' &&
 						operand[1] == '\'' &&
-						strlen(operand) == 4)
+						strlen(operand) == 4)	// e.g. LDA #'A'
 
 						sectyp('\'');
 
 					if (operand[0] == '#' &&
-						operand[1] == '%')
+						operand[1] == '%')		// e.g. LDA #%10001000
 
 						sectyp('!');
 
@@ -2710,7 +2710,7 @@ int main(int argc, char* argv[]) {
 						if (operand[0] == '#' &&
 							intval < 256 &&
 							symfg &&
-							syms_in_expr == 1) {
+							syms_in_expr == 1) {	// zero page symbol
 
 							/* Determine if the symbol is a constant by EQU vs. EPZ */
 							if (const_by_equ_vs_epz) {
@@ -2768,17 +2768,17 @@ int main(int argc, char* argv[]) {
 						lo_fg = 1;
 
 						if ((*txtptr == ':' &&
-							txtptr[1] == 'H') ||
-							operand[1] == '>' ||
-							operand[0] == '/') {
+							txtptr[1] == 'H') ||	// e.g. LDA #LABEL:H
+							operand[1] == '>' ||	// e.g. LDA #>LABEL
+							operand[0] == '/') {	// e.g. LDA /LABEL
 
 							nn_byte = (uint8_t)(intval >> 8);
 							lo_fg = 0;
 
-							if (nn_byte == 0 && symfg) {
+							if (nn_byte == 0 && symfg) { // e.g. LABEL:H is zero, which is possibly not what the user intended
 								char warning_text[WARNING_TEXT_LEN];
 
-								printf(BYELLOW "\nWarning: The high-byte, %s, is zero.\n" RESET,
+								printf(BYELLOW "\nWarning: The high-byte, %s, is zero. Line %i\n" RESET,
 									operand, linnum);
 
 								find_pc_line(pc);
@@ -2789,9 +2789,10 @@ int main(int argc, char* argv[]) {
 
 								record_warning(src_filename, linnum, warning_text);
 							}
-
 						}
 
+
+						/* If the value is greater than 255, we need to determine if the user intended to use a high byte or low byte. */
 						if (intval > 255) {
 
 							if (!pending_NN_pair_flg) {
@@ -2838,95 +2839,7 @@ int main(int argc, char* argv[]) {
 					continue;
 				}
 
-#else // END NEW_DIRECT_ADDRESSING begin old routine
-
-				else if (operand[0] == '#') {
-					syms_in_expr = 0;
-					if (data[cnt][NN] == 0) error("direct addressing (#) cannot be used with this opcode");
-
-					txtptr++;
-#if !ATMAS_II_COMPATIBLE
-					if (operand[1] == '>' || operand[1] == '<')
-						txtptr++;
-#endif
-					intval = expresstoi_p2();
-
-					if ((operand[1] == '\'') && strlen(operand) == 4)	// e.g. LDA #'A'
-						sectyp('\'');
-
-
-					if (operand[1] == '%')							// e.g. LDA #%11000000
-						sectyp('!');
-
-					else // all other possibilities
-
-					{
-
-						if (pass == 2) {
-
-							if (intval < 256 && symfg && syms_in_expr == 1) {			// zero page
-								for (i = 0; i < symnum; i++) {
-									if (sss[i].symadr == intval && sss[i].symtyp == ']') {
-										sectyp('[');
-										break;
-									}
-								}
-								if (sss[i].symtyp != ']') { //zero-page address
-									sectyp('(');	// taken care of by distinguishing between EQU and EPZ ?
-								}
-							}
-
-							intval_sav = intval;
-							lo_fg = 1;				// default is to use low byte of value
-
-							if ((*txtptr == ':' && txtptr[1] == 'H')	// e.g. LDA #OKTXT:H
-								|| (operand[1] == '>')) {				// e.g. LDA #>OKTXT
-
-								intval >>= 8;
-								lo_fg = 0;							// high byte line will be used
-							}
-							if (intval_sav > 255) {
-#if E_5A_5B
-								sss[symnumext].symadr = pc + 1;
-
-								if (lo_fg) {/* e.g. LDA #LABEL:L */
-
-									sprintf_s(sss[symnumext].symbol,
-										sizeof(sss[symnumext].symbol),
-										"%02X",
-										(unsigned char)(intval_sav >> 8));
-								}
-								else {	/* e.g. LDA #LABEL:H */
-
-									sprintf_s(sss[symnumext].symbol,
-										sizeof(sss[symnumext].symbol),
-										"%02X:",
-										(unsigned char)(intval_sav & 0xFF));
-
-								}
-
-								symnumext++;
-
-#else
-
-								char tp = (lo_fg) ? '&' : '@';
-
-								if (!pending_NN_pair_flg) {
-									sectyp(tp);
-								}
-								pending_NN_pair_flg = !pending_NN_pair_flg;
-
-#endif
-							}
-						}
-					}
-					if (strchr("!&@([", section_type) == 0) //if not one of these
-						sectyp(';');//The above affect only single lines
-					toxlbuf((char)data[cnt][NN]);
-					toxlbuf((char)intval);
-					continue;
-				}
-#endif // END_DIRECT_ADDRESSING
+ // END_DIRECT_ADDRESSING
 
 
 				/***********  Commands in data block  ***************/
@@ -2992,7 +2905,8 @@ int main(int argc, char* argv[]) {
 						default: error("Comma missing after bracket"); break;
 						}
 						break;
-					default: printf("Unexpected character: '%c' -- ", *txtptr); error("Symbol contains illegal character"); break;
+					default: printf("Unexpected character: '%c' -- ", *txtptr); 
+						error("Symbol contains illegal character"); break;
 					}
 
 				}
@@ -3184,13 +3098,6 @@ int main(int argc, char* argv[]) {
 
 		}
 		if (verif_flg == 0 || verif_flg == 1) {
-
-
-
-
-
-
-
 
 			/* ... existing cleanup code ... */
 
@@ -3442,10 +3349,8 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-
-
-
 			/* xasm Symbol table. Call using "yr xasm.lab" in debugger console */
+
 			if (strpbrk(outflgs, "Xx")) {
 				if (fopen_s(&stream4, "xasm.lab", "w") != 0) file_err("Can't create LST file", "xasm.lab");
 
@@ -3468,6 +3373,7 @@ int main(int argc, char* argv[]) {
 
 
 			fclose(stream);
+
 			/* APPEND  APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND APPEND*/
 			if (*append_filename) {
 				txtsiz = xlbfptr - xlbuf;
