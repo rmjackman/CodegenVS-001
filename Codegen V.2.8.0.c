@@ -795,7 +795,7 @@ int pc_table_count = 0;
 int ssscmpadr(const ssstype* dummy1, const ssstype* dummy2);
 
 FILE* stream;
-FILE* stream2;
+FILE* lis_stream;
 FILE* stream3;
 FILE* stream4;
 fpos_t pos2;
@@ -1126,6 +1126,14 @@ int main(int argc, char* argv[]) {
 
 			char* dot_position = strchr(lstfilename, '.');
 			strcpy_s(dot_position, strlen(".LIS") + 1, ".LIS");
+			lstflg = 1;
+			if (fopen_s(&lis_stream, lstfilename, "w") != 0) 
+				file_err("Can't create LST file", lstfilename);
+			printf("Opening LST file %s\n", lstfilename);
+
+
+
+
 
 			strcpy_s(loafilename, sizeof(loafilename), "AUTORUN.SYS");
 			strcpy_s(dsk_filename, sizeof(dsk_filename), "temp.atr");
@@ -1251,7 +1259,7 @@ int main(int argc, char* argv[]) {
 
 				/*********** Print line to LIS *************/
 
-				if (strpbrk(outflgs, "Ll") && pass == 2) {
+				if (lstflg && pass == 2) {
 					if (*prnlnbufbeg || *prnlnbuf) {		// if there's something to print
 
 						/* Pad short lines to full width */
@@ -1265,7 +1273,7 @@ int main(int argc, char* argv[]) {
 						/* Append the source line */
 						strcat_s(prnlnbufbeg, sizeof(prnlnbufbeg), prnlnbuf);
 
-						fprintf(stream2, "%s", prnlnbufbeg);
+						fprintf(lis_stream, "%s", prnlnbufbeg);
 
 						/* Save source lines with a genuine PC address */
 						if (prnlnbufbeg[0] != ' ' &&
@@ -1282,18 +1290,18 @@ int main(int argc, char* argv[]) {
 
 						if (cpfflg)
 							if (mismatchln_flg[0])
-								fprintf(stream2, "%s\n", cmpflbytln[0]);
+								fprintf(lis_stream, "%s\n", cmpflbytln[0]);
 
 						if (bytcnt > LSTBYTES) {
 
 							for (i = 1; i <= prnlnum; i++) {
-								fprintf(stream2, "%s\n", prnlnbuf2[i - 1]);
+								fprintf(lis_stream, "%s\n", prnlnbuf2[i - 1]);
 								if (cpfflg)
 									if (mismatchln_flg[i])
-										fprintf(stream2, "%s\n", cmpflbytln[i]);
+										fprintf(lis_stream, "%s\n", cmpflbytln[i]);
 							}
 						}
-						//fprintf (stream2,"%s\n",linbuf[maclevel]); //
+						//fprintf (lis_stream,"%s\n",linbuf[maclevel]); //
 						*prnlnbuf = '\0';
 						*prnlnbufbeg = '\0';
 						*prnlnbuf2[0] = '\0';
@@ -1656,8 +1664,8 @@ int main(int argc, char* argv[]) {
 
 					if (*p == '\n' || *p == ';' || *p == '\0') {
 
-						if (strpbrk(outflgs, "Ll") && pass == 2)
-							fprintf(stream2, "%4X:             %s\n", pc, label);
+						if (lstflg && pass == 2 && label)
+							fprintf(lis_stream, "%4X:             %s\n", pc, label);
 
 						if (pass == 1) {
 							sss[symnum].symadr = pc;
@@ -1863,7 +1871,7 @@ int main(int argc, char* argv[]) {
 				*prnlnbuf = '\0';
 				*prnlnbufbeg = '\0';
 
-				if ((pass == 2) && strpbrk(outflgs, "Ll")) {
+				if ((pass == 2) && lstflg) {
 
 					if (_stricmp(opcode, "MACRO") && _stricmp(opcode, "MEND") && !macroflg) /* Not in macro */
 					{
@@ -2086,8 +2094,8 @@ int main(int argc, char* argv[]) {
 
 				if (_stricmp(opcode, "MEND") == 0) {
 
-					if (pass == 2 && strpbrk(outflgs, "Ll") && *label)
-						fprintf(stream2, "                  %s\n", label);
+					if (pass == 2 && lstflg && *label && strchr(label, '@') == NULL)
+						fprintf(lis_stream, "                  %s\n", label);
 
 					if (macroflg)
 						macroflg--;
@@ -2298,11 +2306,11 @@ int main(int argc, char* argv[]) {
 						find_operand();
 						strcpy_s(outflgs, sizeof(outflgs), operand);
 
-						if (*outflgs && !lstflg) {
+						/*if (*outflgs && !lstflg) {
 							lstflg = 1;
-							if (fopen_s(&stream2, lstfilename, "w") != 0) file_err("Can't create LST file", lstfilename);
+							if (fopen_s(&lis_stream, lstfilename, "w") != 0) file_err("Can't create LST file", lstfilename);
 							printf("Opening LST file %s\n", lstfilename);
-						}
+						}*/
 					}
 					continue;
 				}
@@ -3342,7 +3350,7 @@ int main(int argc, char* argv[]) {
 			/************* Symbol table to LIS file ***********/
 
 			if (strpbrk(outflgs, "Nn")) {
-				fprintf(stream2, "\n\n**** Symbol table *****\n\n");
+				fprintf(lis_stream, "\n\n**** Symbol table *****\n\n");
 				for (i = 0; i < symnumext; i++) {
 
 					list_label_f(i);
@@ -3369,7 +3377,7 @@ int main(int argc, char* argv[]) {
 			if (strpbrk(outflgs, "Tt"))
 				sourcgen_symtab();
 
-			if (lstflg) fclose(stream2);
+			if (lstflg) fclose(lis_stream);
 
 
 			fclose(stream);
@@ -4629,12 +4637,12 @@ void error(char* errstr) {
 	char partstr[100];
 	char response;
 
-	if (stream2 != NULL) {
+	if (lis_stream != NULL) {
 		if (strpbrk(outflgs, "Tt"))
 			sourcgen_symtab();
 
-		fclose(stream2);
-		stream2 = NULL;
+		fclose(lis_stream);
+		lis_stream = NULL;
 	}
 
 	printf(BRED "\n\nERROR --" BYELLOW "\n % s\nat ", errstr);
@@ -4707,7 +4715,7 @@ void toxlbuf(uint8_t ch) {
 		}
 
 		/* Hex listing */
-		if (strpbrk(outflgs, "Ll")) {
+		if (lstflg) {
 
 			char tempstr[16];
 
@@ -4900,20 +4908,20 @@ void list_label(int i) {
 
 
 void list_label_f(int i) {
-	fprintf(stream2, "%s\t", sss[i].symbol);
+	fprintf(lis_stream, "%s\t", sss[i].symbol);
 	if (sss[i].macf == MACRO)
-		fprintf(stream2, "MACRO\n");
+		fprintf(lis_stream, "MACRO\n");
 	else
-		fprintf(stream2, " = %X\n", sss[i].symadr);
+		fprintf(lis_stream, " = %X\n", sss[i].symadr);
 }
 
 void list_label_f2(int i) {
 
 	if (sss[i].macf == MACRO)
-		fprintf(stream2, "MACRO\n");
+		fprintf(lis_stream, "MACRO\n");
 	else
-		fprintf(stream2, "%X\t", sss[i].symadr);
-	fprintf(stream2, "%s\n", sss[i].symbol);
+		fprintf(lis_stream, "%X\t", sss[i].symadr);
+	fprintf(lis_stream, "%s\n", sss[i].symbol);
 }
 
 void list_label_xasm(int i) {
@@ -5300,19 +5308,19 @@ void emit_word() {
 
 void sourcgen_symtab() {
 
-	if (fprintf(stream2, "\n\n**** SOURCGEN symbol table *****\n\n") < 0)
+	if (fprintf(lis_stream, "\n\n**** SOURCGEN symbol table *****\n\n") < 0)
 		perror("Error writing to file");
 	int i;
 	for (i = 0; i < symnum; i++) {
-		fprintf(stream2, "%x ", i);
+		fprintf(lis_stream, "%x ", i);
 		if (sss[i].symtyp) {
-			fprintf(stream2, "%c ", sss[i].symtyp);
+			fprintf(lis_stream, "%c ", sss[i].symtyp);
 
 		}
-		else fprintf(stream2, "  ");
-		fprintf(stream2, "%d ", sss[i].ofst);
+		else fprintf(lis_stream, "  ");
+		fprintf(lis_stream, "%d ", sss[i].ofst);
 		//if (sss[i].comment[0])
-			//fprintf(stream2, "*** %s\n", sss[i].comment);
+			//fprintf(lis_stream, "*** %s\n", sss[i].comment);
 		list_label_f2(i);
 
 	}
