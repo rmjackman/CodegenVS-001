@@ -27,8 +27,8 @@
 //#define SRC_FILENAME "C:\\Users\\Acustica\\source\\repos\\rmjackman\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
-#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
+#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 #define SHOW_SETTING(name) \
@@ -44,7 +44,7 @@
 
 #define GDGN_GLOBAL_H
 
-#define ATMAS_II_COMPATIBLE 0
+#define ATMAS_II_COMPATIBLE 1
 
 #define CREATE_DBG 0
 
@@ -52,7 +52,13 @@
 #define DOS_BLOCK_SIZE (333-4)*32-16
 #define DOS25_VOTC_DIR_SIZE 128+32
 #define MAX_FILENAME_LEN 256
-#define MAX_SYMBOL_SIZE 16           //Set to 8 for ATMAS II compatibility
+
+#if ATMAS_II_COMPATIBLE
+#define MAX_SYMBOL_SIZE 8
+#else
+#define MAX_SYMBOL_SIZE 16
+#endif // ATMAS_II_COMPATIBLE
+
 #define MAXSYMS 2500
 #define COMMENT_LEN 60
 

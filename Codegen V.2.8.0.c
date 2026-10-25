@@ -825,6 +825,8 @@ static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDI
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE LI OR "
 #if !ATMAS_II_COMPATIBLE
 "ascii text db byte dw word fill = *= IN OF HX DA DAT ";
+#else
+;
 #endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY EQUCONST";
 
@@ -1609,9 +1611,10 @@ int main(int argc, char* argv[]) {
 					 *     ICCOM= $342
 					 *     ICCOM = $342
 					 */
-					if (!isspace(*txtptr) && *txtptr != '=')
-						error("Illegal character at end of label");
-
+					if (!isspace(*txtptr) && *txtptr != '=') {
+						printf(BRED "\nIllegal character '%c' in label", *txtptr);
+						error("");
+					}
 					label[pos] = '\0';
 
 					break;
