@@ -19,7 +19,7 @@
 /***************  Preprocessor   **************/
 
 #define ATARI800    1		// Set to 0 only if you are assembling code for a non-ATARI system.
-#define DISASSEMBLE 1		// Probably don't need to change this.
+//#define DISASSEMBLE 1		// Probably don't need to change this.
 #define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr before starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See cdgn_global.h for examples.
@@ -800,7 +800,7 @@ FILE* stream3;
 FILE* stream4;
 fpos_t pos2;
 
-#if DISASSEMBLE
+//#if DISASSEMBLE
 
 void disassemble(const char* filename);
 
@@ -808,7 +808,7 @@ uint8_t* xlram = NULL; // Declare xlram as a global variable
 
 
 
-#endif
+//#endif
 
 static const unsigned char	opcdat1[] = "BRKPHPASLCLCPLPROLSECRTIPHALSRCLIRTSPLARORSEI"
 "DEYTXATYATXSTAYTAXCLVTSXINYDEXCLDINXNOPSED";
@@ -823,11 +823,11 @@ static const unsigned char opcds[] = " BIT STY LDY CPY CPX ORA AND EOR ADC STA L
 
 static const unsigned char assdirecs[] = " EQU EPZ ORG ASC DFB DFW DSKIMAGE XFDIMAGE ATRIMAGE RUNEMUL CPFL APPEND RMB INITRMB "
 "ADDTOIMG SAVEAS BSAVE FILLMEM INCLUDE LINKFILE LINK SMTFILE LI OR "
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 "ascii text db byte dw word fill = *= IN OF HX DA DAT ";
-#else
-;
-#endif
+//#else
+//;
+//#endif
 static const unsigned char assdirecssolo[] = " OUT NOHEADER OBJFILE SMTTOIMG VERIFY EQUCONST";
 
 static const unsigned char brastrdat[] = "BPLBMIBVCBVSBCCBCSBNEBEQ";
@@ -854,8 +854,8 @@ static char emul_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char pathstr[MAX_FILENAME_LEN + 1] = { 0 };
 static char dsk_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char cmp_file[MAX_FILENAME_LEN + 1] = { 0 };
-char current_global[MAX_LABEL_SIZE] = "";
-char stand_alone_label[MAX_LABEL_SIZE] = "";
+char current_global[MAX_SYMBOL_SIZE] = "";
+char stand_alone_label[MAX_SYMBOL_SIZE] = "";
 bool pc_overflow_flg = false;
 bool force_pc_listing_flg = 0;
 int skip_frequency = 0;
@@ -996,7 +996,7 @@ int main(int argc, char* argv[]) {
 			printf("\n--- CODEGEN SETTINGS ---\n");
 
 			SHOW_SETTING(ATARI800);
-			SHOW_SETTING(DISASSEMBLE);
+			//SHOW_SETTING(DISASSEMBLE);
 			SHOW_SETTING(SHOW_POSTFIX);
 			SHOW_SETTING(DELETE_TEMP_ATR);
 			SHOW_SETTING(IMBED_SRC_FILENAME);
@@ -1571,7 +1571,7 @@ int main(int argc, char* argv[]) {
 					while (isalnum(*txtptr)) {
 						label[pos++] = (char)(*txtptr++);
 					}
-#else  // !ATMAS_II_COMPATIBLE
+#else  // !ATMAS_II_COMPATIBLE*/
 
 
 
@@ -1611,7 +1611,7 @@ int main(int argc, char* argv[]) {
 					 *     ICCOM= $342
 					 *     ICCOM = $342
 					 */
-					if (!isspace(*txtptr) && *txtptr != '=') {
+					if (!isspace(*txtptr) && *txtptr != '=' ) {
 						printf(BRED "\nIllegal character '%c' in label", *txtptr);
 						error("");
 					}
@@ -1656,7 +1656,7 @@ int main(int argc, char* argv[]) {
 
 
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 				/*************** Process stand-alone label *****************/
 
 				if (*label) {
@@ -1681,17 +1681,17 @@ int main(int argc, char* argv[]) {
 						continue;
 					}
 				}
-#endif
+//#endif
 
 				tpsav = txtptr;
 
 				if (*txtptr == '\n')
 					continue;
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 				if (*txtptr == ';')
 					continue;
-#endif
+//#endif
 
 				/*
 				 * '=' is an alias for EQU.
@@ -1726,7 +1726,7 @@ int main(int argc, char* argv[]) {
 				}
 				else {
 
-#if ATMAS_II_COMPATIBLE
+/*#if ATMAS_II_COMPATIBLE
 
 					if (!isalpha(*txtptr))
 						error("Alphabetic character expected");
@@ -1757,7 +1757,7 @@ int main(int argc, char* argv[]) {
 							*ptr++ = (char)(*txtptr++);
 					}
 
-#endif	/* ATMAS_II_COMPATIBLE */
+//#endif	/* ATMAS_II_COMPATIBLE */
 
 					* ptr = '\0';
 				}
@@ -1799,7 +1799,7 @@ int main(int argc, char* argv[]) {
 
 
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 				/*************  Check opcode for alias directives   *************/
 
 				if (contains_word_icase(" MAC ", opcode)) {
@@ -1842,7 +1842,7 @@ int main(int argc, char* argv[]) {
 					strcpy_s(opcode, sizeof(opcode), "DAT");
 				}
 
-#endif
+//#endif
 
 
 				/*
@@ -2395,7 +2395,7 @@ int main(int argc, char* argv[]) {
 
 					continue;
 				}
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 				/* HX */
 
 				if (_stricmp(opcode, "HX") == 0) {
@@ -2430,7 +2430,7 @@ int main(int argc, char* argv[]) {
 
 					continue;
 				}
-#endif
+//#endif
 				/* DFW */
 
 				if (_stricmp(opcode, "DFW") == 0) {
@@ -3554,10 +3554,10 @@ int main(int argc, char* argv[]) {
 
 
 
-#if DISASSEMBLE
+//#if DISASSEMBLE
 		if (verif_flg == 0 || verif_flg == 1)
 			disassemble(loafilename);
-#endif
+//#endif
 
 		if (verif_flg == 0 || verif_flg == 2) {
 			//	free(txtbuf);
@@ -4280,7 +4280,7 @@ uint32_t symtoi1() {
 		ch = *txtptr;
 	}
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 
 	if (ch == '<') {
 		unary_LT = 1;
@@ -4293,7 +4293,7 @@ uint32_t symtoi1() {
 		ch = *txtptr;
 	}
 
-#endif
+//#endif
 
 	if (isdigit(ch))				/* :Decimal */
 	{
@@ -4303,12 +4303,12 @@ uint32_t symtoi1() {
 
 		result = atoi(strbeg);
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 		if (unary_LT)
 			result &= 0xFF;
 		else if (unary_GT)
 			result >>= 8;
-#endif
+//#endif
 		if (result > SYMBOL_OFFSET
 			/*&& !syms_in_expr*/
 			&& pass == 2
@@ -4352,12 +4352,12 @@ uint32_t symtoi1() {
 
 		result = ch;
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 		if (unary_LT)
 			result &= 0xFF;
 		else if (unary_GT)
 			result >>= 8;
-#endif
+//#endif
 
 		return(result);
 	}
@@ -4385,12 +4385,12 @@ uint32_t symtoi1() {
 
 		result = i;
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 		if (unary_LT)
 			result &= 0xFF;
 		else if (unary_GT)
 			result >>= 8;
-#endif
+//#endif
 		if (result > SYMBOL_OFFSET
 			&& !syms_in_expr
 			&& pass == 2
@@ -4424,12 +4424,12 @@ uint32_t symtoi1() {
 		if (*txtptr == '\'')
 			txtptr++;
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 		if (unary_LT)
 			result &= 0xFF;
 		else if (unary_GT)
 			result >>= 8;
-#endif
+//#endif
 
 		return(result);
 	}
@@ -4452,7 +4452,7 @@ uint32_t symtoi1() {
 #if ATMAS_II_COMPATIBLE
 
 		if (!(isalpha(*txtptr)))
-			error("Label must begin with a letter");
+			error("ATMAS-II compatible label must begin with a letter.");
 
 		while (isalnum(*txtptr))
 			*ptr++ = (char)(*txtptr++);
@@ -4573,14 +4573,14 @@ uint32_t symtoi1() {
 
 			result = sssptr->symadr;
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 
 			if (unary_LT)
 				result &= 0xFF;
 			else if (unary_GT)
 				result >>= 8;
 
-#endif
+//#endif
 
 			return(result);
 		}
@@ -4681,9 +4681,9 @@ void toxlbuf(uint8_t ch) {
 		pc_overflow_flg = true;
 
 	*xlbfptr = ch;
-#if DISASSEMBLE
+//#if DISASSEMBLE
 	* (xlram + pc) = ch;
-#endif
+//#endif
 	xlbfptr++;
 	pc++;
 
