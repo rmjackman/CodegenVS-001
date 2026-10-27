@@ -44,7 +44,7 @@
 
 #define GDGN_GLOBAL_H
 
-#define ATMAS_II_COMPATIBLE 1
+#define ATMAS_II_COMPATIBLE 0
 
 #define CREATE_DBG 0
 

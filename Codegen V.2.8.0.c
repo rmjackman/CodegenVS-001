@@ -2024,7 +2024,7 @@ int main(int argc, char* argv[]) {
 					else {
 						labflg = 1;
 
-#if !ATMAS_II_COMPATIBLE
+//#if !ATMAS_II_COMPATIBLE
 						// local label, must be appended to previous label
 						if (*label == '.') {
 							char temp[MAX_LABEL_SIZE];
@@ -2033,6 +2033,11 @@ int main(int argc, char* argv[]) {
 
 							if (*current_global == '\0')
 								error("Local label without preceding global label");
+
+							if (sizeof(current_global) + sizeof(temp) + 1 > MAX_LABEL_SIZE) {
+								printf(BRED "\nExpanded local label: %s%s is too long.", current_global, temp);
+								error("Label too long");
+							}
 
 							strcpy_s(label, MAX_LABEL_SIZE, current_global);
 							strcat_s(label, MAX_LABEL_SIZE, temp);
@@ -2050,7 +2055,7 @@ int main(int argc, char* argv[]) {
 
 								strcpy_s(current_global, sizeof(current_global), label);
 						}
-#endif
+//#endif
 						if (_stricmp(label, "do") == 0) sprintf_s(label, sizeof(label), "do%u", ++donum);
 						if (_stricmp(label, "loop") == 0) sprintf_s(label, sizeof(label), "loop%u", ++loopnum);
 						if (_stricmp(label, "minus") == 0) sprintf_s(label, sizeof(label), "minu%u", ++minusnum);
@@ -4669,7 +4674,7 @@ void error(char* errstr) {
 	exit(linnum);
 }
 // end error
-// end error
+
 
 
 void toxlbuf(uint8_t ch) {
