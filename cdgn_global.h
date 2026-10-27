@@ -54,9 +54,9 @@
 #define MAX_FILENAME_LEN 256
 
 #if ATMAS_II_COMPATIBLE
-#define MAX_SYMBOL_SIZE 8
+#define MAX_LABEL_SIZE 8
 #else
-#define MAX_SYMBOL_SIZE 32
+#define MAX_LABEL_SIZE 32
 #endif // ATMAS_II_COMPATIBLE
 
 #define MAXSYMS 2500
@@ -69,7 +69,7 @@
 #define uint32_t uint32_t
 
 typedef struct {
-	char symbol[MAX_SYMBOL_SIZE + 1];
+	char symbol[MAX_LABEL_SIZE + 1];
 	char comment[COMMENT_LEN + 1];
     uint16_t symadr;
 	int8_t ofst;

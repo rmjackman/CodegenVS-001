@@ -46,7 +46,7 @@
 
 #define MAX_LINE_SIZE 255
 #define PRN_BUF_SIZE 255
-#define MAX_LABEL_SIZE 64		// (not symbol) see MAX_SYMBOL_SIZE in cdgn_global.h
+#define MAX_EXPR_STR_SIZE 64		// (not symbol) see MAX_LABEL_SIZE in cdgn_global.h
 #define MAXDUMS 20
 #define LSTBYTES 4
 #define DA_QUOTATION_MARKS "\"!&/=?[\\]^|" // for DAT
@@ -761,11 +761,11 @@ char prnlnbufbeg[PRN_BUF_SIZE] = { 0 };
 short mismatchln_flg[10] = { 0 };
 char src_filename[MAX_FILENAME_LEN + 1] = { 0 };
 char src_filename_sav[MAX_FILENAME_LEN + 1] = { 0 };
-char opcode[MAX_LABEL_SIZE + 1] = { 0 }, operand[MAX_FILENAME_LEN + 1] = { 0 };
+char opcode[MAX_EXPR_STR_SIZE + 1] = { 0 }, operand[MAX_FILENAME_LEN + 1] = { 0 };
 bool line_beg_opc_flg = 0;
-char outflgs[MAX_LABEL_SIZE + 1] = { 0 };
+char outflgs[MAX_EXPR_STR_SIZE + 1] = { 0 };
 char prnlnbuf2[10][PRN_BUF_SIZE] = { { 0 } };
-char cmpflbytln[9][MAX_LABEL_SIZE + 1] = { { 0 } };
+char cmpflbytln[9][MAX_EXPR_STR_SIZE + 1] = { { 0 } };
 char linbuf[MAXMACLEV][MAX_LINE_SIZE + 1] = { { 0 } };
 
 bool const_by_equ_vs_epz = false;
@@ -782,7 +782,7 @@ ssstype	sss[MAXSYMS] = { 0 };
 
 
 #define MAX_PCLINES    10000
-#define MAX_PCLINE_LEN (2 * MAX_LABEL_SIZE + MAX_FILENAME_LEN + 3)
+#define MAX_PCLINE_LEN (2 * MAX_EXPR_STR_SIZE + MAX_FILENAME_LEN + 3)
 
 typedef struct {
 	uint16_t address;
@@ -854,8 +854,8 @@ static char emul_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char pathstr[MAX_FILENAME_LEN + 1] = { 0 };
 static char dsk_filename[MAX_FILENAME_LEN + 1] = { 0 };
 static char cmp_file[MAX_FILENAME_LEN + 1] = { 0 };
-char current_global[MAX_SYMBOL_SIZE] = "";
-char stand_alone_label[MAX_SYMBOL_SIZE] = "";
+char current_global[MAX_LABEL_SIZE + 1] = "";
+char stand_alone_label[MAX_LABEL_SIZE + 1] = "";
 bool pc_overflow_flg = false;
 bool force_pc_listing_flg = 0;
 int skip_frequency = 0;
@@ -926,7 +926,7 @@ int main(int argc, char* argv[]) {
 		unsigned int operval = 0;
 		int operno = 0;
 		int i = 0;
-		char label[MAX_LABEL_SIZE] = { 0 };
+		char label[MAX_EXPR_STR_SIZE] = { 0 };
 
 
 		//int temp = 0;
@@ -968,6 +968,7 @@ int main(int argc, char* argv[]) {
 
 		bool li_flg = 0;
 		int first_adr_symnum = 0;
+		int label_len = 0;
 
 		memset(sss, 0, sizeof sss);
 
@@ -996,6 +997,7 @@ int main(int argc, char* argv[]) {
 			printf("\n--- CODEGEN SETTINGS ---\n");
 
 			SHOW_SETTING(ATARI800);
+			SHOW_SETTING(ATMAS_II_COMPATIBLE);
 			//SHOW_SETTING(DISASSEMBLE);
 			SHOW_SETTING(SHOW_POSTFIX);
 			SHOW_SETTING(DELETE_TEMP_ATR);
@@ -1596,8 +1598,10 @@ int main(int argc, char* argv[]) {
 						*txtptr = ' ';
 					}
 #endif
-					if (pos > MAX_SYMBOL_SIZE)
-						error("Label is too long");
+					label_len = pos;
+
+					/*if (label_len > MAX_LABEL_SIZE)
+						error("Label is too long");*/
 
 					if (*txtptr == '@')
 						label[pos++] = *txtptr++;
@@ -1927,6 +1931,9 @@ int main(int argc, char* argv[]) {
 
 				if (*label) {
 
+					if (label_len > MAX_LABEL_SIZE)
+						error("Label is too long. Set ATMAS_II_COMPATIBLE to 0 to allow longer labels.");
+
 					if (pass == 1) {
 						if (symnum >= MAXSYMS - 1)
 							error("Too many labels");
@@ -2024,9 +2031,12 @@ int main(int argc, char* argv[]) {
 					else {
 						labflg = 1;
 
-//#if !ATMAS_II_COMPATIBLE
+
 						// local label, must be appended to previous label
 						if (*label == '.') {
+#if ATMAS_II_COMPATIBLE
+							error("Local label is not compatible with ATMAS-II/SOURCGEN.\nUse +, -, skip, loop, cont, etc. insted.");
+#endif
 							char temp[MAX_LABEL_SIZE];
 
 							strcpy_s(temp, sizeof(temp), label);
@@ -2034,8 +2044,12 @@ int main(int argc, char* argv[]) {
 							if (*current_global == '\0')
 								error("Local label without preceding global label");
 
-							if (sizeof(current_global) + sizeof(temp) + 1 > MAX_LABEL_SIZE) {
-								printf(BRED "\nExpanded local label: %s%s is too long.", current_global, temp);
+							int size = strlen(current_global) + strlen(temp) + 1;
+
+							if (size > MAX_LABEL_SIZE) {
+
+								printf(BRED "\nLength of expanded local label %s%s is %d, which is too long.", current_global, temp, size);
+								printf(BYELLOW "\nMaximum length MAX_LABEL_SIZE is %d." RESET, MAX_LABEL_SIZE);
 								error("Label too long");
 							}
 
@@ -2055,7 +2069,7 @@ int main(int argc, char* argv[]) {
 
 								strcpy_s(current_global, sizeof(current_global), label);
 						}
-//#endif
+
 						if (_stricmp(label, "do") == 0) sprintf_s(label, sizeof(label), "do%u", ++donum);
 						if (_stricmp(label, "loop") == 0) sprintf_s(label, sizeof(label), "loop%u", ++loopnum);
 						if (_stricmp(label, "minus") == 0) sprintf_s(label, sizeof(label), "minu%u", ++minusnum);
@@ -4260,7 +4274,7 @@ uint32_t expresstoi_p2() {
 					  */
 
 uint32_t symtoi1() {
-	char strbeg[MAX_LABEL_SIZE] = { 0 };
+	char strbeg[MAX_EXPR_STR_SIZE] = { 0 };
 	char* ptr;
 	char ch = 0;
 	unsigned int i = 0, chrcnt = 0;
@@ -4457,7 +4471,7 @@ uint32_t symtoi1() {
 #if ATMAS_II_COMPATIBLE
 
 		if (!(isalpha(*txtptr)))
-			error("ATMAS-II compatible label must begin with a letter.");
+			error("An ATMAS-II/SOURGEN compatible label must begin with a letter.");
 
 		while (isalnum(*txtptr))
 			*ptr++ = (char)(*txtptr++);
@@ -4647,7 +4661,7 @@ void error(char* errstr) {
 		lis_stream = NULL;
 	}
 
-	printf(BRED "\n\nERROR --" BYELLOW "\n % s\nat ", errstr);
+	printf(BRED "\nERROR --" BYELLOW "\n%s\nat ", errstr);
 	if (pc)
 		printf("address $%X, ", pc);
 	printf("line %d\n\n\a", linnum);
@@ -4657,7 +4671,7 @@ void error(char* errstr) {
 		len = txtptr - linbegptr;
 		strcpy_s(partstr, sizeof(partstr), linbuf[0]);
 		partstr[len] = '\0';
-		printf("%s", partstr);
+		printf("%s^", partstr);
 	}
 	else {
 		printf("Error in macro:\n%s", linbuf[maclevel]);
