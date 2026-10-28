@@ -744,6 +744,8 @@ short prnlnum = 0;
 uint8_t syms_in_expr = 0;
 bool reverse_unary_ch_flg = 1;
 int skip_line_numbers_flg = 0;
+uint16_t symnum, symnumext;
+
 #if NEW_DIRECT_ADDRESSING		
 int16_t pc_sav1 = 0;
 bool lo_fg_sav = 0;

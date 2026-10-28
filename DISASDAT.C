@@ -1,7 +1,7 @@
 #include "cdgn_global.h"
 
 
-/*char abtab[] = " ? ANDASLBCCBCSBEQBITBMI"
+/*const char abtab[] = " ? ANDASLBCCBCSBEQBITBMI"
 					"BNEBPLBRKBVCBVSCLCCLDCLI"
 					"CLVCMPCPXCPYDECDEXDEYEOR"
 					"INCINXINYJMPJSRLDALDXLDY"
@@ -11,7 +11,7 @@
 					"ADC";							*/
 
 
-char abtab[] =
+const char abtab[] =
 " ? "                                              /* 000 */
 "AND" "ASL" "BCC" "BCS" "BEQ" "BIT" "BMI" "BNE"   /* 003–024 */
 "BPL" "BRK" "BVC" "BVS" "CLC" "CLD" "CLI" "CLV"   /* 027–048 */
@@ -21,7 +21,7 @@ char abtab[] =
 "RTI" "RTS" "SBC" "SEC" "SED" "SEI" "STA" "STX"   /* 123–144 */
 "STY" "TAX" "TAY" "TSX" "TXA" "TXS" "TYA" "ADC";  /* 147–168 */
 
-char abofst[] =   { 30,102,0,0,0,102,6,0    , 108,102,6,0,0,102,6,0
+const char abofst[] =   { 30,102,0,0,0,102,6,0    , 108,102,6,0,0,102,6,0
          , 27,102,0,0,0,102,6,0      , 39,102,0,0,0,102,6,0
          
 		, 84,3,0,0,18,3,117,0      , 114,3,117,0,18,3,117,0
@@ -47,7 +47,7 @@ char abofst[] =   { 30,102,0,0,0,102,6,0    , 108,102,6,0,0,102,6,0
          , 54,129,0,0,54,129,72,0   , 75,129,99,0,54,129,72,0
          , 15,129,0,0,0,129,72,0    , 135,129,0,0,0,129,72,0	};
 
-char opertytb[] = {OPC,BAAXB,Q,Q,Q,AA,AA,Q,				//256 bytes corespond to opcodes
+const char opertytb[] = {OPC,BAAXB,Q,Q,Q,AA,AA,Q,				//256 bytes corespond to opcodes
 						OPC,NN,OPC,Q,Q,AAAA,AAAA,Q,
 						BRA,BAABY,Q,Q,Q,AAX,AAX,Q,		//$10
 						OPC,AAAAY,Q,Q,Q,AAAAX,AAAAX,Q,
@@ -90,7 +90,7 @@ char opertytb[] = {OPC,BAAXB,Q,Q,Q,AA,AA,Q,				//256 bytes corespond to opcodes
 				OPC,AAAAY,Q,Q,Q,AAAAX,AAAAX,Q };
 
 
-unsigned char oprndlen[256] = {
+const unsigned char oprndlen[256] = {
 	/* 00 */ 1,2,0,0,0,2,2,0, 1,2,1,0,0,3,3,0,
 	/* 10 */ 2,2,0,0,0,2,2,0, 1,3,0,0,0,3,3,0,
 	/* 20 */ 3,2,0,0,2,2,2,0, 1,2,1,0,3,3,3,0,
@@ -113,4 +113,4 @@ unsigned char oprndlen[256] = {
 };
 
 
-unsigned char esc_ch_tab[16] = { 27,28,29,30,31,125,126,127,155,156,157,158,159,253,254,255 };// Escape characters for strings
+const unsigned char esc_ch_tab[16] = { 27,28,29,30,31,125,126,127,155,156,157,158,159,253,254,255 };// Escape characters for strings
