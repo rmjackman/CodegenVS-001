@@ -25,12 +25,12 @@
 
 //The following switches 1,2,3,5,6,7 correspond aproximately to the output menu switches in SOURCGEN
 #define PRINT_DISS_LINNUM 1		// 0. Set to 1 for correct line numbering in DBG and in MADS.LST files
-#define ADDR_LEFT_COMMENT 0		// 1.
-#define SHOW_LEFT_COMMENT 0		// 2.
+#define ADDR_LEFT_COMMENT 1		// 1.
+#define SHOW_LEFT_COMMENT 1		// 2.
 #define PRINT_PCADDRESS_BYTES  1		// 3. Set to 1 for correct line numbering in DBG and in MADS.LST files
 		// COMMAND				// 4. Relevent in SORCGEN but not Codegen
-#define SKA_AS_COMMENT    0		// 5. Set to 1 to show SKA as a comment
-#define SHOW_RH_COMMENT   0		// 6. Set to 1 to show right-hand comment
+#define SKA_AS_COMMENT    1		// 5. Set to 1 to show SKA as a comment
+#define SHOW_RH_COMMENT   1		// 6. Set to 1 to show right-hand comment
 #define SHOW_JSR          1		// 7. Optionally precede subroutines with JSR.
 #define PRINT_OPC_BYTES   0		// 8. Places the opcode byte in front of the instruction mnemonic. (Set to 0 when not needed)
 
@@ -144,7 +144,7 @@ void disassemble(const char* filename) {
 		perror("Error opening output file");
 		return;
 	}
-	printf(BBLUE "Create %s with Symbolic Disassembler\n" RESET, output_filename);
+	printf(CYAN "Create %s with Symbolic Disassembler\n" RESET, output_filename);
 
 	if (fopen_s(&madslstfile, "MADS.LST", "w") != 0) {
 		perror("Error opening MADS.LST");

@@ -11,6 +11,8 @@
 *	OUT LM
 	OUT LT
 *	OUT T		SOURCGEN symbol table
+
+
 EOL     EQU $9B
 -----------------------------------------------------------------------
 ICCOM	=$342
@@ -156,7 +158,7 @@ CRSINH	EQU 752
 CHBAS	EQU 756
 PORTB	EQU $D301
 SKCTL	EQU $D20E Disable the POKEY key click directly
-NOKEY	EPZ 208
+NOKEY	EQU 208
 
 
 *

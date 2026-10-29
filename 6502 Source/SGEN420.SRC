@@ -22,8 +22,11 @@
 	ADDTOIMG MEM.SAV
 	ADDTOIMG OS.SMB
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
-	SMTFILE TEMP.SMB
+	SMTFILE YYY.SMB
 	SMTTOIMG 		add SMT-file to disk image.  (optional)
+
+SK	EQU $100
+YYY	EQU $102	FAUTORUN.SYS^P4D00^H4D00 56DA A/P:^
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -357,7 +360,7 @@ adjND	RTS
 *	RTS
 *********************************************************
 
-SK	EQU $100
+
 
 *segment 2200 4c1F -- now 4c18
 

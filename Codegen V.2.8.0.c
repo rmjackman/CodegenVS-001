@@ -20,12 +20,11 @@
 
 #define ATARI800    1		// Set to 0 only if you are assembling code for a non-ATARI system.
 //#define DISASSEMBLE 1		// Probably don't need to change this.
-#define SHOW_POSTFIX   0	// Shows arithmetic evaluluation for each line: infix  postfix  result
+#define SHOW_POSTFIX   0	// Shows arithmetic evaluation for each line: infix  postfix  result
 #define DELETE_TEMP_ATR    1// Delete temp.atr before starting.
 #define IMBED_SRC_FILENAME 1// Embed SRC file path and name into this program. See cdgn_global.h for examples.
 #define COMMENTS 1			//Set to 1 to include comments in generated code.
 #define COMMENTS2 1			//Set to 1 to include comments after EQU and EPZ.
-
 
 #define NEW_DIRECT_ADDRESSING 1
 #define ALLOW_OPCODE_AT_LINE_BEGIN 1
@@ -68,7 +67,6 @@ void list_label(int i);
 void list_label_xasm(int i);
 void list_label_f(int i);
 void list_label_f2(int i);		//label zu LIS file T
-//uint32_t symtoi2(char* strbeg);
 uint32_t symtoi3(char* strbeg);
 void sectyp(char line_type);
 char fptsmb(int i);
@@ -777,8 +775,8 @@ bool const_by_imm_addr = true;
 #else
 bool const_by_imm_addr = false;
 #endif
-ssstype* sssptr;
 
+ssstype* sssptr;
 
 ssstype	sss[MAXSYMS] = { 0 };
 
@@ -916,7 +914,7 @@ int main(int argc, char* argv[]) {
 	for (;;) {		// beginning of long loop for verif_flg == 2
 		if (verif_flg == 2) {
 			puts("\n\n*******************************************************\n");
-			puts(BBLUE "Starting round trip verification:\n" RESET);
+			puts(CYAN "Starting round trip verification:\n" RESET);
 		}
 
 
@@ -1077,7 +1075,7 @@ int main(int argc, char* argv[]) {
 		}//end of if (verif_flg == 0)
 
 
-		printf(BBLUE "Source file: %s -- " RESET, src_filename);
+		printf(CYAN "Source file: %s -- " RESET, src_filename);
 
 		if (fopen_s(&stream, src_filename, "r") != 0) {
 			printf("Can't open %s\n", src_filename);
@@ -1949,6 +1947,24 @@ int main(int argc, char* argv[]) {
 						if (*txtptr == ' ' || *txtptr == '\t') // not for '='
 							txtptr++;
 						i = expresstoi();
+						//comment
+						if (*txtptr != '\n') { // possible comment
+							char* ptr = txtptr;
+							while (strchr(" \t;", *ptr))
+								ptr++;
+
+							int com_pos = 0;
+							while (*ptr != '\n' && com_pos < COMMENT_LEN - 1) {
+								sss[symnum].comment[com_pos++] = *ptr++;
+							}
+							sss[symnum].comment[com_pos] = 0;
+							//if (sss[symnum].comment[0]) {
+								//printf("%s\t%s\n", sss[symnum].symbol, sss[symnum].comment);
+								//getchar();
+							//}
+						}
+
+
 
 						if (pass == 1) {
 							if (i != NOTFOUND) {
@@ -3426,7 +3442,7 @@ int main(int argc, char* argv[]) {
 				exit(1);
 			}
 
-			printf(BBLUE"\nSaving binary file %s\n" RESET, loafilename);
+			printf(CYAN"\nSaving binary file %s\n" RESET, loafilename);
 			txtsiz = fwrite(xlbuf, 1, xlbfptr - xlbuf, stream);
 			if (txtsiz != xlbfptr - xlbuf)
 				file_err("Can't save", loafilename);
@@ -3480,7 +3496,7 @@ int main(int argc, char* argv[]) {
 				exit(1);
 			}
 
-			printf(BBLUE "Saving symbol-file %s\n" RESET, smbfilename);
+			printf(CYAN "Saving symbol-file %s\n" RESET, smbfilename);
 
 			fputc(0xfb, stream);
 			fputc(0x00, stream);
@@ -3493,10 +3509,10 @@ int main(int argc, char* argv[]) {
 			secsiz = 0;
 			fgetpos(stream, &pos2);
 
-			/*for (i = 0; i < symnum; i++) {// turned off temporarilly because it alters the simbol table prior to disassembly
+			for (i = 0; i < symnum; i++) {// turned off temporarilly because it alters the symbol table prior to disassembly
 				lensv = fptsmb(i);
 				secsiz += lensv;
-			}*/
+			}
 			fsetpos(stream, &pos1);
 			fputc((char)secsiz, stream);
 			fputc((char)(secsiz >> 8), stream);
@@ -4939,7 +4955,10 @@ void list_label_f2(int i) {
 		fprintf(lis_stream, "MACRO\n");
 	else
 		fprintf(lis_stream, "%X\t", sss[i].symadr);
-	fprintf(lis_stream, "%s\n", sss[i].symbol);
+	fprintf(lis_stream, "%s", sss[i].symbol);
+	if (sss[i].comment[0])
+			fprintf(lis_stream, " ;%s\n", sss[i].comment);
+	else fprintf(lis_stream, "\n");
 }
 
 void list_label_xasm(int i) {
@@ -5088,7 +5107,7 @@ char fptsmb(int i) {
 	}
 
 
-	if (sss[i].symtyp) {
+	if (sss[i].symtyp && sss[i].symtyp != '{') {
 		*lnbfptr = sss[i].symtyp;
 		cnt++;
 	}
@@ -5330,15 +5349,14 @@ void sourcgen_symtab() {
 		perror("Error writing to file");
 	int i;
 	for (i = 0; i < symnum; i++) {
-		fprintf(lis_stream, "%x ", i);
+		//fprintf(lis_stream, "%d ", i);
 		if (sss[i].symtyp) {
 			fprintf(lis_stream, "%c ", sss[i].symtyp);
 
 		}
 		else fprintf(lis_stream, "  ");
 		fprintf(lis_stream, "%d ", sss[i].ofst);
-		//if (sss[i].comment[0])
-			//fprintf(lis_stream, "*** %s\n", sss[i].comment);
+		
 		list_label_f2(i);
 
 	}
