@@ -373,3 +373,5 @@ FodyWeavers.xsd
 /6502 Source/TEMP.SMB
 *.lab
 /6502 Source/Sonderzeichen aus Teil 11
+/6502 Source/YYY.SMB
+/6502 Source/temp.src
