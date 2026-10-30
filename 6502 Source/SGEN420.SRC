@@ -26,7 +26,7 @@
 	SMTTOIMG 		add SMT-file to disk image.  (optional)
 
 SK	EQU $100
-YYY	EQU $102	FAUTORUN.SYS^P4D00^H4D00 56DA A/P:^
+YYY	EQU $102	FAUTORUN.SYS^P^H/P:^
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -73,7 +73,7 @@ YYY	EQU $102	FAUTORUN.SYS^P4D00^H4D00 56DA A/P:^
 	INCLUDE if_while_macros.src
 	INCLUDE Macros.SRC
 ***************************************************************
-XXX	EQU $57	*increase by 1 for extra page in the segment at ORG 5100
+XXX	EQU $58	*increase by 1 for extra page in the segment at ORG 5100
 *		*The size of the symbol table will be decreased by one page.
 ***************************************************************
 COPN	EQU 3	Disk open
@@ -246,7 +246,7 @@ BEGIN	LDA #$C0
 	STA RAMTOP
 *
 YL0	LDX #OKTXT:HI
-TEMPPP	LDA #OKTXT
+	LDA #OKTXT
 
 	JSR TITLE
 	RTS
@@ -362,7 +362,7 @@ adjND	RTS
 
 
 
-*segment 2200 4c1F -- now 4c18
+*segment 2200 4B6B
 
 *Display list $4C20
 *SAVMSK $4C40 to $4FFF (screen RAM)
@@ -377,9 +377,9 @@ LN	EQU $5090
 OSV	EQU $50E0	Obtained File-save
 FTV	EQU $50F0
 
-*segment 5100 56DA -- Inrease XXX by 1 to add a page of room for this segment
+*segment 5100 57DA -- Inrease XXX by 1 to add a page of room for this segment
 *XXX=57  
-*  5700: DLB ------  segment 5756 -------------------- 57FF
+*  5800: DLB ------  segment 5856 -------------------- 58FF
 
 SEGTAB0	EQU $1C00	4 pages (enough for 256 segments)
 SEGTAB1	EQU $1D00	This is DOS scratch RAM
@@ -411,7 +411,7 @@ ZLB	DFB XXX+1		58
 ZLE	DFW 0
 BLB	DFB XXX+4		5b
 BLE	DFW 0
-*** J-label table begin Hi bytef
+*** J-label table begin Hi byte
 JLB	DFB XXX+$C		63	
 *** J-label # bytes in use
 JLE	DFW 0
@@ -2262,6 +2262,9 @@ CKFND	RTS
 FE1	LDY #$A5
 FERR	JMP IOERR
 
+****************************************************************
+STAD1SV	DFW 0		start address of first segment
+NDADnSV	DFW 0		end address of last segment
 *** F. FILE
 FFILE	MovlB FLFG,0
 	STA FFG
@@ -2297,21 +2300,26 @@ FA	PRINT
 	ICBadrl FLV
 	ComCiov CPTXTR		wr filename
 	FINS
-FIN	  MovaW BTC,NDAD	loop begin
+loop	  MovaW BTC,NDAD
 	  IncW BTC
 	  RD6B1		RD6B sets STAD,NDAD,DSEC,DBYT
 	  MovlB LSPOS,0
 	  PTSEG
 	  CONSOLR
-	  INC CNT
+	  LDA CNT
+	  ifEQ
+	    MovaW STAD1SV,STAD
+	    
+endif	  INC CNT
 	  LDA AD
 	  BEQ F6
 
 	    DEC AD
 	    MovaW ADR,NDAD
+	    MovaW NDADnSV,NDAD
 	    INCADRw
 	    POINT
-	    JMP FIN	loop end
+	    JMP loop
 
 
 F6	LDA STAD		MovaW ADR,STAD
@@ -2320,6 +2328,7 @@ F6	LDA STAD		MovaW ADR,STAD
 	LDA STAD+1       
 	STA ADR+1
 	STA ADRV+1
+
 	JMP DSI
 * Show segments on F.FILE
 PTSEG	PutW STAD
@@ -3476,7 +3485,7 @@ IA1	CMP ';'
 	CKDX
 	RTS
 *
-LTAB	ASC "BCDGHJKMPRT
+LTAB	ASC "BCDGJKMRT
 	DFB 0
 *** Please enter address
 ADRERR	LDY #$11
@@ -3502,8 +3511,27 @@ INO	MovaB LSsav,LS
 -	STA AD,X
 	DEX
 	BPL -
+	
+* PREPARE and HEAD can be used without entering addresses. 
+* For Head the third value is automatically A. 
+* When using AtariWin800, add /P: to load file to Notepad	
+*** Use P. and H. without entering anything
+	LDY GTC
+	CPY 'H'
+	BEQ +
+	CPY 'P'
+	BNE skip
++	LDA FLFG
+	BEQ skip
 
-	MovlB NMC,$FF
+	MovaW AD,STAD1SV
+
+	CPY 'H'
+	BNE skip
+	  MovaW TOA,NDADnSV
+	  MovlB NWA,$A
+********************************
+skip	MovlB NMC,$FF
 INO1	MovlB BT1,156
 	LDY #0
 
@@ -4798,50 +4826,7 @@ SEGNO	DFB 0
 *TABS
 
 
-*** Opcode offset table
-OPOF	DFB 30,102,0,0,0,102,6,0
-	DFB 108,102,6,0,0,102,6,0
-	DFB 27,102,0,0,0,102,6,0
-	DFB 39,102,0,0,0,102,6,0
 
-	DFB 84,3,0,0,18,3,117,0
-	DFB 114,3,117,0,18,3,117,0
-	DFB 21,3,0,0,0,3,117,0
-	DFB 132,3,0,0,0,3,117,0
-
-	DFB 123,69,0,0,0,69,96,0
-	DFB 105,69,96,0,81,69,96,0
-	DFB 33,69,0,0,0,69,96,0
-	DFB 45,69,0,0,0,69,96,0
-
-	DFB 126,168,0,0,0,168,120,0
-	DFB 111,168,120,0,81,168,120,0
-	DFB 36,168,0,0,0,168,120,0
-	DFB 138,168,0,0,0,168,120,0
-
-*
-
-	DFB 0,141,0,0,147,141,144,0
-	DFB 66,0,159,0,147,141,144,0
-	DFB 9,141,0,0,147,141,144,0
-	DFB 165,141,162,0,0,141,0,0
-
-	DFB 93,87,90,0,93,87,90,0
-	DFB 153,87,150,0,93,87,90,0
-	DFB 12,87,0,0,93,87,90,0
-	DFB 48,87,156,0,93,87,90,0
-
-	DFB 57,51,0,0,57,51,60,0
-	DFB 78,51,63,0,57,51,60,0
-	DFB 24,51,0,0,0,51,60,0
-	DFB 42,51,0,0,0,51,60,0
-
-	DFB 54,129,0,0,54,129,72,0
-	DFB 75,129,99,0,54,129,72,0
-	DFB 15,129,0,0,0,129,72,0
-	DFB 135,129,0,0,0,129,72,0
-
-*
 ERTAB1	ASC \ \
 	ASC \SYNTAX\		1
 	ASC \ADDRESS OVERLAP\	2
@@ -4915,7 +4900,7 @@ OPCtab	ASC " ? ANDASLBCCBCSBEQBITBMI
 	ASC "LSRNOPORAPHAPHPPLAPLPROL
 	ASC "RORRTIRTSSBCSECSEDSEISTA
 	ASC "STXSTYTAXTAYTSXTXATXSTYA
-	ASC "ADC
+	ASC "ADC				;171 bytes
 *
 
 *** Menu A to U
@@ -5629,6 +5614,50 @@ MENU	ASC %1.address 2.comment %
 	ASC $<A><1>..<9><RETURN>
 	ASC "NNNNNNNNNNNNNNNNNNNNF"
 
+*** Opcode offset table
+OPOF	DFB 30,102,0,0,0,102,6,0
+	DFB 108,102,6,0,0,102,6,0
+	DFB 27,102,0,0,0,102,6,0
+	DFB 39,102,0,0,0,102,6,0
+
+	DFB 84,3,0,0,18,3,117,0
+	DFB 114,3,117,0,18,3,117,0
+	DFB 21,3,0,0,0,3,117,0
+	DFB 132,3,0,0,0,3,117,0
+
+	DFB 123,69,0,0,0,69,96,0
+	DFB 105,69,96,0,81,69,96,0
+	DFB 33,69,0,0,0,69,96,0
+	DFB 45,69,0,0,0,69,96,0
+
+	DFB 126,168,0,0,0,168,120,0
+	DFB 111,168,120,0,81,168,120,0
+	DFB 36,168,0,0,0,168,120,0
+	DFB 138,168,0,0,0,168,120,0
+
+*
+
+	DFB 0,141,0,0,147,141,144,0
+	DFB 66,0,159,0,147,141,144,0
+	DFB 9,141,0,0,147,141,144,0
+	DFB 165,141,162,0,0,141,0,0
+
+	DFB 93,87,90,0,93,87,90,0
+	DFB 153,87,150,0,93,87,90,0
+	DFB 12,87,0,0,93,87,90,0
+	DFB 48,87,156,0,93,87,90,0
+
+	DFB 57,51,0,0,57,51,60,0
+	DFB 78,51,63,0,57,51,60,0
+	DFB 24,51,0,0,0,51,60,0
+	DFB 42,51,0,0,0,51,60,0
+
+	DFB 54,129,0,0,54,129,72,0
+	DFB 75,129,99,0,54,129,72,0
+	DFB 15,129,0,0,0,129,72,0
+	DFB 135,129,0,0,0,129,72,0
+
+*
 **********************************************************	
 #	'#' causes the following lines to be ignored up until the next '#'.	
 	ORG $600
