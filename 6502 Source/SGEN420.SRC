@@ -11,7 +11,7 @@
 	EQUCONST		Byte: EQU for constant, EPZ for address
 	
 .define COLORS 1	
-	
+.define SGENSMB 1		autoload SCGEN420.SMB instead of AUTOLOAD.SMB
 * Use the CPFL directive to compare the generated code with another file
 
 *	CPFL SGEN416.LOAorig
@@ -21,12 +21,14 @@
 
 	ADDTOIMG MEM.SAV
 	ADDTOIMG OS.SMB
-	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
-	SMTFILE YYY.SMB
+.if SGENSMB
+	SMTFILE SCGEN420.SMB
 	SMTTOIMG 		add SMT-file to disk image.  (optional)
-
+.else
+	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
+.endif
 SK	EQU $100
-YYY	EQU $102	FAUTORUN.SYS^P^H/P:^
+YYY	EQU $102	FAUTORUN.SYS^P^.A126^H/P:^
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -56,7 +58,8 @@ YYY	EQU $102	FAUTORUN.SYS^P^H/P:^
 
 
 	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
-*	RUNEMUL "C:\Programs stand alone\Altirra\Altirra64.exe"
+*	RUNEMUL "C:\Programs Stand Alone\Altirra-4.21\Altirra64.exe"	;DAW
+*	RUNEMUL "C:\Programme non install\Altirra-4.40\Altirra64.exe"	;Acustica
 *	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
 *	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
 
@@ -1792,6 +1795,9 @@ CPND	LDA ANF
 	LDA FG5
 	BPL WC22
 
+	LDA PREPFG	asdfg
+	  BNE WC2ND
+
 	LDA FG6
 	BPL WC23
 	BLK
@@ -1843,6 +1849,7 @@ WC28	WRL
 	JMP DSI
 WC2A	JMP APLOOP
 WC29	RTS
+
 *** Write comment
 WCM1	MovaW ADR1,ADR1V
 	FADR1A
@@ -1872,10 +1879,12 @@ WCM1	MovaW ADR1,ADR1V
 skip	LDA ANF
 	BNE WC16
 
+	LDA PREPFG	on error show address
+	BNE +
 	LDA FG3
 	BPL WC17
 
-	CKJLTL
++	CKJLTL
 	BCC WC17
 
 	PTHW
@@ -1904,21 +1913,23 @@ WC18	LDA FG3
 	  CKJLTL
 	  BCS +
 
-endif	LDA FG1
+endif	LDA PREPFG
+	BNE +
+	LDA FG1
 	BPL +
 
-*	BLK
-	PTHW
+	  PTHW
 *** comment line-begin
-+	LDA FG2
-	ifMI
-*	  BLK
++	LDA PREPFG
+	BNE skip
+	LDA FG2
+	BPL skip
 	  WCM
-endif	JMP PRL
+skip	JMP PRL
 *
 WHeadCmt	LDA FG2		SGEN412
 	BMI +		SGEN412
-	BPL WCD		SGEN412
+	BPL WCD		SGEN412 
 	
 WCM	LDA ANF
 	BEQ WCD
@@ -2109,23 +2120,23 @@ PTO4	PutS \-\
 	LDA (ADR1),Y
 	SBC SKA
 	JMP PHB
-*** Output-menu 1.address
+*** 1.address
 FG1	DFB 128
-*** Output-menu 2.comment
+*** 2.comment
 FG2	DFB 127
-*** Output-menu 3.ADDRESS
+*** 3.ADDRESS
 FG3	DFB 128
-*** Output-menu 4.COMMAND
+*** 4.COMMAND
 FG4	DFB 128
-*** Output-menu 5.address
+*** 5.address
 FG5	DFB 128
-*** Output-menu 6.comment
+*** 6.comment
 FG6	DFB 127
-*** Output-menu 7.JSR
+*** 7.JSR
 FG7	DFB 127
-*** Output-menu 8.binary
+*** 8.binary
 FG8	DFB 127
-*** Output-menu 9.ASC
+*** 9.ASC
 FG9	DFB 127
 FGD	DFB 0
 *** Output-Menu
@@ -2717,7 +2728,11 @@ DBYT	DFB 0
 DSEC	DFW 0
 SGC	DFB 0
 *** "D1:AUTOLOAD"
+.if SGENSMB
+AUT	ASC "D1:SCGEN420"
+.else
 AUT	ASC "D1:AUTOLOAD"
+.endif
 SMB	ASC ".SMB"
 	DFB EOL
 *** Move LEN bytes from ADR1.. to ADR2..

@@ -3039,7 +3039,7 @@ int main(int argc, char* argv[]) {
 						d40f_found = 1;
 				}
 				if (d40f_found == 0) {
-					sss[symnum].symtyp = '#';
+					sss[symnum].symtyp = '{';
 					strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");//may not need this line
 					sss[symnum++].symadr = 0xd40f;
 				}
@@ -3611,8 +3611,11 @@ int main(int argc, char* argv[]) {
 				printf("\nStarting emulator--\n%s\n\n", emul_filename);
 				printf("Please close the emulator before re-running Codegen.\n");
 
-				if (system(emul_filename)) puts("Emulator not found");
-
+				if (system(emul_filename)) {
+					puts(BRED "ERROR: Emulator not found" RESET);
+					hit_Enter();
+					
+				}
 			}
 			else
 
