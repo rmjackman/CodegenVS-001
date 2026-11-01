@@ -3436,7 +3436,7 @@ int main(int argc, char* argv[]) {
 
 			/* LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA */
 			if (fopen_s(&stream, loafilename, "wb") != 0) {
-				puts("Can't open LOA file.");
+				puts(BRED "Error: Can't open LOA file.\nClose Notepad if you have used it for printer output, and try again.\a" RESET);
 				perror("");
 				hit_Enter();
 				exit(1);
@@ -5108,9 +5108,10 @@ char fptsmb(int i) {
 			if (isSpecialCharacter(sss[i].comment[--comment_bytes_cnt]))
 				sss[i].symtyp = ';';
 	}
+	if (sss[i].symtyp == '{')	//SOURCGEN cannot handle '{'
+		sss[i].symtyp = '#';
 
-
-	if (sss[i].symtyp && sss[i].symtyp != '{') {
+	if (sss[i].symtyp) {
 		*lnbfptr = sss[i].symtyp;
 		cnt++;
 	}

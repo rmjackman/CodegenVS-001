@@ -28,7 +28,7 @@
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 .endif
 SK	EQU $100
-YYY	EQU $102	FAUTORUN.SYS^P^.A126^H/P:^
+U2upRET	EPZ $0	FAUTORUN.SYS^.3^P^.A1256^H/P:^.6^
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -57,8 +57,8 @@ YYY	EQU $102	FAUTORUN.SYS^P^.A126^H/P:^
 *	DISASS 123456	;not yet implemented
 
 
-	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
-*	RUNEMUL "C:\Programs Stand Alone\Altirra-4.21\Altirra64.exe"	;DAW
+*	RUNEMUL "C:\Program Files (x86)\Atari800WinPLus\Atari800Win.exe"
+	RUNEMUL "C:\Programs Stand Alone\Altirra-4.21\Altirra64.exe"	;DAW
 *	RUNEMUL "C:\Programme non install\Altirra-4.40\Altirra64.exe"	;Acustica
 *	RUNEMUL "C:\Programs stand alone\atari800-5.2.0-win32-sdl\atari800.exe"
 *	RUNEMUL "C:\Programs stand alone\Xformer10\xformer10-x64.exe"
@@ -142,7 +142,7 @@ NWA	EPZ $90	A-U 3rd value (or SVL)
 SKAV	EPZ $92	SKA save
 PVAV	EPZ $94
 ADR1V	EPZ $96	ADR1 save
-CHC	EPZ $98
+CHC	EPZ $98	character count
 NML	EPZ $99	name length
 STAD	EPZ $9A	segment begin-address
 A1MX	EPZ $9C	A1 max
@@ -213,8 +213,8 @@ LSPOS	EPZ $F0	Position in LS
 
 FG	EPZ $F5
 BYT	EPZ $F6	value read from RAM or disk
-CNT	EPZ $F7  (or CNT)
-TMP	EPZ $F9
+CNT	EPZ $F7  counter
+TMP	EPZ $F9	temporary
 PVA	EPZ $FB
 JMPAD	EPZ $FD
 
@@ -365,7 +365,7 @@ adjND	RTS
 
 
 
-*segment 2200 4B6B
+*segment 2200 4B83
 
 *Display list $4C20
 *SAVMSK $4C40 to $4FFF (screen RAM)
@@ -1016,7 +1016,7 @@ loop	LDA BYT
 +	    CMP #EOL
 	    BEQ cont
 
-	    PTCH
++	    PTCH		ok
 	    DEC TCT
 	    BEQ cont
 
@@ -1594,27 +1594,27 @@ BR3	MovaW SKA,ADRV
 	CALCBRA
 	DETZ
 	LDA PREPFG
-	BEQ BR2
-*	STS BLB
-	MovlW Z20,BLB
-	ILSR
-J22D	RTS
+	BEQ +
 
-BR2	LDA JF1
-	BEQ BR8
+	  MovlW Z20,BLB
+	  ILSR
+J22D	  RTS
+
++	LDA JF1
+	BEQ +
 
 	JMP WC2ND
-BR8	LDA JF2
++	LDA JF2
 	BNE J22D
 
 	FADR1
-	BPL BR1
+	BPL +
 
 	WADNM
 	WCM2
 	JMP PRL
 
-BR1	ANO
++	ANO
 	BCS BR4
 
 	WJLTL
@@ -1628,6 +1628,7 @@ BR5	JMP PRL
 BR6	WRAD
 	JMP PRL
 
+***
 J17	CPY #17
 	BNE J20
 	PutS \(\
@@ -1715,13 +1716,15 @@ PB1	ASL
 	LDA NULL
 	BCC PB2
 	LDA EINS
-PB2	PTCH
+PB2	PTCH	ok
 	PLA
 	DEX
 	BNE PB1
 PBND	RTS
 *** Write address name (ADR1)
-WADNM	MovlB FG,0
+WADNM	LDA PREPFG
+	BNE PBND
+	MovlB FG,0
 	LDY #3
 	LDA (ADR1),Y	length of entry in symbol table
 	TAY		in Y
@@ -1742,8 +1745,14 @@ loop	INY
 	    LDA (ADR1),Y
 	    CKTY
 	    BCS skip
+	    
+*	    CMP #0
+*	    BNE tempsk
+*	    	LDY #$35
+*		JMP IOERR
+*tempsk
 
-	      PTCH
+	      PTCH	ok
 	      INC FG	set if symbol
 	      DEX
 	      BNE loop
@@ -1800,9 +1809,9 @@ CPND	LDA ANF
 
 	LDA FG6
 	BPL WC23
-	BLK
-WC26	PutS \  \
-	JMP WC24
+	  BLK
+WC26	  PutS \  ;\	placed before address followed by comment
+	  JMP WC24
 
 WC23	LDX CHC		*** Adjust tabs ****
 	LDA FG7		jsr selected?  jjjj
@@ -1824,12 +1833,12 @@ WC2B	CPX #16
 
 WC24	LDA ANF
 	BPL WC22
-	PTHW
+	  PTHW
 
 WC22	LDA FG6
 	BPL WC2ND
 
-	WCM
+	  WCM
 WC2ND	LDA JF1
 	BEQ WC29
 
@@ -1931,7 +1940,9 @@ WHeadCmt	LDA FG2		SGEN412
 	BMI +		SGEN412
 	BPL WCD		SGEN412 
 	
-WCM	LDA ANF
+WCM	LDA PREPFG
+	BNE WCD
+	LDA ANF
 	BEQ WCD
 
 +	LDY #3
@@ -1965,6 +1976,12 @@ WC2	BLK
 
 WC3	INY
 	LDA (ADR1),Y
+	    
+*	    CMP #0
+*	    BNE tempsk
+*	    	LDY #$35
+*		JMP IOERR
+*tempsk
 
 	PTCH
 	DEX
@@ -3118,7 +3135,7 @@ AJPNT	LDY #19
 	LDA PNT+1
 	STA ($20),Y
 	RTS
-*** ZF=0, PRLN, LSPOS=0
+*** Print error line ZF=0, PRLN, LSPOS=0
 PREL	MovlB ZF,0
 *** Write line, LSPOS:=0
 WRL	PutC #EOL
@@ -3214,8 +3231,10 @@ PRLN	ICBadrl LN
 	MovlBX ICBLEN+1,0
 	ComCiov CPBINR
 	RTS
-*
+	
+*** Put blank
 BLK	LDA ' '
+*** Put character
 PTCH	STX TMP
 	LDX LSPOS
 	STA LN,X
@@ -3223,7 +3242,7 @@ PTCH	STX TMP
 
 	LDA LSPOS
 	CMP LNPTRMX
-	BEQ PCHERR
+	  BEQ PCHERR
 
 	INC CHC
 	LDX TMP
