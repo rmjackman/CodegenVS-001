@@ -20,21 +20,22 @@
 
 
 #define ASC_STRING_LENGTH 21 //23
-#define DFB_BYTES_PER_LINE 8
-#define SHOW_LO 1 // Show ':L'
+#define DFB_BYTES_PER_LINE 6
+#define SHOW_LO 0 // Show ':L'
 
 //The following switches 1,2,3,5,6,7 correspond aproximately to the output menu switches in SOURCGEN
 #define PRINT_DISS_LINNUM 1		// 0. Set to 1 for correct line numbering in DBG and in MADS.LST files
 #define ADDR_LEFT_COMMENT 1		// 1.
+#define PRINT_SECTYPE	  0		//     prints the segment type next to the address
 #define SHOW_LEFT_COMMENT 1		// 2.
-#define PRINT_PCADDRESS_BYTES  1		// 3. Set to 1 for correct line numbering in DBG and in MADS.LST files
+#define PRINT_PCADDRESS_BYTES 1	// 3. Set to 1 for correct line numbering in DBG and in MADS.LST files
 		// COMMAND				// 4. Relevent in SORCGEN but not Codegen
 #define SKA_AS_COMMENT    1		// 5. Set to 1 to show SKA as a comment
-#define SHOW_RH_COMMENT   1		// 6. Set to 1 to show right-hand comment
-#define SHOW_JSR          1		// 7. Optionally precede subroutines with JSR.
+#define SHOW_RH_COMMENT   0		// 6. Set to 1 to show right-hand comment
+#define SHOW_JSR          0		// 7. Optionally precede subroutines with JSR.
 #define PRINT_OPC_BYTES   0		// 8. Places the opcode byte in front of the instruction mnemonic. (Set to 0 when not needed)
 
-#define SHOW_B_W_FREQUENCY 1	// Show byte and word variable frequency.
+#define SHOW_B_W_FREQUENCY 0	// Show byte and word variable frequency.
 
 uint16_t seg_start_address;
 uint8_t* opcodeptr;
@@ -76,7 +77,7 @@ char output_filename[FILENAME_MAX];
 FILE* outputfile;
 FILE* madslstfile;
 bool label_equ_flg = false;
-
+bool print_sectype = false;
 void disassemble(const char* filename) {
 
 
@@ -98,6 +99,7 @@ void disassemble(const char* filename) {
 
 	SHOW_SETTING(PRINT_DISS_LINNUM);
 	SHOW_SETTING(ADDR_LEFT_COMMENT);
+	SHOW_SETTING(PRINT_SECTYPE);
 	SHOW_SETTING(SHOW_LEFT_COMMENT);
 	SHOW_SETTING(PRINT_PCADDRESS_BYTES);
 	SHOW_SETTING(SKA_AS_COMMENT);
@@ -175,6 +177,9 @@ void disassemble(const char* filename) {
 #endif
 #if ADDR_LEFT_COMMENT
 	flag[1] = 1;
+#endif
+#if PRINT_SECTYPE
+	print_sectype = 1;
 #endif
 #if SHOW_LEFT_COMMENT
 	flag[2] = 1;
@@ -300,7 +305,7 @@ void disassemble(const char* filename) {
 
 
 		pcsav = 0;
-		print_line();  print_line();
+		print_line();  print_line(); print_line();
 		pts_p("\tORG ");
 		label_equ_flg = 1;
 		adnmw2((uint16_t)pc);
@@ -520,7 +525,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 		
 		if (flag[1]) //ADDR_LEFT_COMMENT
 			pts_p("%X", pc);
-		if (sss[sno].symtyp) {
+		if (print_sectype && sss[sno].symtyp) {
 			pts("/");
 			ptc(sss[sno].symtyp);
 		}
@@ -1034,6 +1039,8 @@ void adnmw2(uint16_t ska) {
 
 		pts_p("%s+", sss[isav].symbol);
 
+		offset_added = true;
+
 		if (offset > 9)
 			ptc('$');
 
@@ -1074,12 +1081,14 @@ void adnmw2(uint16_t ska) {
 
 		pts_p("%s", sss[isav].symbol);
 		pts_p("+%d", offset);
+		offset_added = true;
 	}
 
 	else if ((sss[i].symadr - ska == 1) && (sss[i].symbol[0]) && label_equ_flg == 0) {
 
 		pts_p("%s", sss[i].symbol);
 		pts("-1");
+		offset_added = true;
 	}
 
 	else {
@@ -1273,7 +1282,7 @@ void pt_ska_comment(uint16_t ska) {
 			ptc('\t');
 			if (strlen(line_buffer) - linebeg_lablen <= 10)
 				ptc('\t');
-			pts_p(";%X", ska);
+			pts_p("%X", ska);
 		}
 	}
 

@@ -28,7 +28,7 @@
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 .endif
 SK	EQU $100
-U2upRET	EPZ $0	FAUTORUN.SYS^.3^P^.A1256^H/P:^.6^
+U2upRET	EPZ $7	FAUTORUN.SYS^.3^M400^.A125^H/P:^.^
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -123,9 +123,11 @@ RAMTOP	EPZ $6A
 
 * Temporary variables
 Z20	EPZ $20
-LOCALW1	EPZ $24
-LOCALW2	EPZ $26
+Z24	EPZ $24
+Z26	EPZ $26
 
+Z29	EPZ $29
+Z2A	EPZ $2A
 * SGEN variables
 ADR1	EPZ $80	present address in symbol table
 ADR2	EPZ $82
@@ -215,7 +217,7 @@ FG	EPZ $F5
 BYT	EPZ $F6	value read from RAM or disk
 CNT	EPZ $F7  counter
 TMP	EPZ $F9	temporary
-PVA	EPZ $FB
+PVA	EPZ $FB	previous address
 JMPAD	EPZ $FD
 
 
@@ -878,7 +880,7 @@ DFWmiTy	DFWTY
 	JMP WCM2
 *
 DFWeqTy	DFWTY
-	LDA SKA
+	LDA SKA		replace with ORA
 	BNE DWD
 	LDA SKA+1
 	BNE DWD
@@ -1802,9 +1804,9 @@ CPND	LDA ANF
 	BNE WC2ND	SGEN412
 
 	LDA FG5
-	BPL WC22
+	BPL skipFG5
 
-	LDA PREPFG	asdfg
+	  LDA PREPFG	asdfg
 	  BNE WC2ND
 
 	LDA FG6
@@ -1832,10 +1834,10 @@ WC2B	CPX #16
 	PutTAB
 
 WC24	LDA ANF
-	BPL WC22
+	BPL skipFG5
 	  PTHW
 
-WC22	LDA FG6
+skipFG5	LDA FG6
 	BPL WC2ND
 
 	  WCM
@@ -2114,9 +2116,9 @@ PTOFS	LDA AOF
 	WADNM
 	BCS PTO2
 
-	WRAD
+	  WRAD
 PTO2	PutS \+\
-	MovaB SKA,SKAV
+	MovaW SKA,SKAV	MovaB SKA,SKAV
 	SEC
 	LDY #0
 	LDA SKA
@@ -2131,7 +2133,7 @@ PTO1	MovPZ SKA,ADR1
 
 	WRAD
 PTO4	PutS \-\
-	MovaB SKA,SKAV
+	MovaW SKA,SKAV	MovaB SKA,SKAV
 	SEC
 	LDY #0
 	LDA (ADR1),Y
@@ -2753,8 +2755,8 @@ AUT	ASC "D1:AUTOLOAD"
 SMB	ASC ".SMB"
 	DFB EOL
 *** Move LEN bytes from ADR1.. to ADR2..
-MovER	MovaW LOCALW1,ADR1
-	MovaW LOCALW2,ADR2
+MovER	MovaW Z24,ADR1
+	MovaW Z26,ADR2
 	LDY #0
 	LDX LEN+1
 	ifNE
@@ -2778,8 +2780,8 @@ do	LDA (ADR1),Y
 	  CPY LEN
 	  whileNE
 
-MVND	MovaW ADR1,LOCALW1
-	MovaW ADR2,LOCALW2
+MVND	MovaW ADR1,Z24
+	MovaW ADR2,Z26
 	RTS
 	
 *** Add LEN to ADR1 and ADR2
@@ -3019,7 +3021,7 @@ IR1	IncW Z20
 	SBC A3
 	STA LEN
 	INY
-	LDA ($20),Y
+	LDA (Z20),Y
 	SBC A3+1
 	STA LEN+1
 
@@ -3430,6 +3432,11 @@ PTHW	LDA #0
 	CMP SKA
 	BNE PH1
 	CMP SKA+1
+
+*** Put Hex Word (SKA)
+*PTHW     LDA SKA		replacement	
+*	ORA SKA+1	replacement
+
 	BNE PH1
 
 	JMP PHB
@@ -4934,7 +4941,7 @@ OPCtab	ASC " ? ANDASLBCCBCSBEQBITBMI
 	ASC "LSRNOPORAPHAPHPPLAPLPROL
 	ASC "RORRTIRTSSBCSECSEDSEISTA
 	ASC "STXSTYTAXTAYTSXTXATXSTYA
-	ASC "ADC				;171 bytes
+	ASC "ADC"			;171 bytes
 *
 
 *** Menu A to U
