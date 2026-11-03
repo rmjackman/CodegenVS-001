@@ -17,8 +17,8 @@
 
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\Test_DA.SRC"
 //#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\T31.SRC"
-//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
-#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
+#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\SGEN420.SRC"
+//#define SRC_FILENAME "C:\\Users\\DAW\\source\\repos\\CodegenVS-001\\6502 Source\\TURBO_IN.src"
 
 
 //#define SRC_FILENAME "C:\\Users\\Acustica\\My Drive (richard.miles.jackman@gmail.com)\\CODEGEN-2\\SGEN418.SRC"
@@ -42,7 +42,7 @@
 
 /********************* CONFIGURATION *********************/
 
-#define ATMAS_II_COMPATIBLE 0
+#define ATMAS_II_COMPATIBLE 1 // Sets MAX_LABEL_SIZE to 8 and creates a SMB file for SOURCGEN
 #define EQU_IN_SECTION 1 // The address of a label, defined using EQU, falls within a code segment.
 #define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
 

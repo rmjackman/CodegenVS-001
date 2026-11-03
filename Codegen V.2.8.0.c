@@ -3478,7 +3478,7 @@ int main(int argc, char* argv[]) {
 
 			/* SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT */
 
-
+#if ATMAS_II_COMPATIBLE
 			if (*smbfilename == 0) {
 				strcpy_s(smbfilename, sizeof(smbfilename), loafilename);
 
@@ -3510,7 +3510,7 @@ int main(int argc, char* argv[]) {
 			secsiz = 0;
 			fgetpos(smb_stream, &pos2);
 
-			for (i = 0; i < symnum; i++) {// turned off temporarilly because it alters the symbol table prior to disassembly
+			/**/for (i = 0; i < symnum; i++) {// turned off temporarilly because it alters the symbol table prior to disassembly
 				if (sss[i].symtyp == '{')	//SOURCGEN cannot handle '{'
 					sss[i].symtyp = '#';
 				lensv = fptsmb(i);			// needs to be turned off for TURBO_IN.src
@@ -3524,7 +3524,7 @@ int main(int argc, char* argv[]) {
 			fclose(smb_stream);
 
 			//end Save SMT
-
+#endif
 
 
 			/******************* Save to image ************************************/
@@ -5073,6 +5073,8 @@ void sectyp(char line_type) {
 			}
 	}
 }
+
+#if ATMAS_II_COMPATIBLE
 /***** symbol to be ported to SOURCGEN **/
 char fptsmb(int i) {
 	char* lnbfptr;
@@ -5131,6 +5133,7 @@ char fptsmb(int i) {
 	}
 	return(len);
 }
+#endif
 
 void hit_Enter(void) {
 	printf("\nHit ENTER to continue--");
