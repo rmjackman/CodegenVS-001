@@ -167,9 +167,6 @@ ADR2	EPZ $82
 LEN	EPZ $84
 TMP	EPZ $86
 
-MOUSEMD	EPZ $88
-LASTTRG	EPZ $89
-
 LOC	EPZ $E0
 YA	EPZ $E2
 SV	EPZ $E4
@@ -498,8 +495,7 @@ PACTL	EQU $D302	activates joystick
 	LDA #1
 	STA MSFLAG      ; MSFLAG = 1 (default)
 	LDA #0
-	STA MOUSEMD     ; MOUSEMD = 0 (mouse mode off by default)
-	STA LASTTRG     ; LASTTRG = 0 (for edge detection)
+
 GETLP  ;Test: comment directly after a label  
 
 testsp	equ 1    ;Test: GETLP skips this line
@@ -512,16 +508,8 @@ testsp	equ 1    ;Test: GETLP skips this line
 	  JMP LPBG
 	  
 +	LDA STRIG0      ; read left mouse button / fire
-	CMP LASTTRG
-	BEQ +
-	LDA STRIG0
 	BNE +      ; button not pressed
 
-; Toggle mouse mode
-	LDA MOUSEMD
-	EOR #1
-	STA MOUSEMD	  
-	  
 ; === Joystick / Fire handling ===
 +	LDA STRIG0	read STRIG0 (0 = pressed)
 	BEQ +		if pressed -> joystick/mouse
