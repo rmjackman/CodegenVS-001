@@ -798,6 +798,7 @@ FILE* stream;
 FILE* lis_stream;
 FILE* stream3;
 FILE* stream4;
+FILE* smb_stream;
 fpos_t pos2;
 
 //#if DISASSEMBLE
@@ -3490,7 +3491,7 @@ int main(int argc, char* argv[]) {
 			}
 
 
-			if (fopen_s(&stream, smbfilename, "wb") != 0) {
+			if (fopen_s(&smb_stream, smbfilename, "wb") != 0) {
 				perror("Error opening file");
 				hit_Enter();
 				exit(1);
@@ -3498,26 +3499,29 @@ int main(int argc, char* argv[]) {
 
 			printf(CYAN "Saving symbol-file %s\n" RESET, smbfilename);
 
-			fputc(0xfb, stream);
-			fputc(0x00, stream);
-			fputc(0x00, stream);
-			fputc(0xff, stream);
-			fputc(0xff, stream);
-			fgetpos(stream, &pos1);
-			fputc(0, stream);
-			fputc(0, stream);
+			fputc(0xfb, smb_stream);
+			fputc(0x00, smb_stream);
+			fputc(0x00, smb_stream);
+			fputc(0xff, smb_stream);
+			fputc(0xff, smb_stream);
+			fgetpos(smb_stream, &pos1);
+			fputc(0, smb_stream);
+			fputc(0, smb_stream);
 			secsiz = 0;
-			fgetpos(stream, &pos2);
+			fgetpos(smb_stream, &pos2);
 
 			for (i = 0; i < symnum; i++) {// turned off temporarilly because it alters the symbol table prior to disassembly
-				lensv = fptsmb(i);
+				if (sss[i].symtyp == '{')	//SOURCGEN cannot handle '{'
+					sss[i].symtyp = '#';
+				lensv = fptsmb(i);			// needs to be turned off for TURBO_IN.src
 				secsiz += lensv;
 			}
-			fsetpos(stream, &pos1);
-			fputc((char)secsiz, stream);
-			fputc((char)(secsiz >> 8), stream);
 
-			fclose(stream);
+			fsetpos(smb_stream, &pos1);
+			fputc((char)secsiz, smb_stream);
+			fputc((char)(secsiz >> 8), smb_stream);
+
+			fclose(smb_stream);
 
 			//end Save SMT
 
@@ -5085,7 +5089,7 @@ char fptsmb(int i) {
 			sss[i].symtyp = temp_symtype;// restore symbol type
 
 		secsiz -= lensv;
-		fsetpos(stream, &pos2);
+		fsetpos(smb_stream, &pos2);
 	}
 	lnbfptr = linbuf[0];
 	cnt = 0;
@@ -5108,22 +5112,21 @@ char fptsmb(int i) {
 			if (isSpecialCharacter(sss[i].comment[--comment_bytes_cnt]))
 				sss[i].symtyp = ';';
 	}
-	if (sss[i].symtyp == '{')	//SOURCGEN cannot handle '{'
-		sss[i].symtyp = '#';
+	
 
 	if (sss[i].symtyp) {
 		*lnbfptr = sss[i].symtyp;
 		cnt++;
 	}
 	len = cnt + 4;
-	fgetpos(stream, &pos2);
-	fputc((char)sss[i].symadr, stream);
-	fputc((char)((sss[i].symadr) >> 8), stream);
-	fputc(sss[i].ofst, stream);
-	fputc(len, stream);
+	fgetpos(smb_stream, &pos2);
+	fputc((char)sss[i].symadr, smb_stream);
+	fputc((char)((sss[i].symadr) >> 8), smb_stream);
+	fputc(sss[i].ofst, smb_stream);
+	fputc(len, smb_stream);
 	lnbfptr = linbuf[0];
 	while (cnt) {
-		fputc(*lnbfptr++, stream);
+		fputc(*lnbfptr++, smb_stream);
 		cnt--;
 	}
 	return(len);
