@@ -367,7 +367,7 @@ adjND	RTS
 
 
 
-*segment 2200 4B83
+*segment 2200 4B67
 
 *Display list $4C20
 *SAVMSK $4C40 to $4FFF (screen RAM)
@@ -880,9 +880,10 @@ DFWmiTy	DFWTY
 	JMP WCM2
 *
 DFWeqTy	DFWTY
-	LDA SKA		replace with ORA
-	BNE DWD
-	LDA SKA+1
+	LDA SKA
+*	BNE DWD
+*	LDA SKA+1
+	ORA SKA+1	replacement
 	BNE DWD
 
 	PutS \0\
@@ -2103,7 +2104,7 @@ WRAD	PHW
 	WRL
 	LDY #$E
 	JMP IOERR
-*** No Error--Label was prepared
+*** No Error--Label + prepared
 AN3D	RTS
 
 PTOFS	LDA AOF
@@ -2118,7 +2119,7 @@ PTOFS	LDA AOF
 
 	  WRAD
 PTO2	PutS \+\
-	MovaW SKA,SKAV	MovaB SKA,SKAV
+	MovaW SKA,SKAV
 	SEC
 	LDY #0
 	LDA SKA
@@ -2133,7 +2134,7 @@ PTO1	MovPZ SKA,ADR1
 
 	WRAD
 PTO4	PutS \-\
-	MovaW SKA,SKAV	MovaB SKA,SKAV
+	MovaW SKA,SKAV
 	SEC
 	LDY #0
 	LDA (ADR1),Y
@@ -2618,56 +2619,48 @@ CCODE	MovlB SWTP,0
 J1	INC JF1
 JND	JMP API
 *
-LPV	DFB 0
+
 *
 ASCty	CkScrCtl
-	BMI AST1
+	BMI +
 
-	STA BYTSV
-	JMP WSCTL
+	  STA BYTSV
+	  JMP WSCTL
 
-AST1	LDA BYT
++	LDA BYT
 	AND #%01100000
-	BNE WAS
+	BNE +
 
-	PTDFB
-	LDA BYT
-	JMP PHB
+	  PTDFB
+	  LDA BYT
+	  JMP PHB
 
-WAS	PTAS
-	MovaB LPV,LSPOS
++	PTAS
 	LDA '\'
 	PTCH
 
-ASLP	LDA BYT
-	BMI ASD
+loop	LDA BYT
+	BMI skip
 
 	AND #%01100000
-	BEQ ASD1
+	BEQ skip
 
 	LDA BYT
 	PTCH
 
 	CKNA
-	BCS ASD1
+	BCS skip
 
 	CkScrCtl
-	BPL ASD1
+	BMI loop
 
-	DEC TCT
-	BNE ASLP
-
-ASD1	LDX LPV
-	LDA '"'
-	STA LN,X
-	JMP PTCH
-
-ASD	INCADRw
+skip	INCADRw
 	LDA BYT
 	AND #%01111111
 	PTCH
 	LDA '\'
 	JMP PTCH
+	
 * L.LIST
 LLIST	INC LFG
 	Cmpl LS,'P'
@@ -5084,7 +5077,7 @@ C21	PTSTR
 	BEQ +		no input
 	  adjstDX
 	  LDA LS
-	  CMP 'D'	filename was entered
+	  CMP 'D'	filename + entered
 	  BEQ C6
 	  RTS
 

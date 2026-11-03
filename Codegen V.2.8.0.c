@@ -2377,7 +2377,7 @@ int main(int argc, char* argv[]) {
 							orgflg = 1;
 						}
 						else {
-							printf("to %4X\n", (uint16_t)(pc - 1));		/*write NDAD */
+							printf("Segment end:   %4X\n\n", (uint16_t)(pc - 1));		/*write NDAD */
 							if (seg_beg_sav >= (uint16_t)(pc - 1))
 								error("Program counter overflow: Segment end must be greater than segment begin");
 
@@ -2779,7 +2779,7 @@ int main(int argc, char* argv[]) {
 											if (sss[i].symtyp != ']') {
 												char warning_text[WARNING_TEXT_LEN];
 
-												printf(BYELLOW "\nWarning: %s was defined using EPZ,\n ",
+												printf(BYELLOW "Warning: %s was defined using EPZ,\n ",
 													operand);
 												printf("but is found after DFB or in an immediate-addressing statement. Line %i\n" RESET, linnum);
 
@@ -3015,7 +3015,7 @@ int main(int argc, char* argv[]) {
 
 
 			}// end toxlbuf  end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf end toxlbuf
-			printf("to %4X\n", (uint16_t)(pc - 1));		/*write last segment end address NDAD */
+			printf("Segment end:   %4X\n\n", (uint16_t)(pc - 1));		/*write last segment end address NDAD */
 			if (seg_beg_sav >= (uint16_t)(pc - 1))
 				error("Program counter overflow: Segment end must be greater than segment begin");
 
