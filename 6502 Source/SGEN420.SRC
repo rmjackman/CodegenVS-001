@@ -82,6 +82,7 @@ XXX	EQU $58	*increase by 1 for extra page in the segment at ORG 5100
 COPN	EQU 3	Disk open
 CGTXTR	EQU 5	command get text
 CGBINR	EQU 7
+MXLABLEN	EQU $D0	8	max label length
 CPTXTR	EQU 9
 CPBINR	EQU $B
 CCLOSE	EQU $C
@@ -1724,6 +1725,8 @@ PB2	PTCH	ok
 	DEX
 	BNE PB1
 PBND	RTS
+
+
 *** Write address name (ADR1)
 WADNM	LDA PREPFG
 	BNE PBND
@@ -1736,24 +1739,25 @@ WADNM	LDA PREPFG
 	TAX		in X
 
 	DEY
-	LDA (ADR1),Y
+	LDA (ADR1),Y	last char (often symtyp)
+	CKTY
+	BCC +		if not symtyp char	
+
+	  DEX		decrease len if tymtyp
+	  
++	LDA (ADR1),Y	last char (often symtyp)	  
 	BPL +
-	WADNMI
+	
+	  WADNMI		print inverted = or -
 
 +	LDY #3		
 loop	INY
-	  CPY #12
-	  BEQ skip
+	  CPY #MXLABLEN+4
+	  BEQ skip	if max length
 	  
 	    LDA (ADR1),Y
-	    CKTY
-	    BCS skip
-	    
-*	    CMP #0
-*	    BNE tempsk
-*	    	LDY #$35
-*		JMP IOERR
-*tempsk
+	    CMP ';'
+	    BEQ skip	if end of label
 
 	      PTCH	ok
 	      INC FG	set if symbol
