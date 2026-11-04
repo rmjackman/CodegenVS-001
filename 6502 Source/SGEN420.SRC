@@ -28,7 +28,7 @@
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 .endif
 SK	EQU $100
-U2upRET	EPZ $7	FAUTORUN.SYS^.3^M400^.A125^H/P:^.^
+U2upRET	EPZ $7	FAUTORUN.SYS^.3^M400^.A1325^H/P:^.^
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -534,11 +534,12 @@ DSI	LDX STKV
 
 	AJA1MX
 
-	LDA ZF
+	LDA ZF		zuio
 	BEQ skip
 
 	  DEC ZF
 	  INC ZZF
+
 	  LHEAD
 	  LDA FFG
 	  BEQ +
@@ -1341,7 +1342,7 @@ BBB	MovaB BT1,BYT
 	BNE skip
 
 	  LDA ZF
-	  BEQ B1P	rts
+	  BEQ B1P	rts		zuio
 
 	  PTHW		?????????
 	  MovaW ADV,SKA	?????????
@@ -1726,10 +1727,11 @@ PB2	PTCH	ok
 	BNE PB1
 PBND	RTS
 
-
+.define NEWWADNM 1
 *** Write address name (ADR1)
 WADNM	LDA PREPFG
 	BNE PBND
+	
 	MovlB FG,0
 	LDY #3
 	LDA (ADR1),Y	length of entry in symbol table
@@ -1740,15 +1742,16 @@ WADNM	LDA PREPFG
 
 	DEY
 	LDA (ADR1),Y	last char (often symtyp)
+.if NEWWADNM
 	CKTY
 	BCC +		if not symtyp char	
 
-	  DEX		decrease len if tymtyp
+	  DEX		decrease len if symtyp
 	  
 +	LDA (ADR1),Y	last char (often symtyp)	  
 	BPL +
 	
-	  WADNMI		print inverted = or -
+	  WADNMI		print inverted '=' or '-'
 
 +	LDY #3		
 loop	INY
@@ -1758,7 +1761,19 @@ loop	INY
 	    LDA (ADR1),Y
 	    CMP ';'
 	    BEQ skip	if end of label
+.else
+	BPL +
+	WADNMI
 
++	LDY #3		
+loop	INY
+	  CPY #12
+	  BEQ skip
+	  
+	    LDA (ADR1),Y
+	    CKTY
+	    BCS skip
+.endif
 	      PTCH	ok
 	      INC FG	set if symbol
 	      DEX
@@ -1805,7 +1820,8 @@ CP3	STS JLB		MovlW Z20,JLB  ILSR
 
 CPND	LDA ANF
 	BEQ WC2ND
-	LDA ZF		SGEN412
+
+	LDA ZF		SGEN412	zuio
 	BNE WC2ND	SGEN412
 
 	LDA FG5
@@ -2099,7 +2115,7 @@ WAORL	DETZ
 	  STA LSPOS
 
 WRAD	PHW
-	LDA ZF
+	LDA ZF		zuio
 	BEQ AN3D
 
 	CmpaW MNLB,SKA
@@ -2512,7 +2528,7 @@ BC	LDA LS
 
 BE	JMP IOERR
 
-*** Do if ZF (head flag) is set
+*** Determine Z-table if ZF (head flag) is set
 DETZ	LDA ZF
 	BEQ DZD		exit
 
@@ -2521,27 +2537,25 @@ DETZ	LDA ZF
 
 	  CKSEGTAB
 	  BCC skip
-	  BCS PLRETADR
+	  BCS DZD
 *** not file
 +	CmpaW SKA,AD
 	BCC skip		ska < ad
 
 	  CmpaW TOA,SKA	if ska <= toa	
-	  BCS PLRETADR	pull retadress
+	  BCS DZD
 *** ska outside, so add to tab
 skip	CKD000
 	BCC skip
 
 	  MovlW Z20,DLB
 	  ILSR
-	  JMP PLRETADR
+	  JMP DZD
 
 skip	MovlW Z20,ZLB
 	ILSR
-PLRETADR	RTS		???????????
-	PLA		???????????
-	PLA		???????????
-DZD	RTS		???????????
+DZD	RTS
+
 *
 *** List head
 LHEAD	WHDCONST
@@ -5191,6 +5205,7 @@ WA22	RTS
 *
 
 OFSI	DETZ
+
 	LDA PREPFG
 	BEQ OFD
 

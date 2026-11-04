@@ -43,7 +43,7 @@
 /********************* CONFIGURATION *********************/
 
 #define ATMAS_II_COMPATIBLE 1 // Sets MAX_LABEL_SIZE to 8 and creates a SMB file for SOURCGEN
-#define EQU_IN_SECTION 1 // The address of a label, defined using EQU, falls within a code segment.
+#define EQU_IN_SECTION 0 // The address of a label, defined using EQU, falls within a code segment.
 #define SYMBOL_OFFSET 5 // SYMBOL+1, SYMBOL+2 ...
 
 #define CREATE_DBG 0
