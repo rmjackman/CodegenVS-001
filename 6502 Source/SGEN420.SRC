@@ -1727,7 +1727,7 @@ PB2	PTCH	ok
 	BNE PB1
 PBND	RTS
 
-.define NEWWADNM 1
+
 *** Write address name (ADR1)
 WADNM	LDA PREPFG
 	BNE PBND
@@ -1742,7 +1742,7 @@ WADNM	LDA PREPFG
 
 	DEY
 	LDA (ADR1),Y	last char (often symtyp)
-.if NEWWADNM
+
 	CKTY
 	BCC +		if not symtyp char	
 
@@ -1753,27 +1753,16 @@ WADNM	LDA PREPFG
 	
 	  WADNMI		print inverted '=' or '-'
 
-+	LDY #3		
++	LDY #3
+
 loop	INY
-	  CPY #MAXLABLEN+4
-	  BEQ skip	if max length
+*	  CPY #MAXLABLEN+4
+*	  BEQ skip	if max length
 	  
 	    LDA (ADR1),Y
 	    CMP ';'
 	    BEQ skip	if end of label
-.else
-	BPL +
-	WADNMI
 
-+	LDY #3		
-loop	INY
-	  CPY #12
-	  BEQ skip
-	  
-	    LDA (ADR1),Y
-	    CKTY
-	    BCS skip
-.endif
 	      PTCH	ok
 	      INC FG	set if symbol
 	      DEX
@@ -3262,6 +3251,7 @@ PTCND	RTS
 *
 PCHERR	PREL
 	LDY #$30
+	
 IOERR	STY ERNO
 
 	MovlB DFG,0
@@ -5706,7 +5696,7 @@ OPOF	DFB 30,102,0,0,0,102,6,0
 
 *
 **********************************************************	
-#	'#' causes the following lines to be ignored up until the next '#'.	
+*#	'#' causes the following lines to be ignored up until the next '#'.	
 	ORG $600
 	RTS
 			  
@@ -5723,14 +5713,14 @@ MESSAGE	PHP
 	TYA
 	PHA
 
-	MovaW SAVV1,ZF		ZF is 1 byte!!!!!
+	MovaW SAVV1,ADR1		ZF is 1 byte!!!!!
 	MovaW SAVV2,SKA
 	MovaW SAVV3,STAD
 	MovaW SAVV4,NDAD
 		
 	PRL
-	PutS \ZF=\
-	PutW ZF
+	PutS \ADR1=\
+	PutW ADR1
 
 	PutS \ SKA=\
 	PutW SKA
@@ -5742,7 +5732,7 @@ MESSAGE	PHP
 	
 	PRL
 
-	MovaW ZF,SAVV1
+	MovaW ADR1,SAVV1
 	MovaW SKA,SAVV2
 	MovaW STAD,SAVV3
 	MovaW NDAD,SAVV4
@@ -5754,10 +5744,13 @@ MESSAGE	PHP
 	TAX
 	PLA
 	PLP
+	
+*STOP	JMP STOP	
+	
 	RTS
 
 
-#
+*#
 
 * --------------------------------------------------
 * Mouse Cursor Module (PC Mouse / Altirra ST Mouse)
