@@ -82,7 +82,7 @@ XXX	EQU $58	*increase by 1 for extra page in the segment at ORG 5100
 COPN	EQU 3	Disk open
 CGTXTR	EQU 5	command get text
 CGBINR	EQU 7
-MXLABLEN	EQU $D0	8	max label length
+MAXLABLEN	EQU 32	9 max label length
 CPTXTR	EQU 9
 CPBINR	EQU $B
 CCLOSE	EQU $C
@@ -184,7 +184,7 @@ HIF	EPZ $C4	HI flag
 JKF	EPZ $C5	Flag JUNK FROM TO
 JKF1	EPZ $C6	Flag JUNK FROM TO 1
 HILOFG	EPZ $C7	HI-LO-flag
-ZZF	EPZ $C8	second head flag
+ZZF	EPZ $C8	2nd head flag: Print # bytes, 1st ORG
 SKF	EPZ $C9
 HIF1	EPZ $CA
 SP	EPZ $CB
@@ -534,7 +534,7 @@ DSI	LDX STKV
 
 	AJA1MX
 
-	LDA ZF		zuio
+	LDA ZF
 	BEQ skip
 
 	  DEC ZF
@@ -1330,11 +1330,11 @@ PTOPCD	LDY BYT		better 	LDX BYT
 	STY OPFG
 	LDX #3
 
--	LDA OPCtab,Y	put three characters
+loop	LDA OPCtab,Y	put three characters
 	  PTCH
 	  INY
 	  DEX
-	BNE -
+	BNE loop
 	RTS
 *******************************************
 BBB	MovaB BT1,BYT
@@ -1342,7 +1342,7 @@ BBB	MovaB BT1,BYT
 	BNE skip
 
 	  LDA ZF
-	  BEQ B1P	rts		zuio
+	  BEQ B1P	rts
 
 	  PTHW		?????????
 	  MovaW ADV,SKA	?????????
@@ -1755,7 +1755,7 @@ WADNM	LDA PREPFG
 
 +	LDY #3		
 loop	INY
-	  CPY #MXLABLEN+4
+	  CPY #MAXLABLEN+4
 	  BEQ skip	if max length
 	  
 	    LDA (ADR1),Y
@@ -1821,7 +1821,7 @@ CP3	STS JLB		MovlW Z20,JLB  ILSR
 CPND	LDA ANF
 	BEQ WC2ND
 
-	LDA ZF		SGEN412	zuio
+	LDA ZF		SGEN412
 	BNE WC2ND	SGEN412
 
 	LDA FG5
@@ -1961,7 +1961,7 @@ skip	JMP PRL
 *
 WHeadCmt	LDA FG2		SGEN412
 	BMI +		SGEN412
-	BPL WCD		SGEN412 
+	  BPL WCD	SGEN412 
 	
 WCM	LDA PREPFG
 	BNE WCD
@@ -1969,54 +1969,48 @@ WCM	LDA PREPFG
 	BEQ WCD
 
 +	LDY #3
-	LDA (ADR1),Y
+	LDA (ADR1),Y	total length of item
 	TAX
 	DEX
 	DEX
 	DEX
 	DEX
-	STX XSAV
+	STX XSAV		printable length of item 
 
-WC5	INY
-	CPY #13
-	BEQ WC1
-	LDA (ADR1),Y
-	CMP ';'
-	BEQ WC4
-	DEX
-	BNE WC5
-	RTS
+loop	INY
+	CPY #MAXLABLEN+5	#13
+	BEQ skip
+	  LDA (ADR1),Y
+	  CMP ';'
+	  BEQ +
+	    DEX
+	    BNE loop
+	      RTS
 
-WC4	CPX #1
-	BEQ WCD
-	BNE WC2
++	  CPX #1
+	  BEQ WCD
+	  BNE WC2
 
-WC1	LDX XSAV
+skip	LDX XSAV
 	INX
 	LDY #3
 WC2	BLK
 	DEX
 
-WC3	INY
+loop	INY
 	LDA (ADR1),Y
-	    
-*	    CMP #0
-*	    BNE tempsk
-*	    	LDY #$35
-*		JMP IOERR
-*tempsk
-
 	PTCH
 	DEX
-	BNE WC3
+	BNE loop
 
 	LDA (ADR1),Y
 	CKTY
 	BCC WCD
 
-	DEC LSPOS
+	  DEC LSPOS
 
 WCD	RTS
+
 *
 ADNM1	LDA ANF
 	BEQ ADN12
@@ -2115,7 +2109,7 @@ WAORL	DETZ
 	  STA LSPOS
 
 WRAD	PHW
-	LDA ZF		zuio
+	LDA ZF
 	BEQ AN3D
 
 	CmpaW MNLB,SKA

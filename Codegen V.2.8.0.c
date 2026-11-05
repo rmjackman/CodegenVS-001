@@ -3478,7 +3478,7 @@ int main(int argc, char* argv[]) {
 
 			/* SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT SMT */
 
-#if ATMAS_II_COMPATIBLE
+//#if ATMAS_II_COMPATIBLE
 			if (*smbfilename == 0) {
 				strcpy_s(smbfilename, sizeof(smbfilename), loafilename);
 
@@ -3524,7 +3524,7 @@ int main(int argc, char* argv[]) {
 			fclose(smb_stream);
 
 			//end Save SMT
-#endif
+//#endif
 
 
 			/******************* Save to image ************************************/
@@ -5074,7 +5074,7 @@ void sectyp(char line_type) {
 	}
 }
 
-#if ATMAS_II_COMPATIBLE
+//#if ATMAS_II_COMPATIBLE
 /***** symbol to be ported to SOURCGEN **/
 char fptsmb(int i) {
 	char* lnbfptr;
@@ -5133,7 +5133,7 @@ char fptsmb(int i) {
 	}
 	return(len);
 }
-#endif
+//#endif
 
 void hit_Enter(void) {
 	printf("\nHit ENTER to continue--");
