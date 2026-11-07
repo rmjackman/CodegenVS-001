@@ -368,7 +368,7 @@ adjND	RTS
 
 
 
-*segment 2200 4B67
+*segment 2200 4B9D
 
 *Display list $4C20
 *SAVMSK $4C40 to $4FFF (screen RAM)
@@ -580,10 +580,21 @@ DSI1	MovlB PRF,0
 	MovlB ROWCRS,23
 	LDX #$70
 	ComCiov CCLOSE	close printer
+	LDA FLFG
+	BNE +
+	
 	PRINT
-	DFB DLN,'?',0	print prompt: ?
-		
-	INPT
+	DFB DLN
+	ASC "(RAM) ?"
+	DFB 0
+	JMP skip
+	
++	PRINT
+	DFB DLN
+	ASC "(file) ?"
+	DFB 0
+	
+skip	INPT
 
 	JMP DSI		loop end
 **********************************************************
@@ -759,8 +770,7 @@ DOTRACE	PRINT
 	  JMP ALERR
 	  
 +	  PHA
-	  PRINT
-	  DFB DLN,0
+	  WDLN
 	  PLA
 	  CMP #ESC
 	  BNE +
@@ -1225,7 +1235,7 @@ JDOS	JSR 0
 	JMP BG1
 *** Escape key
 fESC	MovaW AD,ADRV	EOL
-	WDBS
+	WDLN
 	JMP API
 *** Cursor keys
 fARROW	LDA 'E'
@@ -1262,7 +1272,7 @@ CMPQ	CMP 'v'		Letter after u
 	BCS INPT
 	
 	PHA
-	WDBS
+	WDLN
 	PLA
 
 	SEC
@@ -2245,7 +2255,10 @@ skip	SEC
 	JMP GETLP
 	
 *** P.PREPARE
-PPREPARE	LDA LS
+PPREPARE	LDA FLFG
+	BNE +
+	  ERTOA0
++	LDA LS
 	BNE +
 
 	  Dsta BLE
@@ -2332,8 +2345,7 @@ loop	    INY
 	    CMP #EOL
 	    BNE loop
 
-FA	PRINT
-	DFB DLN,0	del line
+FA	WDLN		del line
 	LDA FLV		get saved file name
 	BEQ FE1		error - no file
 
@@ -2688,6 +2700,10 @@ DA1	RTS
 WDBS	PRINT
 	DFB DBS,0	
 	RTS
+*** Write DLN
+WDLN	PRINT
+	DFB DLN,0	
+	RTS	
 *** flag4 COMMAND off
 PTFG4	PutTAB
 	MovaB BYTSV,BYT
@@ -3360,8 +3376,7 @@ fSEMICOL	CHKTOA
 	  MovaB ADR1+1,SYMTAB	SGEN408	adr1 = symtab
 	  MovlB ADR1,0		SGEN408
 	FADR1A			SGEN408
-	PRINT
-	DFB DBS,0
+	WDBS
 loop	CONSOLR
 	LADNM
 	  CLC
