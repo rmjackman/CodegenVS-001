@@ -28,7 +28,7 @@
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 .endif
 SK	EQU $100
-U2upRET	EPZ $7	FAUTORUN.SYS^.3^M400^.A1325^H/P:^.^
+UTILITY_up_up_RETURN	EPZ $7	FAUTORUN.SYS^.3^M400^.A1325^H/P:^.^
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -82,7 +82,7 @@ XXX	EQU $58	*increase by 1 for extra page in the segment at ORG 5100
 COPN	EQU 3	Disk open
 CGTXTR	EQU 5	command get text
 CGBINR	EQU 7
-MAXLABLEN	EQU 32	9 max label length
+*MAXLABLEN EQU 32	label length
 CPTXTR	EQU 9
 CPBINR	EQU $B
 CCLOSE	EQU $C
@@ -147,7 +147,7 @@ PVAV	EPZ $94
 ADR1V	EPZ $96	ADR1 save
 CHC	EPZ $98	character count
 NML	EPZ $99	name length
-STAD	EPZ $9A	segment begin-address
+STAD_seg	EPZ $9A	segment begin-address
 A1MX	EPZ $9C	A1 max
 TV	EPZ $9E
 GTC	EPZ $A0	Main menu get char(A-U, f.keys)
@@ -368,7 +368,7 @@ adjND	RTS
 
 
 
-*segment 2200 4B9D
+*segment 2200 4B92
 
 *Display list $4C20
 *SAVMSK $4C40 to $4FFF (screen RAM)
@@ -600,7 +600,7 @@ skip	INPT
 **********************************************************
 
 *** Check segment
-CKSG	CmpaW AD,STAD
+CKSG	CmpaW AD,STAD_seg
 	BCC CKSD
 	CmpaW NDAD,AD
 CKSD	RTS
@@ -645,7 +645,7 @@ APLOOP	LDX STKV
 	  PRL
 	  PRL
 	  PTORG
-	  PutW STAD
+	  PutW STAD_seg
 	  PRL
 	  PRL
 	  FTY
@@ -1251,6 +1251,7 @@ INPT
 	BPL -
 	
 	MovlB LS,0
+*	STA LSPOS	doesn't solve WADNM-PTCH overflow
 	STA CRSINH
 	GETC
 	AND #%01111111	include inverted
@@ -1359,15 +1360,15 @@ BBB	MovaB BT1,BYT
 	LDA OPFG
 	BNE skip
 
-	  LDA ZF
-	  BEQ B1P	rts
-
-	  PTHW		?????????
-	  MovaW ADV,SKA	?????????
-	  WRL		?????????
+*	  LDA ZF
+*	  BEQ B1P	rts
+*testtt	jmp testtt
+*	  PTHW		?????????
+*	  MovaW ADV,SKA	?????????
+*	  WRL		?????????
 *** NEED D4OF/<SYMBOL>	  
-	  LDY #$C	?????????
-	  JMP IOERR	?????????
+*	  LDY #$C	?????????
+*	  JMP IOERR	?????????
 *** Opcodes without operands
 skip	CPY #8		"PHP,PLP,...
 	BEQ B1P
@@ -1747,7 +1748,9 @@ PBND	RTS
 
 
 *** Write address name (ADR1)
-WADNM	LDA PREPFG
+WADNM	LDA ZF
+	BNE PBND
+	LDA PREPFG
 	BNE PBND
 	
 	MovlB FG,0
@@ -1774,8 +1777,8 @@ WADNM	LDA PREPFG
 +	LDY #3
 
 loop	INY
-	  CPY #MAXLABLEN+4
-	  BEQ skip	if max length
+*	  CPY #MAXLABLEN+4
+*	  BEQ skip	if max length, overflow override
 	  
 	    LDA (ADR1),Y
 	    CMP ';'
@@ -1985,8 +1988,8 @@ WCM	LDA PREPFG
 	STX XSAV		printable length of item 
 
 loop	INY
-	CPY #MAXLABLEN+5	#13
-	BEQ skip
+*	CPY #MAXLABLEN+5	#13
+*	BEQ skip
 	  LDA (ADR1),Y
 	  CMP ';'
 	  BEQ +
@@ -2356,13 +2359,13 @@ FA	WDLN		del line
 	FINS
 loop	  MovaW BTC,NDAD
 	  IncW BTC
-	  RD6B1		RD6B sets STAD,NDAD,DSEC,DBYT
+	  RD6B1		RD6B sets STAD_seg,NDAD,DSEC,DBYT
 	  MovlB LSPOS,0
 	  PTSEG
 	  CONSOLR
 	  LDA CNT
 	  ifEQ
-	    MovaW STAD1SV,STAD
+	    MovaW STAD1SV,STAD_seg
 	    
 endif	  INC CNT
 	  LDA AD
@@ -2376,16 +2379,16 @@ endif	  INC CNT
 	    JMP loop
 
 
-F6	LDA STAD		MovaW ADR,STAD
+F6	LDA STAD_seg		MovaW ADR,STAD_seg
          STA ADR 		MovaW ADRV,ADR
          STA ADRV
-	LDA STAD+1       
+	LDA STAD_seg+1       
 	STA ADR+1
 	STA ADRV+1
 
 	JMP DSI
 * Show segments on F.FILE
-PTSEG	PutW STAD
+PTSEG	PutW STAD_seg
 	PutS \ \
 	PutW NDAD
 	Cmpl LSPOS,9
@@ -2397,7 +2400,7 @@ PTSEG	PutW STAD
 	INX
 	TXA
 	PHB
-	CmpaW STAD,BTC
+	CmpaW STAD_seg,BTC
 	BNE PS1
 	PutS \>\
 PS1	JMP PRL
@@ -3274,7 +3277,7 @@ PTCH	STX TMP
 PTCND	RTS
 *
 PCHERR	PREL
-	LDY #$30
+	LDY #$12
 	
 IOERR	STY ERNO
 
@@ -3315,7 +3318,7 @@ IE5	PutS \   \
 	LDX #128
 	BMI IE3
 
-IE4	CMP #$12
+IE4	CMP #$13		Number of error messages + 1
 	BCS IE8
 
 	MovlW A2,ERTAB1
@@ -3570,6 +3573,10 @@ INO	MovaB LSsav,LS
 	BEQ skip		read from ram
 	
 	LDY GTC
+	CPY 'G'
+	BEQ +
+	CPY 'T'
+	BEQ +
 	CPY 'H'
 	BEQ +
 	CPY 'P'
@@ -3577,8 +3584,8 @@ INO	MovaB LSsav,LS
 
 +	      MovaW AD,STAD1SV	H and P: set from-address
 
-	      CPY 'P'
-	      BEQ INOm	must be 'H'
+	      CPY 'H'
+	      BNE INOm	must be 'H'
 
 		MovaW TOA,NDADnSV
 		MovlB NWA,$A
@@ -3615,18 +3622,19 @@ loop	INX
 	  BEQ ADRERR
 	  
 	  BNE loop
+#	  
 *** Clear AD,TOA,NWA
 +	LDX #5
 	LDA #0
 -	STA AD,X
 	DEX
 	BPL -
-	
+#	
 * PREPARE and HEAD can be used without entering addresses. 
 * For Head the third value is automatically A. 
 * When using AtariWin800, add /P: to load file to Notepad	
 *** Use P. and H. without entering anything
-	LDY GTC
++	LDY GTC
 	CPY 'H'
 	BEQ +
 	CPY 'P'
@@ -4351,7 +4359,7 @@ POINT	LDA FLFG
 	BNE PO1
 	RTS
 
-PO1	EquDif A1,ADR,STAD
+PO1	EquDif A1,ADR,STAD_seg
 	MovaW AX63,DSEC
 
 PO2	LDA A1+1
@@ -4416,10 +4424,10 @@ RDFILE	MovlB SGFG,0
 	 RBTI
 	 BCS skip
 
-	  CmpaW STAD,TMP
+	  CmpaW STAD_seg,TMP
 	  BEQ +
 
-	    MovaW ADR,STAD
+	    MovaW ADR,STAD_seg
 	    INC SGFG
 	    SEC
 	    BCS skip
@@ -4508,23 +4516,23 @@ AX63	EQU 844+$60
 AX65	EQU 846+$60
 **************************************
 
-**** RD6B sets STAD,NDAD,DSEC,DBYT
+**** RD6B sets STAD_seg,NDAD,DSEC,DBYT
 RD6B	LDX #$60
 	GTBT
 	CMP #$FF
-	STA STAD
+	STA STAD_seg
 	BNE F2
 
 	GTBT
 	CMP #$FF
-	STA STAD+1
+	STA STAD_seg+1
 	BNE F3
 
 	GTBT
-F2	STA STAD
+F2	STA STAD_seg
 
 	GTBT
-	STA STAD+1
+	STA STAD_seg+1
 
 F3	GTBT
 	STA NDAD
@@ -4926,9 +4934,9 @@ L7SFC	ICBlenl 7
 	ICBadrl SFC
 	RTS
 	
-*** if (STAD<=TOA<=NDAD) CS
-TOAINSEG	  CmpaW TOA,STAD
-	  BCC TID		TOA < STAD
+*** if (STAD_seg<=TOA<=NDAD) CS
+TOAINSEG	  CmpaW TOA,STAD_seg
+	  BCC TID		TOA < STAD_seg
 	  CmpaW NDAD,TOA
 TID	  RTS		NDAD < TOA  ie. TOA not in segment
 
@@ -4962,6 +4970,7 @@ ERTAB1	ASC \ \
 	ASC \TRACE NOT POSSIBLE\	F
 	ASC \BAD SMB-FILE\	10
 	ASC \ADDRESS?\		11
+	ASC \OUTPUT LINE TOO LONG\	12	
 	DFW 0
 
 ASTB	DFB 32,64,0,96,160,192,128,224
@@ -5316,10 +5325,10 @@ FINS	INC FFG
 
 NOFF	DEC FFG		not load file  FFG=0
 
-	STY STAD		= TOA
+	STY STAD_seg		= TOA
 	STY NDAD		= TOA
 
-	MovaB STAD+1,TOA+1
+	MovaB STAD_seg+1,TOA+1
 	STA NDAD+1
 
 	OPFL
@@ -5411,7 +5420,7 @@ FID	LDA NDAD
 +	DEC NDAD
 
 FID2	MovlB LSPOS,0
-	MovaW SKA,STAD
+	MovaW SKA,STAD_seg
 	PTHW
 	PTSTR
 	ASC \ \
@@ -5529,7 +5538,7 @@ SHIFT8	MovaW EDADV,HATED
 	MovlW HATED,NEWED	new E: routine
 	MovlW HATKB,NEWKB	new K: routine
 
-	LDY #0		start with 8 not 0
+	LDY #0
 	STY TXPT
 SH1	LDA (EDADV),Y
 	STA NEWED,Y
@@ -5604,8 +5613,8 @@ F1STSEG	CKSG
 	BCS SST2
 
 	OPFL
-SSTLP	  RD6B1		* RD6B sets STAD,NDAD,DSEC,DBYT
-	  CKSG		stad <= ad <= ndad
+SSTLP	  RD6B1		* RD6B sets STAD_seg,NDAD,DSEC,DBYT
+	  CKSG		STAD_seg <= ad <= ndad
 	  BCS SST2		yes
 
 	  MovaW ADR,NDAD		no
@@ -5628,9 +5637,9 @@ SETSGTAB	LDA FFG
 	F1STSEG
 
 	LDX #0
-	MovaBX SEGTAB0,STAD	 - set first entry
+	MovaBX SEGTAB0,STAD_seg	 - set first entry
 	STA STADSV
-	MovaBX SEGTAB1,STAD+1
+	MovaBX SEGTAB1,STAD_seg+1
 	STA STADSV+1
 
 	MovaW NDADSV,NDAD
@@ -5652,13 +5661,13 @@ loop	  TOAINSEG
 	  LDA CNT1
 	  TAX
 	  INC CNT1
-	  MovaBX SEGTAB0,STAD
-	  MovaBX SEGTAB1,STAD+1
+	  MovaBX SEGTAB0,STAD_seg
+	  MovaBX SEGTAB1,STAD_seg+1
 	  JMP loop
 
 skip	MovaBX SEGTAB2,TOA
 	MovaBX SEGTAB3,TOA+1
-RESTSEG	  MovaW STAD,STADSV
+RESTSEG	  MovaW STAD_seg,STADSV
 	  MovaW NDAD,NDADSV
 	  MovaW DSEC,DSECSV
 	  MovaB DBYT,DBYTSV
@@ -5796,7 +5805,7 @@ MESSAGE	PHP
 
 	MovaW SAVV1,ADR1		ZF is 1 byte!!!!!
 	MovaW SAVV2,SKA
-	MovaW SAVV3,STAD
+	MovaW SAVV3,STAD_seg
 	MovaW SAVV4,NDAD
 		
 	PRL
@@ -5806,8 +5815,8 @@ MESSAGE	PHP
 	PutS \ SKA=\
 	PutW SKA
 
-	PutS \ STAD=\
-	PutW STAD
+	PutS \ STAD_seg=\
+	PutW STAD_seg
 	PutS \ NDAD=\
 	PutW NDAD
 	
@@ -5815,7 +5824,7 @@ MESSAGE	PHP
 
 	MovaW ADR1,SAVV1
 	MovaW SKA,SAVV2
-	MovaW STAD,SAVV3
+	MovaW STAD_seg,SAVV3
 	MovaW NDAD,SAVV4
 	
 
