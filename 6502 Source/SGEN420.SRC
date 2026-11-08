@@ -2972,7 +2972,7 @@ FADR1A	LDA SKA			push ska
 	LDA SKA+1
 	PHA
 
-	CKD000
+	CKD000			doesn't use ADR1
 	BCC +
 
 	  MovlW SKA,NMIST		$D40F
@@ -3905,7 +3905,12 @@ DA12ND	RTS
 
 *** D. DELETE
 DDELETE	ClearW SVL
-*	MovaB SCTP,LS	for ']'
+*	LDA SCTP
+*	CMP ']'
+*	ifEQ
+*	  LDA '['
+*	  STA SCTP
+*endif	
 	BLOKR
 	RTS
 	
@@ -3936,7 +3941,9 @@ D3	TXA		last char is in A
 OL	DFB 0
 
 *** S. SAVE
-SSAVE	LDA LS
+SSAVE	LDA '['
+	STA SCTP
+	LDA LS
 	BNE SAVE1
 
 	LDA SGC
