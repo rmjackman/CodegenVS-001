@@ -155,7 +155,7 @@ HF	EPZ $A1
 LSsav	EPZ $A2
 
 
-ZF	EPZ $A7	head flag
+ZF	EPZ $A7	head flag, parse EQU, EPZ
 CONSTFG	EPZ $A8	constants flag eg. COPN EQU 3
 TXPT	EPZ $A9
 EDADV	EPZ $AA	editor address save
@@ -580,14 +580,15 @@ DSI1	MovlB PRF,0
 	MovlB ROWCRS,23
 	LDX #$70
 	ComCiov CCLOSE	close printer
+	
 	LDA FLFG
 	BNE +
 	
-	PRINT
-	DFB DLN
-	ASC "(RAM) ?"
-	DFB 0
-	JMP skip
+	  PRINT
+	  DFB DLN
+	  ASC "(RAM) ?"
+	  DFB 0
+	  JMP skip
 	
 +	PRINT
 	DFB DLN
@@ -1222,6 +1223,7 @@ QQUIT	Cmpl AD,1
 	GETC
 	CMP 'N'
 	BEQ Q1
+	JMP SSAVE
 	LDA 'S'
 	NP
 	JMP DSI
@@ -2961,11 +2963,8 @@ skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab
 	  MovlB ADR1,0
 	  BEQ FADR1A	forced branch
 	
-	
 +	DEC CONSTFG
 	FNDEPZ
-
-
 	
 *** CKD000, search for SKA in symbol table
 FADR1A	LDA SKA			push ska
@@ -3906,6 +3905,7 @@ DA12ND	RTS
 
 *** D. DELETE
 DDELETE	ClearW SVL
+*	MovaB SCTP,LS	for ']'
 	BLOKR
 	RTS
 	
@@ -5703,7 +5703,7 @@ WHDCONST	MovaB ADR1+1,SYMTAB		adr1 = symtab
 loop	CKCONSTY
 	BNE WHCND
 	
-	  WADNM
+	  WADNM		zhn
 	  PutTAB
 	  PutS \EQU \
 	  LDY #0
