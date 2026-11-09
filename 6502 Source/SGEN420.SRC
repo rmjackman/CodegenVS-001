@@ -4043,7 +4043,9 @@ OPF1	LDA SMB,Y	".SMB" or ".SRC"
 	RTS
 	
 *** Obtain symbols
-OOBTAIN	adjstDX
+OOBTAIN	LDA '['
+	STA SCTP
+	adjstDX
 	LDY NML
 	STY OL
 	DEY
