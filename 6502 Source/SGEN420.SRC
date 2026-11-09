@@ -443,13 +443,12 @@ TypTab	ASC ".(;!'\#,"		'?' changed to ','
 	DFB '"'
 	ASC "=-%$*&<_|@[]"
 	ASC /=-/
-*	DFB 0,0	SG32
 	DFB 0	SG40
 *** Table of sec type pointers
 TyPtrTb	DFW TXTty,NormTy,NormTy,NormTy,NormTy,ASCty,DFBty,DFBty
 	DFW StrTy
 	DFW DFWeqTy,DFWmiTy,BinTy,StrTy,ORGty
-	DFW NormTy,NormTy,DFWmiTy,DFWeqTy,NormTy,NormTy,NormTy
+	DFW NormTy,NormTy,DFWmiTy,DFWeqTy,NormTy,NormTy,CONtyERR		NormTy
 	DFW DFWeqTy,DFWmiTy,0
 
 ANFV	DFB 0
@@ -2468,7 +2467,7 @@ loop	INY
 	LDA TypTab,Y
 	BEQ skip		End of table--no char found
 	
-	  CMP LS
+	  CMP LS		???????????
 	  BNE loop
 	  
 	  MovaB SWTP,LS	char found
@@ -2846,12 +2845,12 @@ FLA	MovlB ANF,0
 	STA SEF
 *** long loop
 loop	LDA SCTP
-	CMP ']'	prevents DELETE 0 ff/]
+	CMP ']'	might prevent DELETE 0 ff/]
 	BNE +
 *** Check constant is one byte
 	  LDA AD+1
 	  BEQ skip
-	  LDY #$A
+	  LDY #$A	INVALID ADDR.
 	  BNE CONSTERR
 	  
 skip	  CKCONSTY
@@ -2950,13 +2949,13 @@ CD4	SEC	Write-only symbol
 *** search for SKA, ADR1:=SYMTAB
 FADR1	MovlB CONSTFG,1
 	LDA SCTP
-	CMP '"'
+	CMP '"'		used in ASC
 	BEQ skip
-	CMP ','		used in DELETE
+	CMP ','		used in DFB, OOBTAIN, SSAVE
 	BEQ skip
-	CMP ']'
+	CMP ']'		enter constant with E.EDIT
 	BEQ skip
-	CMP '['
+	CMP '['		label constants in normal code
 	BNE +
 
 skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab
@@ -3579,9 +3578,9 @@ INO	MovaB LSsav,LS
 	CPY 'H'
 	BEQ +
 	CPY 'P'
-	BNE skip		neither P nor H
+	BNE skip		not G,T,H or P
 
-+	      MovaW AD,STAD1SV	H and P: set from-address
++	      MovaW AD,STAD1SV	G,T,H and P: set from-address
 
 	      CPY 'H'
 	      BNE INOm	must be 'H'
@@ -3905,13 +3904,13 @@ DA12ND	RTS
 
 *** D. DELETE
 DDELETE	ClearW SVL
-	LDA SCTP
-	CMP ']'
-	ifEQ
-	  LDA ','
-	  STA SCTP
+*	LDA SCTP		doesn't work
+*	CMP ']'
+*	ifEQ
+*	  LDA ','
+*endif	  STA SCTP
 	
-endif	BLOKR
+	BLOKR
 	RTS
 	
 ***A=SCTP, if '<' found, BT1=157, flag: EQ
@@ -3941,7 +3940,7 @@ D3	TXA		last char is in A
 OL	DFB 0
 
 *** S. SAVE
-SSAVE	LDA '['
+SSAVE	LDA ','		or '['
 	STA SCTP
 	LDA LS
 	BNE SAVE1
@@ -4043,7 +4042,7 @@ OPF1	LDA SMB,Y	".SMB" or ".SRC"
 	RTS
 	
 *** Obtain symbols
-OOBTAIN	LDA '['
+OOBTAIN	LDA ','		or '['
 	STA SCTP
 	adjstDX
 	LDY NML
@@ -5109,6 +5108,9 @@ RDFG	DFB 0
 
 *** NOT ENOUGH ROOM
 ERR	LDY #9
+	JMP IOERR
+	
+CONtyERR LDY $36	Error-- Constant is being treated as an address
 	JMP IOERR
 
 ***U.Utility
