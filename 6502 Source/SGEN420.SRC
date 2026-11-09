@@ -368,7 +368,7 @@ adjND	RTS
 
 
 
-*segment 2200 4B92
+*segment 2200 4BB3
 
 *Display list $4C20
 *SAVMSK $4C40 to $4FFF (screen RAM)
@@ -1218,15 +1218,15 @@ QQUIT	Cmpl AD,1
 	MovlB LS,0
 	STA CRSINH
 	PRINT
-	ASC "SAVE? Y/N"
+	ASC "(Return:2200) SAVE first? Y/N"
 	DFB EOL,0
 	GETC
 	CMP 'N'
 	BEQ Q1
-	JMP SSAVE
-	LDA 'S'
-	NP
-	JMP DSI
+	SSAVE
+*	LDA 'S'
+*	NP
+*	JMP DSI
 
 Q1	MovaW $C,JDOS+1
 	MovlB RAMTOP,$C0
@@ -2845,19 +2845,19 @@ FLA	MovlB ANF,0
 	STA PVA+1
 	STA SEF
 *** long loop
-loop	LDA SCTP		SGEN408
-	CMP ']'		SGEN408
-	BNE +		SGEN408
+loop	LDA SCTP
+	CMP ']'	prevents DELETE 0 ff/]
+	BNE +
 *** Check constant is one byte
 	  LDA AD+1
 	  BEQ skip
 	  LDY #$A
 	  BNE CONSTERR
 	  
-skip	  CKCONSTY	SGEN408
-	  BNE NOTF	SGEN408	if next symbol not a constant
+skip	  CKCONSTY
+	  BNE NOTF	if next symbol not a constant
 
-+	CA1MX		SGEN408 loop replaced with +
++	CA1MX
 	  BCC +
 	  BEQ NOTF1
 
@@ -2952,10 +2952,10 @@ FADR1	MovlB CONSTFG,1
 	LDA SCTP
 	CMP '"'
 	BEQ skip
-	CMP ','
+	CMP ','		used in DELETE
 	BEQ skip
-	CMP ']'		SGEN408
-	BEQ skip		SGEN408
+	CMP ']'
+	BEQ skip
 	CMP '['
 	BNE +
 
@@ -3905,13 +3905,13 @@ DA12ND	RTS
 
 *** D. DELETE
 DDELETE	ClearW SVL
-*	LDA SCTP
-*	CMP ']'
-*	ifEQ
-*	  LDA '['
-*	  STA SCTP
-*endif	
-	BLOKR
+	LDA SCTP
+	CMP ']'
+	ifEQ
+	  LDA ','
+	  STA SCTP
+	
+endif	BLOKR
 	RTS
 	
 ***A=SCTP, if '<' found, BT1=157, flag: EQ
