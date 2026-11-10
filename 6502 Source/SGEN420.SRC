@@ -7,11 +7,13 @@
 * ATMAS-II compatible Source code
 * Assemble using the CODEGEN Macro ASSEMBLER for PC
 *
-	VERIFY
-	EQUCONST		Byte: EQU for constant, EPZ for address
 	
 .define COLORS 1	
-.define SGENSMB 1		autoload SCGEN420.SMB instead of AUTOLOAD.SMB
+.define SGENSMB 0		autoload SCGEN420.SMB instead of AUTOLOAD.SMB
+
+	VERIFY
+	EQUCONST		Byte: EQU for constant, EPZ for address
+
 * Use the CPFL directive to compare the generated code with another file
 
 *	CPFL SGEN416.LOAorig
@@ -2839,18 +2841,18 @@ skip	LDX #0
 	    BNE -
 MMD	RTS
 
-*** Find SKA in symtab
+*** Find Label address SKA in symtab
 FLA	MovlB ANF,0
 	STA PVA+1
 	STA SEF
 *** long loop
 loop	LDA SCTP
-	CMP ']'	might prevent DELETE 0 ff/]
+	CMP ']'
 	BNE +
 *** Check constant is one byte
 	  LDA AD+1
 	  BEQ skip
-	  LDY #$A	INVALID ADDR.
+	  LDY #$13	VALUE>BYTE
 	  BNE CONSTERR
 	  
 skip	  CKCONSTY
@@ -2915,6 +2917,9 @@ NOTF1	INC SEF
 	
 * $D000 to $D7FF, write-only table
 WTAB	DFB 140,141,142,153,157
+*separate labels for read and write: $D000 to $D014, 
+*$D100 to $D1FF, $D200 to $D20A, $D20D to $D20F, $D40F
+*************STY STA STX STA,Y STA,X
 * $D000 to $D7FF, write only: carry set
 CKD000	Cmpl SKA+1,$D0	
 	BCC CD2		SKA+1 < $D0
@@ -3316,7 +3321,7 @@ IE5	PutS \   \
 	LDX #128
 	BMI IE3
 
-IE4	CMP #$13		Number of error messages + 1
+IE4	CMP #$14		Number of error messages + 1
 	BCS IE8
 
 	MovlW A2,ERTAB1
@@ -3564,21 +3569,21 @@ ADRERR	LDY #$11
 INO	MovaB LSsav,LS
 	CMP #EOL
 	BEQ +		there is no keyboard input
-	CMP '/'		e.g. /P:
-	BNE INOm
+	  CMP '/'	e.g. /P:
+	  BNE INOm
 	
 +	LDA FLFG
 	BEQ skip		read from ram
 	
-	LDY GTC
-	CPY 'G'
-	BEQ +
-	CPY 'T'
-	BEQ +
-	CPY 'H'
-	BEQ +
-	CPY 'P'
-	BNE skip		not G,T,H or P
+	  LDY GTC
+	  CPY 'G'
+	  BEQ +
+	  CPY 'T'
+	  BEQ +
+	  CPY 'H'
+	  BEQ +
+	  CPY 'P'
+	  BNE skip		not G,T,H or P
 
 +	      MovaW AD,STAD1SV	G,T,H and P: set from-address
 
@@ -4978,7 +4983,8 @@ ERTAB1	ASC \ \
 	ASC \TRACE NOT POSSIBLE\	F
 	ASC \BAD SMB-FILE\	10
 	ASC \ADDRESS?\		11
-	ASC \OUTPUT LINE TOO LONG\	12	
+	ASC \OUTPUT LINE TOO LONG\	12
+	ASC \VALUE>FF\		13
 	DFW 0
 
 ASTB	DFB 32,64,0,96,160,192,128,224
