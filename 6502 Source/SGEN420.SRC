@@ -9,7 +9,7 @@
 *
 	
 .define COLORS 1	
-.define SGENSMB 0		autoload SCGEN420.SMB instead of AUTOLOAD.SMB
+.define SGENSMB 1		autoload SCGEN420.SMB instead of AUTOLOAD.SMB
 
 	VERIFY
 	EQUCONST		Byte: EQU for constant, EPZ for address
@@ -2916,7 +2916,7 @@ NOTF1	INC SEF
 ******************************************
 	
 * $D000 to $D7FF, write-only table
-WTAB	DFB 140,141,142,153,157
+WRonlyTB	DFB 140,141,142,153,157
 *separate labels for read and write: $D000 to $D014, 
 *$D100 to $D1FF, $D200 to $D20A, $D20D to $D20F, $D40F
 *************STY STA STX STA,Y STA,X
@@ -2937,7 +2937,7 @@ CKD000	Cmpl SKA+1,$D0
 	BEQ CD2
 
 CD3	LDX #4
-loop	LDA WTAB,X
+loop	LDA WRonlyTB,X
 	  CMP BT1
 	  BEQ CD4
 
@@ -3909,33 +3909,29 @@ DA12ND	RTS
 
 *** D. DELETE
 DDELETE	ClearW SVL
-*	LDA SCTP		doesn't work
-*	CMP ']'
-*	ifEQ
-*	  LDA ','
-*endif	  STA SCTP
-	
 	BLOKR
 	RTS
 	
 ***A=SCTP, if '<' found, BT1=157, flag: EQ
-CKDX	MovlB BT1,156	(156 seems to be arbitary)
+CKDX	MovlB BT1,156	(156 is not in WRonlyTB)
 	LDX NML		name length
-	DEX
+	DEX		if MI -> delete entry
+	BMI D3
+	
 	LDA LS,X		last char of name
-	STA SCTP		needed for ']' (SGEN408)
-	CPX #0		(SGEN411)
-	BNE +		(SGEN411)
-	  CMP ']'	(SGEN411)
-	  BNE +		(SGEN411)
-	    MovAW TOA,AD	(SGEN411)
-	    PLA		(SGEN411)
-	    PLA		(SGEN411)
-	    JMP DDELETE	(SGEN411)
+	STA SCTP		needed for ']'
+	CPX #0
+	BNE +
+
+	  CMP ']'
+	  BNE +
+	    STX NML	set to 0
+	    DEX		MI -> delete entry
+	    BMI D3
 
 +	CMP '<'
 	BNE D3
-
+			;157 is last opcode in WRonlyTB 
 	INC BT1		BT1 = 157: '<' found
 D3	TXA		last char is in A
 	RTS
