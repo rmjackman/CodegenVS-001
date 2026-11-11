@@ -11,7 +11,7 @@
 #include "cdgn_global.h"
 
 
-#define USE_SYMTAB_OFFSET 0		// Use symbol table offsets
+#define USE_SYMTAB_OFFSET 1		// Use symbol table offsets
 #define MAX_SEGMENTS 256
 #define LINE_BUFFER_SIZE 1000
 
@@ -236,7 +236,8 @@ void disassemble(const char* filename) {
 		//if (sss[i].symtyp == '{') sss[i].symtyp = 0;
 #endif
 		
-		if (in_segment == 0) {
+		if (in_segment == 0 && 
+			sss[i].symbol[0] != '\0') { // Only print symbols that are not in any segment and have a non-empty symbol name
 			
 			if (sss[i].symadr <= 0xFF && !(sss[i].symtyp == ']')) {
 				if (epz_flg == 0) {
@@ -1028,7 +1029,7 @@ void adnmw2(uint16_t ska) {
 
 
 #if USE_SYMTAB_OFFSET
-
+	int inext = isav + 1;
 	if (sss[isav].ofst > 0 &&
 		ska >= sss[isav].symadr &&
 		ska - sss[isav].symadr <= sss[isav].ofst) {
@@ -1046,16 +1047,29 @@ void adnmw2(uint16_t ska) {
 
 		pts_p("%X", offset);
 	}
+	
+	/*if (ska == 0x54AD) {
+		printf("i=%d isav=%d\n", i, isav);
 
-	else if (sss[isav].ofst < 0 &&
-		ska <= sss[isav].symadr &&
-		sss[isav].symadr - ska <= -(int)sss[isav].ofst) {
+		for (int j = isav - 1; j <= isav + 2; j++) {
+			printf("%d: %s %04X ofst=%d\n",
+				j, sss[j].symbol,
+				sss[j].symadr, sss[j].ofst);
+		}
+		getchar();
+	}*/
+
+	else if (sss[i].ofst < 0 &&
+		ska < sss[i].symadr &&
+		sss[i].symadr - ska <= -(int)sss[i].ofst) {
 
 		/* Negative offset: SYMBOL-1 ... SYMBOL-n */
 
-		offset = sss[isav].symadr - ska;
+		offset = sss[i].symadr - ska;
 
-		pts_p("%s-", sss[isav].symbol);
+		pts_p("%s-", sss[i].symbol);
+
+		offset_added = true;
 
 		if (offset > 9)
 			ptc('$');

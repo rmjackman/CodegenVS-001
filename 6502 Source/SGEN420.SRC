@@ -1777,12 +1777,9 @@ WADNM	LDA ZF
 +	LDY #3
 
 loop	INY
-*	  CPY #MAXLABLEN+4
-*	  BEQ skip	if max length, overflow override
-	  
-	    LDA (ADR1),Y
-	    CMP ';'
-	    BEQ skip	if end of label
+	LDA (ADR1),Y
+	CMP ';'
+	BEQ skip	if end of label
 
 	      PTCH	ok
 	      INC FG	set if symbol
@@ -1792,8 +1789,8 @@ loop	INY
 skip	LDA FG
 	BNE +
 
-	WJLTL
-	BCC WAND
+	  WJLTL
+	  BCC WAND
 
 +	SEC
 WAND	RTS
@@ -1804,8 +1801,8 @@ WCM2	LDA PREPFG
 	CmpaW SKA,MNLB
 	BCC CPND
 
-	LDA CONSTFG	v403 This works
-	BNE CPND		v403 This works
+	LDA CONSTFG
+	BNE CPND
 
 	LDA HILOFG
 	BNE CPHL
@@ -2125,6 +2122,9 @@ WRAD	PHW
 
 	CmpaW MNLB,SKA
 	BCS AN3D
+
+	CmplW SKA,$D40F	exempt from PREPARE
+	BEQ AN3D
 
 	WRL
 	LDY #$E
@@ -2975,7 +2975,7 @@ FADR1A	LDA SKA			push ska
 	CKD000			doesn't use ADR1
 	BCC +
 
-	  MovlW SKA,NMIST		$D40F
+	  MovlW SKA,$D40F		NMIST		
 	  FLA
 	  BEQ FLAERR		not found in symbol table
 

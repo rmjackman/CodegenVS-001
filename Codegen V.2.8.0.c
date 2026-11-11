@@ -3041,7 +3041,7 @@ int main(int argc, char* argv[]) {
 				}
 				if (d40f_found == 0) {
 					sss[symnum].symtyp = '{';
-					strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");//may not need this line
+					//strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");//may not need this line
 					sss[symnum++].symadr = 0xd40f;
 				}
 
