@@ -7,8 +7,8 @@
 * ATMAS-II compatible Source code
 * Assemble using the CODEGEN Macro ASSEMBLER for PC
 *
-	
-.define COLORS 1	
+.define W1_DD 1	
+.define COLORS 1		keys: !" $% ()
 .define SGENSMB 1		autoload SCGEN420.SMB instead of AUTOLOAD.SMB
 
 	VERIFY
@@ -18,19 +18,29 @@
 
 *	CPFL SGEN416.LOAorig
 	
-*	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+
 *	APPEND FRAMDISK		only with DOS 2.5 -- not TURBODOS!!!
 
 	ADDTOIMG MEM.SAV
 	ADDTOIMG OS.SMB
+	
 .if SGENSMB
 	SMTFILE SCGEN420.SMB
 	SMTTOIMG 		add SMT-file to disk image.  (optional)
 .else
 	ADDTOIMG AUTOLOAD.SMB	add AUTOLOAD.SMB to disk image.  (required)
 .endif
-SK	EQU $100
-UTILITY_up_up_RETURN	EPZ $7	FAUTORUN.SYS^.3^M400^.A1325^H/P:^.^
+
+
+.if W1_DD
+	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads
+	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+U_up_up_RETURN_T	EPZ 6 FT.LOA^MFFFF^OT.SMB^Y.A1245^H/P:^	
+U_up_up_RETURN_SG	EPZ 7 FSG.LOA^M400^.A1245^H/P:^
+
+.else
+UTILITY_up_up_RETURN	EPZ 7	FAUTORUN.SYS^.3^M400^.A1245^H/P:^
+.endif
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
 * Change the name of the following disk image file ( W1_DD.XFD ) as required:
@@ -101,6 +111,7 @@ DLN	EQU $9c
 INSLN	EQU $9D
 BELL	EQU $FD
 
+SK	EQU $100
 CRSINH	EQU $2F0
 DSPFLG	EQU $2FE
 ICCOM	EQU $342
@@ -239,7 +250,7 @@ KEYREP	EQU $2DA
 DBYTLO	EQU $308	 Sector size
 CONSOL	EQU $D01F
 VCOUNT	EQU $D40B
-
+NMIST	EQU $D40F
 
 
 
@@ -389,10 +400,10 @@ FTV	EQU $50F0
 *XXX=57  
 *  5800: DLB ------  segment 5856 -------------------- 58FF
 
-SEGTAB0	EQU $1C00	4 pages (enough for 256 segments)
-SEGTAB1	EQU $1D00	This is DOS scratch RAM
-SEGTAB2	EQU $1E00
-SEGTAB3	EQU $1F00
+SEGTAB0	EQU $BC00	4 pages (enough for 256 segments)
+SEGTAB1	EQU $BD00	This is Screen RAM for many programs
+SEGTAB2	EQU $BE00
+SEGTAB3	EQU $BF00
 * Utility TEXTbf $BE00, NEWED $BE70, NEWKB $BE78 to $BE7F
 OUTMENSV	EQU $BF00	to $BCA0 - Buffer for 1st 4 lines on screen
 * $BC00 to $C000 remain untouched by FRAMDISK, since at this location,
@@ -1918,8 +1929,8 @@ WCM1	MovaW ADR1,ADR1V
 skip	LDA ANF
 	BNE WC16
 
-	LDA PREPFG	on error show address
-	BNE +
+*	LDA PREPFG	on error show address not working
+*	BNE +
 	LDA FG3
 	BPL WC17
 
@@ -2123,7 +2134,7 @@ WRAD	PHW
 	CmpaW MNLB,SKA
 	BCS AN3D
 
-	CmplW SKA,$D40F	exempt from PREPARE
+	CmplW SKA,NMIST	$D40F exempt from PREPARE
 	BEQ AN3D
 
 	WRL
@@ -2272,6 +2283,7 @@ PPREPARE	LDA FLFG
 +	INC PREPFG
 	MovaW LOFST,NWA
 	MovlB FG4,128
+*	STA FG3		for error message
 	JMP API
 	
 *** Calculate branch
@@ -2442,7 +2454,7 @@ HHEAD	ERTOA0		Error if no to-address
 	INC ZF		on
 	
 	LDX #127
-	STX FG3		off
+*	STX FG3		off Remove this line to include line number on HEAD error
 	INX
 	STX FG4		on
 * G.GO
@@ -2975,7 +2987,7 @@ FADR1A	LDA SKA			push ska
 	CKD000			doesn't use ADR1
 	BCC +
 
-	  MovlW SKA,$D40F		NMIST		
+	  MovlW SKA,NMIST		$D40F	
 	  FLA
 	  BEQ FLAERR		not found in symbol table
 

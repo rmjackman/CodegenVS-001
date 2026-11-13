@@ -6,13 +6,33 @@
 	ADDTOIMG TAIABR.X
 	ADDTOIMG TBHELP.TX
 	EQUCONST		Byte: EQU for constant, EPZ for address
-	CPFL T31.SYS
+*	CPFL T31.SYS
 	OUT X		XASM.LAB
 *	OUT LM
 	OUT LT
 *	OUT T		SOURCGEN symbol table
 
 
+
+.define W1_DD 1
+
+
+
+	
+.if W1_DD
+	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads
+	SAVEAS T.LOA		Not AUTORUN.SYS when using TURBODOS!!!
+	SMTFILE T.SMB
+	SMTTOIMG 		add SMT-file to disk image.  (optional)
+	
+U_up_up_RETURN_SG	EPZ 7 FSG.LOA^M400^.A1245^H/P:^
+
+.else
+UTILITY_up_up_RETURN	EPZ 7	FAUTORUN.SYS^.3^M400^.A1245^H/P:^
+.endif	
+	
+	
+	verify
 EOL     EQU $9B
 -----------------------------------------------------------------------
 ICCOM	=$342
@@ -142,19 +162,19 @@ MMOVE	MACRO OA,A2,L
 --------------------------------------------------
 WARMST	EPZ 8
 BOOT 	EPZ 9
-DOSVEC	EPZ $0A
+*DOSVEC	EPZ $0A
 DOSINI	EPZ $0C
 LMARGN	EPZ 82
 SAVMSC	EPZ 88
 KEYDEF	EPZ 121
-RAMTOP	EPZ $6A
+*RAMTOP	EPZ $6A
 COLDST	EQU $244
 CH	EQU 764 keycode of last pressed key
 BRKKY	EQU 566
 INVFLG	EQU 694
 SHFLOK	EQU 702
-NOCLIK	EQU 731
-CRSINH	EQU 752
+*NOCLIK	EQU 731
+*CRSINH	EQU 752
 CHBAS	EQU 756
 PORTB	EQU $D301
 SKCTL	EQU $D20E Disable the POKEY key click directly
@@ -268,7 +288,7 @@ ENG	DFB 1,21
 	DFB 0
 GER	DFB 11,10
 	.DA "yY","z","Z"		ASC "yYzZ"
-CHARBUF	ASC "?"
+	ASC "?"
 ***********************************
 *	B E G I N	*
 
@@ -400,7 +420,7 @@ SCROLDN	MovaW ADR2,WA
 MOVSCR	LDA FFLG
 	BEQ INVUP
 
-LNED		MovaW ADR1,XA		ADR1 = XA
+		MovaW ADR1,XA		ADR1 = XA
 
 		MovaW LOC,XA		LOC = XA
 		SublW LOC,cTXAD		LOC -= cTXAD
@@ -566,8 +586,8 @@ KEYPRESS	STY KCD		store key code
 *	JSR $FCD8	CLICK
 
 	LDY KCD
-
-SETVECT	STY KCD
+*** set vector
+	STY KCD
 	CPY #192
 	BCC SEEKKCD	
 	TYA
@@ -1421,7 +1441,7 @@ ENDPL	IncW XA
 
 END	GET
 
-GND	JMP BKTP	
+	JMP BKTP	
 *
 WL	DFW 0
 
@@ -2297,7 +2317,7 @@ PUTBF1Z	STA cPRBF,Y
 VOWELS	DFB 228,246,252
 	ASC "aeiou"
 
-BUF     DFB 0
+	DFB 0
 ************************************************
 ANSITAB	DFB 225,249,209,201,231,244,242,236
 	DFB 163,239,252,228,214,250,243,246

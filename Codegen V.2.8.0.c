@@ -1140,8 +1140,8 @@ int main(int argc, char* argv[]) {
 
 
 
-			strcpy_s(loafilename, sizeof(loafilename), "AUTORUN.SYS");
-			strcpy_s(dsk_filename, sizeof(dsk_filename), "temp.atr");
+			strcpy_s(loafilename, sizeof(loafilename), "AUTORUN.SYS");	//Set default
+			strcpy_s(dsk_filename, sizeof(dsk_filename), "temp.atr");	//Set default
 
 #if DELETE_TEMP_ATR
 
@@ -2286,7 +2286,7 @@ int main(int argc, char* argv[]) {
 					if (_stricmp(opcode, "ADDTOIMG") == 0) {
 						operand_to_filename(addtoimg_filename[addtoimg_cnt++]); continue;
 					}
-					if (_stricmp(opcode, "SMTFILE") == 0) {
+					if ((_stricmp(opcode, "SMTFILE") == 0) || (_stricmp(opcode, "SMBFILE") == 0)){
 						operand_to_filename(smbfilename); continue;
 					}
 					if (_stricmp(opcode, "RUNEMUL") == 0) {
@@ -2315,7 +2315,7 @@ int main(int argc, char* argv[]) {
 
 				/* SMTTOIMG */
 
-				if (_stricmp(opcode, "SMTTOIMG") == 0) {
+				if ((_stricmp(opcode, "SMTTOIMG") == 0) || (_stricmp(opcode, "SMBTOIMG") == 0)) {
 					smttoimg_flg = 1;
 					continue;
 				}
@@ -3634,8 +3634,29 @@ int main(int argc, char* argv[]) {
 
 
 		if (verif_flg == 1) {
+			char* ext1, * ext2;
+			size_t len1, len2;
+
 			verif_flg = 2;
-			strcpy_s(src_filename, sizeof(src_filename), "AUTORUN.SRC");
+
+			ext1 = strrchr(loafilename, '.');
+			ext2 = strrchr(src_filename, '.');
+
+			len1 = ext1 ? (size_t)(ext1 - loafilename) : strlen(loafilename);
+			len2 = ext2 ? (size_t)(ext2 - src_filename) : strlen(src_filename);
+
+			if (len1 == len2 && _strnicmp(loafilename, src_filename, len1) == 0) {
+				printf("ERROR: Source and comparison filenames have the same root.\n");
+				exit(EXIT_FAILURE);
+			}
+
+			strcpy_s(src_filename, sizeof(src_filename), loafilename);
+			ext1 = strrchr(src_filename, '.');
+			if (ext1)
+				strcpy_s(ext1, sizeof(src_filename) - (size_t)(ext1 - src_filename), ".SRC");
+			else
+				strcat_s(src_filename, sizeof(src_filename), ".SRC");
+
 			strcpy_s(cmp_file, sizeof(cmp_file), loafilename);
 		}
 	}//end of long loop for verif_flg == 2
