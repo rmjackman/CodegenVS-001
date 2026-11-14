@@ -338,6 +338,7 @@ adjstDX	LDX #1
 loop	LDA LS,X		LS+1 and LS+2
 	CMP #EOL
 	BEQ skip
+	
 	CMP ':'
 	BEQ adjND
 	INX
@@ -359,7 +360,18 @@ adjLP	LDA LS,Y		Make space for "D:"
 	STA LS
 	LDA ':'
 	STA LS+1
-
+.define FL_NAME2 1 	show filename
+.if FL_NAME2
+*	STX NML
+	LDY #0
+-	LDA LS,Y		ObtainSV,Y
+	  PTCH
+	  INY
+	  CPY NML	OldLen
+	  BNE -
+	  
+	PRL 
+.endif	
 adjND	RTS	
 
 *adjND	LDX #$20		screen
@@ -393,7 +405,7 @@ FLV	EQU $5000+20	File-Save (15 bytes)
 LS	EQU $5000+$23	Input line
 LSmin4	EQU $5000+35-4
 LN	EQU $5090	Output line
-OSV	EQU $50E0	Obtained File-save
+ObtainSV	EQU $50E0	Obtained File-save
 FTV	EQU $50F0
 
 *segment 5100 57DA -- Inrease XXX by 1 to add a page of room for this segment
@@ -1195,7 +1207,7 @@ fSLASH	PRMEN
 	MovlB CNT,'A'
 	BNE +
 
-WGLP	STX XSAV
+loop	STX XSAV
 	  LDA MenTab-1,X
 	  BEQ WGD
 	  BPL skip
@@ -1217,7 +1229,7 @@ WGLP	STX XSAV
 skip	  PUTR
 WG2	  LDX XSAV
 	  INX
-	  BNE WGLP
+	  BNE loop
 
 WGD	RTS
 *
@@ -2331,6 +2343,7 @@ CKFND	RTS
 
 *** Error - no filename saved
 FE1	LDY #$A5
+
 FERR	JMP IOERR
 
 ****************************************************************
@@ -3286,7 +3299,7 @@ PTCND	RTS
 *
 PCHERR	PREL
 	LDY #$12
-	
+* IOerror	
 IOERR	STY ERNO
 
 	MovlB DFG,0
@@ -3300,7 +3313,7 @@ IOERR	STY ERNO
 
 IE6	MovaW ADR,ADRV
 	CPY #128
-	BEQ JINP
+	LBEQ JINP
 
 	LDA HILOFG
 	BEQ IE9
@@ -3341,13 +3354,32 @@ IE1	INY
 	INX
 	CPX ERNO
 	BNE IE1
-
-IE2	INY
+* IO error text
+loop	INY
 	LDA (A2),Y
 	AND #%01111111
 	PTCH
 	LDA (A2),Y
-	BPL IE2
+	BPL loop
+
+
+.define NAME_ERR 0 	show filename
+.if NAME_ERR
+	LDA ERNO
+	CMP #$A5
+	BNE IE8
+
+	LDA ' '
+	PTCH
+	
+	LDY #0
+-	LDA ObtainSV,Y
+	  PTCH
+	  INY
+	  CPY #6	OldLen
+	  BNE -
+.endif	
+	
 
 IE8	PREL
 
@@ -3357,6 +3389,7 @@ IE8	PREL
 	PREL
 	fPL
 JINP	JMP DSI
+
 *** Put Hex Byte (A)
 PHB	PHA
 	CMP #10
@@ -3667,7 +3700,6 @@ skip	MovlB NMC,$FF
 
 INO1	MovlB BT1,156
 	LDY #0
-
 loop	LDA LS,Y
 	CMP '$'
 	BEQ +
@@ -3677,10 +3709,11 @@ loop	LDA LS,Y
 	BEQ +
 	CMP 'T'
 	BEQ +
-	CMP ' '
-	BNE NNB
-+	INY
-	BNE loop
+	
+	  CMP ' '
+	  BNE NNB
++	    INY
+	    BNE loop
 
 NNB	INC NMC
 NXN	LDA LS,Y
@@ -3943,7 +3976,7 @@ D3	TXA		last char is in A
 	
 
 *
-OL	DFB 0
+OldLen	DFB 0
 
 *** S. SAVE
 SSAVE	LDA ','		or '['
@@ -3974,10 +4007,10 @@ loop	MovlB A3,2
 	PutS \/\
 
 	LDY #0
--	LDA OSV,Y
+-	LDA ObtainSV,Y
 	  PTCH
 	  INY
-	  CPY OL
+	  CPY OldLen
 	  BNE -
 
 	LDA JJ
@@ -3999,14 +4032,14 @@ loop	MovlB A3,2
 
 *
 SAVE1	adjstDX
-	MovlB ICAX1+$10,8
+	MovlB ICAX1+$10,8		Write
 	LDX NML
 	DEX
 	LDA LS,X
+	
 	CMP '>'
 	BNE +
-
-	  INC ICAX1+$10
+	  INC ICAX1+$10		9 = append
 	  DEC NML
 
 +	CHKTOA
@@ -4031,14 +4064,27 @@ SER	JMP IOERR
 *
 OPENLF	MovlW OPF1+1,SMB
 OPF	LDX NML
-	LDY #0
+	LDY #0		 01234
 OPF1	LDA SMB,Y	".SMB" or ".SRC"
 	STA LS,X
 	INX
 	INY
-	CPY #4
+	CPY #5
 	BNE OPF1
 
+
+.define FL_NAME 1 	show filename
+.if FL_NAME
+	STX NML
+	LDY #0
+-	LDA LS,Y		ObtainSV,Y
+	  PTCH
+	  INY
+	  CPY NML	OldLen
+	  BNE -
+	  
+	PRL 
+.endif	
 	LDX #$10
 	ICBadrl LS
 	OPR
@@ -4048,16 +4094,18 @@ OPF1	LDA SMB,Y	".SMB" or ".SRC"
 *** Obtain symbols
 OOBTAIN	LDA ','		or '['
 	STA SCTP
+	
+	LDA LS
 	adjstDX
 	LDY NML
-	STY OL
+	STY OldLen
 	DEY
-O3	LDA LS,Y		save filename in OSV
-	 STA OSV,Y
+O3	LDA LS,Y		save filename in ObtainSV
+	 STA ObtainSV,Y
 	 DEY
 	 BPL O3
 
-	MovlB ICAX1+$10,4
+	MovlB ICAX1+$10,4		Read
 	MovlB SGC,0
 	OPENLF
 
