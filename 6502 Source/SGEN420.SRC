@@ -360,14 +360,14 @@ adjLP	LDA LS,Y		Make space for "D:"
 	STA LS
 	LDA ':'
 	STA LS+1
-.define FL_NAME2 1 	show filename
+.define FL_NAME2 0 	show filename
 .if FL_NAME2
 *	STX NML
 	LDY #0
--	LDA LS,Y		ObtainSV,Y
+-	LDA LS,Y
 	  PTCH
 	  INY
-	  CPY NML	OldLen
+	  CPY NML
 	  BNE -
 	  
 	PRL 
@@ -393,7 +393,7 @@ adjND	RTS
 
 
 
-*segment 2200 4BA0
+*segment 2200 4BDC
 
 *Display list $4C20
 *SAVMSK $4C40 to $4FFF (screen RAM)
@@ -3699,7 +3699,20 @@ skip	MovlB NMC,$FF
 .endif
 
 INO1	MovlB BT1,156
-	LDY #0
+* Filename J or T
+	LDA #EOL
+	CMP LS+1
+	BNE skip
+	  LDX LS
+	  CPX 'J'
+	  BEQ +
+	  CPX 'T'
+	  BNE skip
++	    STA LS+2	EOL
+	    STX LS+1	T,J
+	    MovlB LS,'/'
+
+skip	LDY #0
 loop	LDA LS,Y
 	CMP '$'
 	BEQ +
@@ -4075,6 +4088,8 @@ OPF1	LDA SMB,Y	".SMB" or ".SRC"
 
 .define FL_NAME 1 	show filename
 .if FL_NAME
+	LDA #CRSUP
+	PTCH
 	STX NML
 	LDY #0
 -	LDA LS,Y		ObtainSV,Y
@@ -4094,8 +4109,7 @@ OPF1	LDA SMB,Y	".SMB" or ".SRC"
 *** Obtain symbols
 OOBTAIN	LDA ','		or '['
 	STA SCTP
-	
-	LDA LS
+
 	adjstDX
 	LDY NML
 	STY OldLen
