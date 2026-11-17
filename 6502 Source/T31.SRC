@@ -177,7 +177,8 @@ SHFLOK	EQU 702
 *CRSINH	EQU 752
 CHBAS	EQU 756
 PORTB	EQU $D301
-SKCTL	EQU $D20E Disable the POKEY key click directly
+IRQEN	EQU $D20E Disable the POKEY key click directly
+IRQST	EQU $D20E
 NOKEY	EQU 208
 
 
@@ -314,9 +315,9 @@ BG1	TSX
 	MovaW BKYSV,BRKKY
 	MovlW BRKKY,BKTP
 	
-	LDA SKCTL Disable the POKEY key click directly
+	LDA IRQST
 	and #%11111110  ; clear bit 0
-	STA SKCTL	
+	STA IRQEN Disable the POKEY key click directly	
         
 	SCTLRET
 	N
@@ -3097,14 +3098,14 @@ JDOS	JSR 0
 	JMP BG1
 	
 * bell
-BELL	LDA SKCTL Disable the POKEY key click directly
+BELL	LDA IRQST Disable the POKEY key click directly
 	AND #%11111111  ; set bit 0
-	STA SKCTL
+	STA IRQEN
 
 	JSR $F556	ring bell
 
-	LDA SKCTL Disable the POKEY key click directly
+	LDA IRQST Disable the POKEY key click directly
 	AND #%11111110  ; clear bit 0
-	STA SKCTL
+	STA IRQEN
 
 	RTS

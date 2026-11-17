@@ -993,6 +993,147 @@ uint16_t adnmw(uint8_t* ptr) {
 	adnmw2(ska);
 	return(ska);
 }
+#define WRITE_ONLY_SYMBOL 1
+#define NEW_ADNMW2 1
+#if NEW_ADNMW2
+
+void adnmw2(uint16_t ska) {
+	uint16_t i;
+	uint16_t offset = 0;
+	int prev = -1;
+	int next = -1;
+
+#if WRITE_ONLY_SYMBOL
+	bool hw_addr = ska >= 0xD000 && ska < 0xD800 &&
+		(ska < 0xD300 || ska >= 0xD400) &&
+		ska != 0xD01F;
+
+	bool write_access = hw_addr && wr_only_opc_xxxx_flg;
+#endif
+
+	isav = symtab_init; 
+
+	for (i = symtab_init; i <= symnum; i++) {
+
+		if (sss[i].symbol[0] == 0)
+			continue;
+
+#if WRITE_ONLY_SYMBOL
+		if (hw_addr) {
+			if (write_access && sss[i].symtyp != '<')
+				continue;
+
+			if (!write_access && sss[i].symtyp == '<')
+				continue;
+		}
+#endif
+
+		if (sss[i].symadr <= ska)
+			prev = i;
+		else {
+			next = i;
+			break;
+		}
+	}
+
+	if (prev >= 0 && sss[prev].symadr == ska &&
+		(label_equ_flg == 0 || sss[prev].symtyp == '{')) {
+
+		isav = prev;
+		pts(sss[prev].symbol);
+		return;
+	}
+
+	if (prev < 0) {
+		if (ska > 9)
+			ptc('$');
+
+		pts_p("%X", ska);
+		return;
+	}
+
+	isav = prev;
+
+#if USE_SYMTAB_OFFSET
+
+	if (sss[prev].ofst > 0 &&
+		ska >= sss[prev].symadr &&
+		ska - sss[prev].symadr <= sss[prev].ofst) {
+
+		offset = ska - sss[prev].symadr;
+
+		pts_p("%s+", sss[prev].symbol);
+		offset_added = true;
+
+		if (offset > 9)
+			ptc('$');
+
+		pts_p("%X", offset);
+	}
+
+	else if (next >= 0 &&
+		sss[next].ofst < 0 &&
+		ska < sss[next].symadr &&
+		sss[next].symadr - ska <= -(int)sss[next].ofst) {
+
+		offset = sss[next].symadr - ska;
+		isav = next;
+
+		pts_p("%s-", sss[next].symbol);
+		offset_added = true;
+
+		if (offset > 9)
+			ptc('$');
+
+		pts_p("%X", offset);
+	}
+
+	else {
+		if (ska > 9)
+			ptc('$');
+
+		pts_p("%X", ska);
+	}
+
+#else
+
+	offset = ska - sss[prev].symadr;
+
+	if (offset <= SYMBOL_OFFSET && label_equ_flg == 0) {
+
+		pts_p("%s", sss[prev].symbol);
+		pts_p("+%d", offset);
+		offset_added = true;
+	}
+
+	else if (next >= 0 &&
+		sss[next].symadr - ska == 1 &&
+		label_equ_flg == 0) {
+
+		isav = next;
+
+		pts_p("%s", sss[next].symbol);
+		pts("-1");
+		offset_added = true;
+	}
+
+	else {
+		if (ska > 9)
+			ptc('$');
+
+		pts_p("%X", ska);
+	}
+
+#endif
+}
+
+#else
+
+/* Keep your existing adnmw2(uint16_t ska) routine here, unchanged. */
+
+
+
+
 
 void adnmw2(uint16_t ska) {
 
@@ -1047,17 +1188,6 @@ void adnmw2(uint16_t ska) {
 
 		pts_p("%X", offset);
 	}
-	
-	/*if (ska == 0x54AD) {
-		printf("i=%d isav=%d\n", i, isav);
-
-		for (int j = isav - 1; j <= isav + 2; j++) {
-			printf("%d: %s %04X ofst=%d\n",
-				j, sss[j].symbol,
-				sss[j].symadr, sss[j].ofst);
-		}
-		getchar();
-	}*/
 
 	else if (sss[i].ofst < 0 &&
 		ska < sss[i].symadr &&
@@ -1146,7 +1276,7 @@ void adnmw2(uint16_t ska) {
 
 	return;
 }
-
+#endif
 
 uint16_t adnmb(uint8_t* ptr) {
 	uint8_t byte;

@@ -695,6 +695,9 @@ const unsigned char data[21][15] = {
 	/* DEC */{ 0,0,0xC6,0xCE,0xD6,0xDE,0,0,0,0,0xD6,0x67,0x46,0,0 },
 	/* INC */{ 0,0,0xE6,0xEE,0xF6,0xFE,0,0,0,0,0,0,0,0,0 }
 };
+static const unsigned char WRonlyTB[] = { 140, 141, 142, 153, 157 };
+int operno = 0;
+int wr_only_opc_xxxx_flg = 0;
 
 
 #if ATARI800
@@ -925,7 +928,6 @@ int main(int argc, char* argv[]) {
 		int pos = 0;
 		char ch = 0;
 		unsigned int operval = 0;
-		int operno = 0;
 		int i = 0;
 		char label[MAX_EXPR_STR_SIZE] = { 0 };
 
@@ -1217,6 +1219,7 @@ int main(int argc, char* argv[]) {
 
 			symnumext = symnum;
 			include_flg = 0;
+			wr_only_opc_xxxx_flg = 0;
 
 			/* Are there line numbers in the source code? */
 			{
@@ -3001,8 +3004,20 @@ int main(int argc, char* argv[]) {
 				}
 				else if (data[cnt][operno] == 0)
 					error("This addressing is not possible with this opcode");
+
+#define WRITE_ONLY_SYMBOL 1
+#if WRITE_ONLY_SYMBOL
+				if (pass == 2) {
+					wr_only_opc_xxxx_flg = 0;
+					if (memchr(WRonlyTB, (unsigned char)data[cnt][operno],
+						sizeof(WRonlyTB)) != NULL)
+						wr_only_opc_xxxx_flg = 1;
+				}
+#endif
+
 				toxlbuf((char)data[cnt][operno]);		// opcode command
 				toxlbuf((char)symval);					// address low byte
+
 
 				switch (operno)								// now address high byte (if applicable)
 				{
@@ -3040,7 +3055,7 @@ int main(int argc, char* argv[]) {
 						d40f_found = 1;
 				}
 				if (d40f_found == 0) {
-					sss[symnum].symtyp = '{';
+					sss[symnum].symtyp = '#';
 					//strcpy_s(sss[symnum].symbol, sizeof(sss[symnum].symbol), "NMIST");//may not need this line
 					sss[symnum++].symadr = 0xd40f;
 				}
@@ -3071,8 +3086,16 @@ int main(int argc, char* argv[]) {
 			* sgndtbptr1 = pc - 1;
 
 #endif
-
+			for (int i = 0; i < symnumext; i++) {
+    if (sss[i].symadr == 0xD20E) {
+        printf("BEFORE QSORT: %s adr=%04X typ=%02X\n",
+            sss[i].symbol, sss[i].symadr,
+            (unsigned char)sss[i].symtyp);
+    }
+}
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
+
+
 #if SORT_EQU_EPZ
 			first_adr_symnum = sort_equ_epz();
 #endif // SORT_EQU_EPZ
@@ -3087,6 +3110,9 @@ int main(int argc, char* argv[]) {
 						pc_table[i].address,
 						pc_table[i].line);
 				}**/
+
+
+
 
 
 		if (const_by_equ_vs_epz || const_by_imm_addr) {
@@ -3127,6 +3153,9 @@ int main(int argc, char* argv[]) {
 								}
 							}
 						}
+
+
+
 
 						qsort(sss, symnum, sizeof(ssstype), ssscmpadr);
 
@@ -4589,6 +4618,7 @@ uint32_t symtoi1() {
 		if ((sssptr = bsearch(strbeg, sss, symnum,
 			sizeof(ssstype), _stricmp)) != 0) {
 
+
 			if (maclevel)
 				sssptr->macf = MACRO_LAB;
 			else
@@ -4622,9 +4652,6 @@ uint32_t symtoi1() {
 
 			symfg = 1;
 
-			if (strcmp("ADR1", sssptr->symbol) == 0)
-				pc = pc;
-
 			if (pass == 2 && !skip_frequency && !frequency_disabled &&
 				(!pending_NN_pair_flg || maclevel == 0)) {
 
@@ -4637,6 +4664,36 @@ uint32_t symtoi1() {
 			syms_in_expr++;
 
 			result = sssptr->symadr;
+
+
+#if WRITE_ONLY_SYMBOL
+			if (pass == 2) {
+				if (result >= 0xD000 && result < 0xD800) {
+
+					bool write_only_addr =
+						(result < 0xD300 || result >= 0xD400) &&
+						result != 0xD01F;
+
+					bool write_only_op =
+						strcmp(opcode, "STY") == 0 ||
+						strcmp(opcode, "STA") == 0 ||
+						strcmp(opcode, "STX") == 0;
+
+					if (write_only_addr && write_only_op) {
+
+						for (int i = 0; i < symnumext; i++) {
+							if (sss[i].symadr == result &&
+								sss[i].symbol[0] &&
+								strstr(operand, sss[i].symbol) != NULL) {
+
+								sss[i].symtyp = '<';
+								break;
+							}
+						}
+					}
+				}
+			}
+#endif
 
 //#if !ATMAS_II_COMPATIBLE
 
@@ -4946,7 +5003,26 @@ static void operand_to_filename(char filename[MAX_FILENAME_LEN + 1]) {
 // end operand_to_filename
 
 
+#if WRITE_ONLY_SYMBOL
+int ssscmpadr(const ssstype* a1, const ssstype* a2) {
+	bool a1_hw = a1->symadr >= 0xD000 && a1->symadr < 0xD800;
+	bool a2_hw = a2->symadr >= 0xD000 && a2->symadr < 0xD800;
 
+	if (a1_hw && a2_hw) {
+		if (a1->symtyp == '<' && a2->symtyp != '<')
+			return 1;
+		if (a1->symtyp != '<' && a2->symtyp == '<')
+			return -1;
+	}
+
+	if (a1->symadr < a2->symadr)
+		return -1;
+	if (a1->symadr > a2->symadr)
+		return 1;
+
+	return 0;
+}
+#else
 
 int ssscmpadr(const ssstype* a1, const ssstype* a2) {
 	if (a1->symadr < a2->symadr)
@@ -4955,6 +5031,8 @@ int ssscmpadr(const ssstype* a1, const ssstype* a2) {
 		return 1;
 	return 0;
 }
+#endif
+
 
 // end ssscmpadr
 

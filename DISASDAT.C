@@ -114,3 +114,5 @@ const unsigned char oprndlen[256] = {
 
 
 const unsigned char esc_ch_tab[16] = { 27,28,29,30,31,125,126,127,155,156,157,158,159,253,254,255 };// Escape characters for strings
+
+static const unsigned char WRonlyTB[] = { 140, 141, 142, 153, 157 };
