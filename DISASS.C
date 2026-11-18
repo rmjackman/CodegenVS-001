@@ -78,6 +78,10 @@ FILE* outputfile;
 FILE* madslstfile;
 bool label_equ_flg = false;
 bool print_sectype = false;
+unsigned char opcodebyte;
+
+static const unsigned char WRonlyTB[] = { 140, 141, 142, 153, 157 };
+
 void disassemble(const char* filename) {
 
 
@@ -709,6 +713,7 @@ uint16_t disassln(DbgContext* ctx, uint16_t ska){ // ska = start address -- take
 	offset = abofst[*codeptr];
 	ptr = abtab + offset;
 	opcodeptr = codeptr;
+	opcodebyte = *opcodeptr;
 
 	if (flag[8] == 1) { //SHOW_OPCODES
 		pts_p(" %X ", *codeptr);
@@ -1008,12 +1013,17 @@ void adnmw2(uint16_t ska) {
 		(ska < 0xD300 || ska >= 0xD400) &&
 		ska != 0xD01F;
 
+	wr_only_opc_xxxx_flg = 0;
+
+	if (memchr(WRonlyTB, opcodebyte, sizeof(WRonlyTB)) != NULL)
+		wr_only_opc_xxxx_flg = 1;
+
 	bool write_access = hw_addr && wr_only_opc_xxxx_flg;
 #endif
 
 	isav = symtab_init; 
 
-	for (i = symtab_init; i <= symnum; i++) {
+	for (i = symtab_init; i < symnum; i++) {
 
 		if (sss[i].symbol[0] == 0)
 			continue;
@@ -1028,14 +1038,26 @@ void adnmw2(uint16_t ska) {
 		}
 #endif
 
-		if (sss[i].symadr <= ska)
-			prev = i;
+		if (sss[i].symadr <= ska) {
+			if (prev < 0 || sss[i].symadr > sss[prev].symadr)
+				prev = i;
+		}
 		else {
-			next = i;
-			break;
+			if (next < 0 || sss[i].symadr < sss[next].symadr)
+				next = i;
 		}
 	}
+	if (ska == 0x00D0) {
+		printf("NOKEY SELECT: prev=%d label_equ_flg=%d",
+			prev, label_equ_flg);
 
+		if (prev >= 0)
+			printf(" name=%s adr=%04X typ=%02X",
+				sss[prev].symbol, sss[prev].symadr,
+				(unsigned char)sss[prev].symtyp);
+
+		printf("\n");
+	}
 	if (prev >= 0 && sss[prev].symadr == ska &&
 		(label_equ_flg == 0 || sss[prev].symtyp == '{')) {
 

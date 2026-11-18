@@ -695,7 +695,7 @@ const unsigned char data[21][15] = {
 	/* DEC */{ 0,0,0xC6,0xCE,0xD6,0xDE,0,0,0,0,0xD6,0x67,0x46,0,0 },
 	/* INC */{ 0,0,0xE6,0xEE,0xF6,0xFE,0,0,0,0,0,0,0,0,0 }
 };
-static const unsigned char WRonlyTB[] = { 140, 141, 142, 153, 157 };
+//static const unsigned char WRonlyTB[] = { 140, 141, 142, 153, 157 };
 int operno = 0;
 int wr_only_opc_xxxx_flg = 0;
 
@@ -3005,15 +3005,15 @@ int main(int argc, char* argv[]) {
 				else if (data[cnt][operno] == 0)
 					error("This addressing is not possible with this opcode");
 
-#define WRITE_ONLY_SYMBOL 1
-#if WRITE_ONLY_SYMBOL
+/**/#define WRITE_ONLY_SYMBOL 1
+/*#if WRITE_ONLY_SYMBOL
 				if (pass == 2) {
 					wr_only_opc_xxxx_flg = 0;
 					if (memchr(WRonlyTB, (unsigned char)data[cnt][operno],
 						sizeof(WRonlyTB)) != NULL)
 						wr_only_opc_xxxx_flg = 1;
 				}
-#endif
+#endif*/
 
 				toxlbuf((char)data[cnt][operno]);		// opcode command
 				toxlbuf((char)symval);					// address low byte
@@ -3086,13 +3086,7 @@ int main(int argc, char* argv[]) {
 			* sgndtbptr1 = pc - 1;
 
 #endif
-			for (int i = 0; i < symnumext; i++) {
-    if (sss[i].symadr == 0xD20E) {
-        printf("BEFORE QSORT: %s adr=%04X typ=%02X\n",
-            sss[i].symbol, sss[i].symadr,
-            (unsigned char)sss[i].symtyp);
-    }
-}
+
 			qsort(sss, symnumext, sizeof(ssstype), ssscmpadr);
 
 
@@ -3177,7 +3171,7 @@ int main(int argc, char* argv[]) {
 #define NEW_REMOVE_UNNEEDED_SYMBOLS 1
 
 #if NEW_REMOVE_UNNEEDED_SYMBOLS
-/* Remove unneeded symbols */
+/* COMPACTION: Remove unneeded symbols */
 
 			puts("");
 			symnum = first_adr_symnum;
@@ -3216,18 +3210,21 @@ int main(int argc, char* argv[]) {
 
 
 				/****************************************************************
-				 * Find the section type for this address.
-				 *
-				 * Look through ALL symbols, not just the previous symbol.
-				 *
-				 * A section type of 0 means "no section type".
-				 *
-				 * '{' is NOT a section type. It is a special symbol
-				 * category and must remain distinct from normal entries.
-				 *
-				 * If different non-zero section types are found, issue
-				 * a warning.
-				 ****************************************************************/
+ * Find the section type for this address.
+ *
+ * Look through ALL symbols, not just the previous symbol.
+ *
+ * A section type of 0 means "no section type".
+ *
+ * '{' is NOT a section type. It is a special symbol
+ * category and must remain distinct from normal entries.
+ *
+ * '<' is a write symbol and must also remain distinct.
+ *
+ * If different non-zero section types are found, issue
+ * a warning.
+ ****************************************************************/
+
 
 				for (j = first_adr_symnum; j < symnumext; j++) {
 
@@ -3238,7 +3235,8 @@ int main(int argc, char* argv[]) {
 						continue;
 
 					if (sss[j].symtyp == 0 ||
-						sss[j].symtyp == '{')
+						sss[j].symtyp == '{' ||
+						sss[j].symtyp == '<')
 						continue;
 
 					if (sectype == 0)
@@ -3257,7 +3255,7 @@ int main(int argc, char* argv[]) {
 				 * Check whether this address/type category has already been
 				 * placed in the compacted symbol table.
 				 *
-				 * Normal entries and '{' entries are kept separately.
+				 * Normal entries and '{' entries and '{' entries are kept separately.
 				 *
 				 * The table is sorted by address, so stop when a larger
 				 * address is encountered.
@@ -3269,8 +3267,8 @@ int main(int argc, char* argv[]) {
 						break;
 
 					if (sss[j].symadr == sss[i].symadr &&
-						((sss[j].symtyp == '{') ==
-							(sss[i].symtyp == '{'))) {
+						((sss[j].symtyp == '{') == (sss[i].symtyp == '{')) &&
+						((sss[j].symtyp == '<') == (sss[i].symtyp == '<'))) {
 
 						duplicate = 1;
 						dupnum = j;
@@ -3298,11 +3296,12 @@ int main(int argc, char* argv[]) {
 					 * If a non-zero section type exists anywhere at this
 					 * address, use it for the retained normal entry.
 					 *
-					 * Never overwrite a '{' entry.
+					 * Never overwrite a '{' or '<' entry.
 					 */
-					if (sectype != 0 && sss[dupnum].symtyp != '{')
+					if (sectype != 0 &&
+						sss[dupnum].symtyp != '{' &&
+						sss[dupnum].symtyp != '<')
 						sss[dupnum].symtyp = sectype;
-
 
 					/*
 					 * Handle two named symbols at the same address.
@@ -3327,7 +3326,8 @@ int main(int argc, char* argv[]) {
 									sss[dupnum] = sss[i];
 
 									if (sectype != 0 &&
-										sss[dupnum].symtyp != '{')
+										sss[dupnum].symtyp != '{' &&
+										sss[dupnum].symtyp != '<')
 										sss[dupnum].symtyp = sectype;
 								}
 							}
@@ -3360,7 +3360,9 @@ int main(int argc, char* argv[]) {
 				 *
 				 * Never overwrite a '{' entry.
 				 */
-				if (sectype != 0 && sss[symnum].symtyp != '{')
+				if (sectype != 0 &&
+					sss[symnum].symtyp != '{' &&
+					sss[symnum].symtyp != '<')
 					sss[symnum].symtyp = sectype;
 
 
@@ -3466,7 +3468,10 @@ int main(int argc, char* argv[]) {
 
 			/* LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA LOA */
 			if (fopen_s(&stream, loafilename, "wb") != 0) {
-				puts(BRED "Error: Can't open LOA file.\nClose Notepad if you have used it for printer output, and try again.\a" RESET);
+				puts(BRED "Error: Can't open LOA file.\n"
+					"Close your Atari emulator if it is open.\n"
+					"Close Notepad if you have used it for printer output.\n"
+					"Then try again.\a" RESET);
 				perror("");
 				hit_Enter();
 				exit(1);
