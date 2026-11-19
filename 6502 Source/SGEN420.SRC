@@ -4199,7 +4199,7 @@ loop	LDY #3
 		BMI STFND
 		DEY
 		LDA (ADR1),Y
-		AND %11011111 Case insensitivity not working!
+*		AND %11011111 Case insensitivity not working!
 		CMP LS,X
 		BEQ -
 
@@ -4229,9 +4229,9 @@ STFND	WSEC1
 
 *
 WSEC	FADR1
-WSEC1	MovlB ROWCRS,22
-	PRINT
-	DFB DLN,DLN,0
+WSEC1	PUT DLN		delete (RAM) ?
+	MovlB ROWCRS,21
+	PUT DLN
 	MovlB TOA,$FF
 	STA TOA+1
 	LADNM
