@@ -35,11 +35,11 @@
 .if W1_DD
 	DSKIMAGE W1_DD.XFD 	TURBO DOS DD Sourcgen loads
 	SAVEAS SG.LOA		Not AUTORUN.SYS when using TURBODOS!!!
-U_up_up_RET_T	EPZ 6 FT.LOA^MFFFF^OT.SMB^Y.A1245^H/P:^	
-U_up_up_RET_SG	EPZ 7 FSG.LOA^M400^OSCGEN420.SMB^Y.A1245^H/P:^
+U_up_up_RET_T	EPZ 6 FT.LOA^MFFFF^OT.SMB^Y.A1245^H/P:	
+U_up_up_RET_SG	EPZ 7 FSG.LOA^M400^OSCGEN420.SMB^Y.A1245^H/P:
 
 .else
-UTILITY_up_up_RETURN	EPZ 7	FAUTORUN.SYS^.3^M400^.A1245^H/P:^
+UTILITY_up_up_RETURN	EPZ 7	FAUTORUN.SYS^.3^M400^.A1245^H/P:
 .endif
 
 * CODEGEN will create a Load-File and save it to an ATR or XFD-disk image file.
@@ -180,12 +180,12 @@ SWTP	EPZ $B2	Swap-type
 TPNO	EPZ $B3	type no.
 LBFG	EPZ $B4	Label flag
 STKV	EPZ $B5	Stack-save
-ANF	EPZ $B6	Address not found
+ANf	EPZ $B6	Address not found
 ADR1OF	EPZ $B7	ADR1 offset flag
 XSAV	EPZ $B8	Save X register
 PRF	EPZ $B9	printer flag
 PREPFG	EPZ $BA	Prepare-flag
-AOF	EPZ $BB
+AOf	EPZ $BB	Address offest flag: 0:+  1:-
 SEF	EPZ $BC
 BYTSV	EPZ $BD	BYT save
 SPV	EPZ $BE
@@ -468,7 +468,7 @@ TypTab	ASC ".(;!'\#,"		'?' changed to ','
 	DFB '"'
 	ASC "=-%$*&<_|@[]"
 	ASC /=-/
-	DFB 0	SG40
+	DFB 0
 *** Table of sec type pointers
 TyPtrTb	DFW TXTty,NormTy,NormTy,NormTy,NormTy,ASCty,DFBty,DFBty
 	DFW StrTy
@@ -1662,17 +1662,17 @@ J22D	  RTS
 	JMP PRL
 
 +	ANO
-	BCS BR4
+	BCS +
 
 	WJLTL
-	BCS BR5
+	BCS skip
 
-BR4	WBL
-	BCC BR6
++	WBL
+	BCC +
 
-BR5	JMP PRL
+skip	JMP PRL
 
-BR6	WRAD
++	WRAD
 	JMP PRL
 
 ***
@@ -1842,13 +1842,15 @@ WCM2	LDA PREPFG
 	CMP '-'
 	BEQ CP3
 
-CPHL	STS TLB		MovlW Z20,TLB  ILSR
+CPHL	MovlW Z20,TLB
+	ILSR	
 	RTS		
 
-CP3	STS JLB		MovlW Z20,JLB  ILSR
+CP3	MovlW Z20,JLB
+	ILSR
 	RTS
 
-CPND	LDA ANF
+CPND	LDA ANf
 	BEQ WC2ND
 
 	LDA ZF		SGEN412
@@ -1884,7 +1886,7 @@ WC2B	CPX #16
 	BCS WC24
 	PutTAB
 
-WC24	LDA ANF
+WC24	LDA ANf
 	BPL skipFG5
 	  PTHW
 
@@ -1918,7 +1920,7 @@ WCM1	MovaW ADR1,ADR1V
 	STA ANFV
 	MovaW ADR1V,ADR1
 
-	LDA ANF
+	LDA ANf
 	BEQ skip
 
 	  LDA ADR
@@ -1938,7 +1940,7 @@ WCM1	MovaW ADR1,ADR1V
 	DEC LBFG
 	MovaW ADR1,ADR1V
 
-skip	LDA ANF
+skip	LDA ANf
 	BNE WC16
 
 *	LDA PREPFG	on error show address not working
@@ -1971,7 +1973,7 @@ WC18	LDA FG3
 	  JMP LADNM
 
 +	PutS \*\
-	LDA ANF
+	LDA ANf
 	ifPL
 	  CKJLTL
 	  BCS +
@@ -1996,7 +1998,7 @@ WHeadCmt	LDA FG2		SGEN412
 	
 WCM	LDA PREPFG
 	BNE WCD
-	LDA ANF
+	LDA ANf
 	BEQ WCD
 
 +	LDY #3
@@ -2043,11 +2045,11 @@ loop	INY
 WCD	RTS
 
 *
-ADNM1	LDA ANF
+ADNM1	LDA ANf
 	BEQ ADN12
 
 	MovaW PVAV,ADR1
-	LDA ANF
+	LDA ANf
 	BPL ADN15
 
 	WADNM
@@ -2067,7 +2069,7 @@ ADN13	LDA CBF
 	LDA FG3
 	BPL ADN14
 skip	PTHW
-	MovlB ANF,0
+	MovlB ANf,0
 ADN14	WBL
 	BCS AN1ND
 
@@ -2093,51 +2095,52 @@ AN1D	DEC JKF1		Print junk1 address
 	PRL
 	INC JKF1
 	RTS
-	
+********************************************	
+
 *** Put address or symbol after opcode (SKA)
 ADNM2	LDA JF2
-	BNE CP5
+	BNE +
 	LDA JF1
 	BEQ skip
-CP5	CmpaW SKA,NWASV
-	BNE AN1ND
++	  CmpaW SKA,NWASV
+	  BNE AN1ND	rts
 *** Hide JSR?
 skip	Cmpl BT1,32	jsr?
-	BNE +		no: skip
+	BNE skip		no: skip
 	LDA FG7		jsr selected? jjjj
-	BMI +		yes: skip     jjjj
+	BMI skip		yes: skip     jjjj
 	
 	  SEC		
 	  LDA LSPOS
 	  SBC #4		go back 4 spaces
-	  BCC +		Avoid negative value. (not needed)
+	  BCC skip		Avoid negative value. (not needed)
 	  STA LSPOS
 
-+	FADR1
-	LDA ANF
-	BEQ AN21
-	BPL WAORL
-
-	DETZ
-	JMP WADNM
-
-AN21	ANO
+skip	FADR1
+	LDA ANf		address name flag
+	BEQ +
+	  BPL WrAorL	PL && NE: entry without symbol
+*** symbol
+	    DETZ		Determine Z-table if ZF (head flag) is set
+	    JMP WADNM
+*** No entry
++	ANO
 	BNE PTOFS
+*** Entry without symbol
+WrAorL	DETZ		Determine Z-table if ZF (head flag) is set
+	WJLTL		Write J or T label if it exists
+	BCS AN3D		exit if label written
 
-WAORL	DETZ
-	WJLTL
-	BCS AN3D		exit if label
-
-	Cmpl BT1,32	jsr?
-	BNE WRAD		no: go pt '$' now
+	  Cmpl BT1,32	jsr?
+	  BNE WRAD		no: go pt '$' now
 	
-	LDA FG7		jsr selected?      jjjj
-	BMI WRAD		no: go pt '$' now  jjjj
+	  LDA FG7		jsr selected?      jjjj
+	  BMI WRAD		no: go pt '$' now  jjjj
 	
-	  CLC		yes: 
-	  LDA LSPOS	first move up 4
-	  ADC #4
-	  STA LSPOS
+	    CLC		yes: 
+	    LDA LSPOS	first move up 4
+	    ADC #4
+	    STA LSPOS
 
 WRAD	PHW
 	LDA ZF
@@ -2155,18 +2158,26 @@ WRAD	PHW
 *** No Error--Label + prepared
 AN3D	RTS
 
-PTOFS	LDA AOF
-	BNE PTO1
-
+*** Put offset
+PTOFS	LDA AOf
+	BNE PTmiOf
+* Put positive offset
 	MovaW ADR1,PVA
 	MovPZ SKA,PVA
 
-	OFSI
-	WADNM
-	BCS PTO2
+	DETZ
+
+	LDA PREPFG
+	BEQ +
+
+	  JMP CPHL
+
++	WADNM
+	BCS +
 
 	  WRAD
-PTO2	PutS \+\
+	  
++	PutS \+\
 	MovaW SKA,SKAV
 	SEC
 	LDY #0
@@ -2174,20 +2185,22 @@ PTO2	PutS \+\
 	SBC (PVA),Y
 	JMP PHB
 
-PTO1	MovPZ SKA,ADR1
+PTmiOf	MovPZ SKA,ADR1
 
 	DETZ
 	WADNM
-	BCS PTO4
+	BCS +
 
-	WRAD
-PTO4	PutS \-\
+	  WRAD
+	
++	PutS \-\
 	MovaW SKA,SKAV
 	SEC
 	LDY #0
 	LDA (ADR1),Y
 	SBC SKA
 	JMP PHB
+	
 *** 1.address
 FG1	DFB 128
 *** 2.comment
@@ -2862,8 +2875,8 @@ skip	LDX #0
 	    BNE -
 MMD	RTS
 
-*** Find Label address SKA in symtab
-FLA	MovlB ANF,0
+*** Find Label address SKA in symtab. Not found:0, label:1, no label:128
+FLA	MovlB ANf,0
 	STA PVA+1
 	STA SEF
 *** long loop
@@ -2898,42 +2911,54 @@ LOW	  DEY
 	  CMP SKA
 	  BEQ FLND
 	  BCS NOTF
+*** Find offset
+.define FLOFINIT 0
+.if FLOFINIT
+FLOF	  LDY #2
+	  LDA (ADR1),Y		offset
+	  BEQ +
 
+	    MovaW PVA,ADR1	remember if found
+	    
++	  INY			#3
+.else
 FLOF	  LDY #3
-	  MovaW PVA,ADR1
-	  LDA (ADR1),Y
+	  MovaW PVA,ADR1		save ADR1 in PVA
+.endif
+	  LDA (ADR1),Y		entry length
 	  CLC
-	  ADC ADR1
+	  ADC ADR1		add it to ADR1
 	  STA ADR1
 	  LDA ADR1+1
 	  BCC loop
 	    INC ADR1+1
 	    BCS loop
-*** Address found
+	    
+*** address found
 FLND	LDY #4
 	LDX #0
 *** sec type char only?
--	LDA TypTab,X
-	BEQ NotTyCH
+loop	LDA TypTab,X
+	BEQ notTyCH	end of TypTab: char not found
 
 	  INX
 	  CMP (ADR1),Y
-	  BNE -
+	  BNE loop
 
-	   INC ANF
-	   BNE FLND2
+	   INC ANf	ANf is 1 if no label in entry
+	   BNE +		jmp
 
-NotTyCH	MovlB ANF,128
+notTyCH	MovlB ANf,128	( dec ANf. ANf is MI if label in entry
 
-FLND2	DEY		Y=3
++	DEY		Y=3
 	LDA (ADR1),Y	
 	TAY
 	STY ADR1OF	Y=ADR1OF
-NOTF	LDA ANF
+NOTF	LDA ANf		not found:0, label:1, no label:128
 	RTS
 	
-NOTF1	INC SEF
-	BNE NOTF	(A is 0)
+NOTF1	INC SEF		= 1
+	BNE NOTF		forced branch
 ******************************************
 	
 * $D000 to $D7FF, write-only table
@@ -2981,12 +3006,12 @@ FADR1	MovlB CONSTFG,1
 	BEQ skip
 	CMP ']'		enter constant with E.EDIT
 	BEQ skip
-	CMP '['		label constants in normal code
+	CMP '['		byte-constant-labels in normal code
 	BNE +
 
 skip	  MovaB ADR1+1,SYMTAB	adr1 = symtab
 	  MovlB ADR1,0
-	  BEQ FADR1A	forced branch
+	  BEQ FADR1A	branch always
 	
 +	DEC CONSTFG
 	FNDEPZ
@@ -4865,47 +4890,47 @@ SKP3	CLC
 
 ANO1	MovaW PVA,PVAV
 ANO	MovaW SKAV,SKA
-	MovlB ANF,0
-	STA AOF
+	MovlB ANf,0
+	STA AOf
 	LDA PVA+1
 	BEQ AOD
 
 	LDY #1
 	LDA (PVA),Y
-	TAX
-	INY
-	LDA (PVA),Y
-	BMI MANO
+	TAX		X=PVA+1
+	INY		#2
+	LDA (PVA),Y	offset
+	BMI MiANof
 
 	LDY #0
 	CLC
 	ADC (PVA),Y
 	TAY
-	BCC AO1
+	BCC +
 
 	INX
-AO1	CPX SKA+1
-	BNE AO2
++	CPX SKA+1
+	BNE +
 
 	CPY SKA
-AO2	BCC MANO
++	BCC MiANof
 
-	LDY #4
+	LDY #4		sectyp
 	LDA (PVA),Y
 AOY	CKTY
-	BCC AO3
+	BCC +
 
-	MovlB ANF,1
-	BNE AOD
+	  MovlB ANf,1	entry without symbol
+	  BNE AOD
 
-AO3	MovlB ANF,128
++	MovlB ANf,128	entry with symbol
 	SEC
 	RTS
-*
-MANO	LDA SEF
+*** negative offset
+MiANof	LDA SEF
 	BNE AOD
 
-	INC AOF
+	INC AOf		1: negative offset
 	LDY #1
 	LDA (ADR1),Y
 	STA TMP+1
@@ -4917,20 +4942,21 @@ MANO	LDA SEF
 	CLC
 	ADC (ADR1),Y
 	STA TMP
-	BCS AO6
+	BCS +
 
 	DEC TMP+1
-AO6	CmpaW SKA,TMP
++	CmpaW SKA,TMP
 	BCC AOD
 
 	LDY #4
 	LDA (ADR1),Y
 	JMP AOY
 
-AOD	LDA ANF
+AOD	LDA ANf
 	CLC
 	RTS
-*
+	
+*** Write branch label
 WBL	WIS BLB
 	BCC WD
 

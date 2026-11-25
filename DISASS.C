@@ -1047,17 +1047,7 @@ void adnmw2(uint16_t ska) {
 				next = i;
 		}
 	}
-	if (ska == 0x00D0) {
-		printf("NOKEY SELECT: prev=%d label_equ_flg=%d",
-			prev, label_equ_flg);
 
-		if (prev >= 0)
-			printf(" name=%s adr=%04X typ=%02X",
-				sss[prev].symbol, sss[prev].symadr,
-				(unsigned char)sss[prev].symtyp);
-
-		printf("\n");
-	}
 	if (prev >= 0 && sss[prev].symadr == ska &&
 		(label_equ_flg == 0 || sss[prev].symtyp == '{')) {
 
