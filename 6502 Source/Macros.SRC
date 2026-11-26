@@ -259,11 +259,17 @@ STS	MACRO A
 	MovlW $20,A
 	ILSR
 	MEND
-
+*old
 WIS	MACRO A
 	MovlW $20,A
 	WISR
 	MEND
+*renamed
+FlbAD	MACRO A
+	MovlW $20,A
+	FlabAD
+	MEND
+
 
 LBCC	MACRO L
 	BCS E@

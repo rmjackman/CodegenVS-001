@@ -168,7 +168,7 @@ HF	EPZ $A1
 LSsav	EPZ $A2
 
 
-ZF	EPZ $A7	head flag, parse EQU, EPZ
+Zf	EPZ $A7	head flag, parse EQU, EPZ
 CONSTFG	EPZ $A8	constants flag eg. COPN EQU 3
 TXPT	EPZ $A9
 EDADV	EPZ $AA	editor address save
@@ -178,13 +178,13 @@ SCTP	EPZ $B0	section type
 
 SWTP	EPZ $B2	Swap-type
 TPNO	EPZ $B3	type no.
-LBFG	EPZ $B4	Label flag
+LBf	EPZ $B4	Label flag
 STKV	EPZ $B5	Stack-save
 ANf	EPZ $B6	Address not found
 ADR1OF	EPZ $B7	ADR1 offset flag
 XSAV	EPZ $B8	Save X register
 PRF	EPZ $B9	printer flag
-PREPFG	EPZ $BA	Prepare-flag
+PREPf	EPZ $BA	Prepare-flag
 AOf	EPZ $BB	Address offest flag: 0:+  1:-
 SEF	EPZ $BC
 BYTSV	EPZ $BD	BYT save
@@ -522,7 +522,7 @@ BG1	TSX
 	MovlB LMARGN,0
 	STA BGFG
 	STA SWTP
-	STA ZF
+	STA Zf
 	fSLASH
 
 *Loop begin
@@ -558,10 +558,10 @@ DSI	LDX STKV
 
 	AJA1MX
 
-	LDA ZF
+	LDA Zf
 	BEQ skip
 
-	  DEC ZF
+	  DEC Zf
 	  INC ZZF
 
 	  LHEAD
@@ -592,7 +592,7 @@ skip	ComCiov CCLOSE
 DSI1	MovlB PRF,0
 	STA CRSINH
 	STA DSPFLG
-	STA PREPFG
+	STA PREPf
 	STA DFG
 	Dsta TOA
 	STA INVFLG
@@ -677,7 +677,7 @@ APLOOP	LDX STKV
 	  ITLB
 
 +	MovlB HILOFG,0
-	STA LBFG
+	STA LBf
 	STA J9FG
 	LDA FLFG
 	BEQ +
@@ -760,7 +760,7 @@ AP1	INCADRw
 XX	  XX
 	  JMP AP2
 
-NormTy	INC LBFG
+NormTy	INC LBf
 
 	PutTAB
 	PTOPCD
@@ -904,7 +904,7 @@ skip	INCADRw
 	PutTAB
 	PutS \DFW \
 	MovlB CHC,0
-	INC LBFG
+	INC LBf
 	RTS
 *
 DFWmiTy	DFWTY
@@ -1383,7 +1383,7 @@ BBB	MovaB BT1,BYT
 	LDA OPFG
 	BNE skip
 
-*	  LDA ZF
+*	  LDA Zf
 *	  BEQ B1P	rts
 *testtt	jmp testtt
 *	  PTHW		?????????
@@ -1639,11 +1639,11 @@ BR	CPY #16
 	MovaW SKA,ADRV
 	CALCBRA
 	DETZ
-	LDA PREPFG
+	LDA PREPf
 	BEQ +
 
 	  MovlW Z20,BLB
-	  ILSR
+	  INSlabAD
 J22D	  RTS
 
 +	LDA JF1
@@ -1661,7 +1661,7 @@ J22D	  RTS
 	WCM2
 	JMP PRL
 
-+	ANO
++	ANOfst
 	BCS +
 
 	WJLTL
@@ -1771,9 +1771,9 @@ PBND	RTS
 
 
 *** Write address name (ADR1)
-WADNM	LDA ZF
+WADNM	LDA Zf
 	BNE PBND
-	LDA PREPFG
+	LDA PREPf
 	BNE PBND
 	
 	MovlB FG,0
@@ -1818,7 +1818,7 @@ skip	LDA FG
 +	SEC
 WAND	RTS
 *
-WCM2	LDA PREPFG
+WCM2	LDA PREPf
 	BEQ CPND
 
 	CmpaW SKA,MNLB
@@ -1843,23 +1843,23 @@ WCM2	LDA PREPFG
 	BEQ CP3
 
 CPHL	MovlW Z20,TLB
-	ILSR	
+	INSlabAD	
 	RTS		
 
 CP3	MovlW Z20,JLB
-	ILSR
+	INSlabAD
 	RTS
 
 CPND	LDA ANf
 	BEQ WC2ND
 
-	LDA ZF		SGEN412
+	LDA Zf		SGEN412
 	BNE WC2ND	SGEN412
 
 	LDA FG5
 	BPL skipFG5
 
-	  LDA PREPFG	asdfg
+	  LDA PREPf	asdfg
 	  BNE WC2ND
 
 	LDA FG6
@@ -1926,24 +1926,24 @@ WCM1	MovaW ADR1,ADR1V
 	  LDA ADR
 	  AND #1
 	  STA ODF
-	  LDA PREPFG
+	  LDA PREPf
 	  BEQ skip
 
 	    LDY #2
 	    LDA (ADR1),Y
 	    BEQ skip
 
-	INC LBFG
+	INC LBf
 
 	MovlW Z20,TLB
-	ILSR
-	DEC LBFG
+	INSlabAD
+	DEC LBf
 	MovaW ADR1,ADR1V
 
 skip	LDA ANf
 	BNE WC16
 
-*	LDA PREPFG	on error show address not working
+*	LDA PREPf	on error show address not working
 *	BNE +
 	LDA FG3
 	BPL WC17
@@ -1978,14 +1978,14 @@ WC18	LDA FG3
 	  CKJLTL
 	  BCS +
 
-endif	LDA PREPFG
+endif	LDA PREPf
 	BNE +
 	LDA FG1
 	BPL +
 
 	  PTHW
 *** comment line-begin
-+	LDA PREPFG
++	LDA PREPf
 	BNE skip
 	LDA FG2
 	BPL skip
@@ -1996,7 +1996,7 @@ WHeadCmt	LDA FG2		SGEN412
 	BMI +		SGEN412
 	  BPL WCD	SGEN412 
 	
-WCM	LDA PREPFG
+WCM	LDA PREPf
 	BNE WCD
 	LDA ANf
 	BEQ WCD
@@ -2046,48 +2046,52 @@ WCD	RTS
 
 *
 ADNM1	LDA ANf
-	BEQ ADN12
+	BEQ +
 
 	MovaW PVAV,ADR1
 	LDA ANf
-	BPL ADN15
+	BPL skip
 
 	WADNM
 	LDA JKF1
 	BEQ AN1ND
-	BNE ADN15
-
-ADN12	  MovaW PVA,PVAV
-	  ANO
-	  BNE ADN13
-
-ADN15	WJLTL
-	BCS AN1ND
-
-ADN13	LDA CBF
 	BNE skip
-	LDA FG3
-	BPL ADN14
-skip	PTHW
-	MovlB ANf,0
-ADN14	WBL
-	BCS AN1ND
+
++	  ANOfst1
+	  BNE +
+
+skip	WJLTL
+	BCS AN1ND	rts
+
++	LDA CBF
+	BNE skip
+	
+	  LDA FG3
+	  BPL +
+	
+skip	  PTHW		address at line begin
+	  MovlB ANf,0	no address name
+	
++	WBL
+	BCS AN1ND	rts
 
 	LDA JKF1
-	BEQ AN1ND
+	BEQ AN1ND	rts
 	LDA SKF
-	BEQ AN1ND
+	BEQ AN1ND	rts
 
 	MovlB LSPOS,0
 	PTHW
 	LDA ANFV
-	BPL ADN16
+	BPL +
 
-	BLK
-	WADNM
-ADN16	LDA JKF1
+	  BLK
+	  WADNM
+	
++	LDA JKF1
 	BNE AN1D
-	WRL
+	
+	  WRL
 
 AN1ND	RTS
 
@@ -2121,13 +2125,13 @@ skip	FADR1
 	BEQ +
 	  BPL WrAorL	PL && NE: entry without symbol
 *** symbol
-	    DETZ		Determine Z-table if ZF (head flag) is set
+	    DETZ		Determine Z-table if Zf (head flag) is set
 	    JMP WADNM
 *** No entry
-+	ANO
++	ANOfst
 	BNE PTOFS
 *** Entry without symbol
-WrAorL	DETZ		Determine Z-table if ZF (head flag) is set
+WrAorL	DETZ		Determine Z-table if Zf (head flag) is set
 	WJLTL		Write J or T label if it exists
 	BCS AN3D		exit if label written
 
@@ -2143,7 +2147,7 @@ WrAorL	DETZ		Determine Z-table if ZF (head flag) is set
 	    STA LSPOS
 
 WRAD	PHW
-	LDA ZF
+	LDA Zf
 	BEQ AN3D
 
 	CmpaW MNLB,SKA
@@ -2167,7 +2171,7 @@ PTOFS	LDA AOf
 
 	DETZ
 
-	LDA PREPFG
+	LDA PREPf
 	BEQ +
 
 	  JMP CPHL
@@ -2305,7 +2309,7 @@ PPREPARE	LDA FLFG
 	  Dsta JLE
 	  Dsta TLE
 	  STA SWTP
-+	INC PREPFG
++	INC PREPf
 	MovaW LOFST,NWA
 	MovlB FG4,128
 *	STA FG3		for error message
@@ -2477,7 +2481,7 @@ HHEAD	ERTOA0		Error if no to-address
 	SETSGTAB
 	ClearW ZLE	0
 	Dsta DLE		0
-	INC ZF		on
+	INC Zf		on
 	
 	LDX #127
 *	STX FG3		off Remove this line to include line number on HEAD error
@@ -2573,8 +2577,8 @@ BC	LDA LS
 
 BE	JMP IOERR
 
-*** Determine Z-table if ZF (head flag) is set
-DETZ	LDA ZF
+*** Determine Z-table if Zf (head flag) is set
+DETZ	LDA Zf
 	BEQ DZD		exit
 
 	LDA FFG
@@ -2594,18 +2598,18 @@ skip	CKD000
 	BCC skip
 
 	  MovlW Z20,DLB
-	  ILSR
+	  INSlabAD
 	  JMP DZD
 
 skip	MovlW Z20,ZLB
-	ILSR
+	INSlabAD
 DZD	RTS
 
 *
 *** List head
 LHEAD	WHDCONST
 	ITLB
-	INC LBFG		on
+	INC LBf		on
 	MovlB ADR,0
 	STA BT1		= 0
 	MovaB ADR+1,ZLB
@@ -3049,8 +3053,9 @@ FADR1A	LDA SKA			push ska
 *** Need D40F/<SYMBOL>
 FLAERR	LDY #$D
 JIOERR	JMP IOERR
-*** incorporates MMOVER
-ILSR	WISR
+
+*** insert label into table
+INSlabAD	FlabAD
 	BCS IRND
 
 	LDY #1
@@ -3068,6 +3073,7 @@ ILSR	WISR
 	BEQ JIOERR
 
 	IncW Z20
+	CLC
 	LDA A3
 	ADC #2
 	STA ADR1
@@ -3116,7 +3122,131 @@ ILSR	WISR
 
 IRND	RTS
 *
-WISR	LDY #0
+.define NEW_FLABAD 1
+.if NEW_FLABAD
+PNT	EPZ A2
+
+*** Find label address SKA in sorted symbol table
+
+FlabAD  LDY #0
+        STY A1
+        LDA (Z20),Y
+        STA A1+1
+
+        CLC
+        INY
+        LDA (Z20),Y
+        ADC A1
+        STA A3
+        INY
+        LDA (Z20),Y
+        ADC A1+1
+        STA A3+1
+
+        LDA A1
+        STA PNT
+        LDA A1+1
+        STA PNT+1
+
+*** Binary search
+
+FADLP   SEC
+        LDA A3
+        SBC PNT
+        STA CNT
+        LDA A3+1
+        SBC PNT+1
+        STA CNT+1
+
+*** Have the two limits met?
+
+        LDA CNT
+        ORA CNT+1
+        BEQ FADNF
+
+*** Calculate midpoint offset
+
+        LSR CNT+1
+        ROR CNT
+        LDA CNT
+        AND #$FE
+        STA CNT
+
+*** ADR2 = PNT + midpoint offset
+
+        CLC
+        LDA PNT
+        ADC CNT
+        STA ADR2
+        LDA PNT+1
+        ADC CNT+1
+        STA ADR2+1
+
+*** Compare midpoint entry with SKA
+
+        LDY #1
+        LDA (ADR2),Y
+        CMP SKA+1
+        BCC FADLOW
+        BNE FADHIGH
+
+        DEY
+        LDA (ADR2),Y
+        CMP SKA
+        BCC FADLOW
+        BEQ FADYES
+
+*** Entry greater than SKA
+
+FADHIGH LDA ADR2
+        STA A3
+        LDA ADR2+1
+        STA A3+1
+        JMP FADLP
+
+*** Entry smaller than SKA
+
+FADLOW  CLC
+        LDA ADR2
+        ADC #2
+        STA PNT
+        LDA ADR2+1
+        ADC #0
+        STA PNT+1
+        JMP FADLP
+
+*** Not found: PNT is insertion position
+
+FADNF   SEC
+        LDA PNT
+        SBC #2
+        STA A3
+        LDA PNT+1
+        SBC #0
+        STA A3+1
+        CLC
+        RTS
+
+*** Found
+
+FADYES  LDA ADR2
+        STA A3
+        LDA ADR2+1
+        STA A3+1
+
+        SEC
+        LDA A3
+        SBC A1
+        STA CNT
+        LDA A3+1
+        SBC A1+1
+        STA CNT+1
+
+        SEC
+        RTS
+
+.else
+FlabAD	LDY #0
 	STY A1
 	LDA (Z20),Y
 	STA A1+1
@@ -3132,7 +3262,7 @@ WISR	LDY #0
 	ADC A1+1
 	STA A3+1
 
-	LDA LBFG		only place where LBFG is tested
+	LDA LBf		only place where LBf is tested
 	BEQ INSTR
 
 WWI1	SublB A3,2
@@ -3206,8 +3336,9 @@ AJPNT	LDY #19
 	LDA PNT+1
 	STA ($20),Y
 	RTS
-*** Print error line ZF=0, PRLN, LSPOS=0
-PREL	MovlB ZF,0
+.endif
+*** Print error line Zf=0, PRLN, LSPOS=0
+PREL	MovlB Zf,0
 *** Write line, LSPOS:=0
 WRL	PutC #EOL
 	LDX #0
@@ -3226,9 +3357,9 @@ PRL	LDA HIF
 	BNE PRL5
 	LDA JKF1
 	BNE PRL5
-	LDA ZF
+	LDA Zf
 	BNE PRL5
-	LDA PREPFG
+	LDA PREPf
 	BEQ skip
 *** char to top right corner. J. H. P.
 PRL5	  LDA ADR+1
@@ -3328,7 +3459,7 @@ PCHERR	PREL
 IOERR	STY ERNO
 
 	MovlB DFG,0
-	STA ZF
+	STA Zf
 
 	CPY #$88
 	BNE IE6
@@ -4746,7 +4877,7 @@ TAB1	LDA #9
 XV	DFB 0	(use EPZ local, save 3
 YV	DFB 0	(use EPZ local, save 3
 
-JUNK1	DEC LBFG
+JUNK1	DEC LBf
 	LDA JKF
 	BEQ JD
 
@@ -4780,13 +4911,13 @@ J5	LADNM1
 JJ1	WJLTL
 	BCC J4
 
-	ANO1
+	ANOfst1
 	BEQ J3
 
 	PutS \ ok\
 	JMP J3
 
-J4	WIS BLB
+J4	FlbAD BLB
 	BCC JJ2
 
 	PTHW
@@ -4799,20 +4930,20 @@ JJ2	INC JKF
 	LDX XV
 	LDY YV
 
-JD	INC LBFG
+JD	INC LBf
 	RTS
 **************************************	
 *** Write J-, T-, Z-label
 WJLTL	CmpaW SKA,MNLB
 	BCC WJND
 
-	WIS JLB
+	FlbAD JLB
 	BCC WJT5
 
 	PutS \J\
 	JMP WJPHW
 
-WJT5	WIS TLB
+WJT5	FlbAD TLB
 	BCC WJND
 
 	PutS \T\
@@ -4850,16 +4981,16 @@ CN33	RDBYT
 	FADR1A
 	BNE CAF
 
-	ANO1
+	ANOfst1
 	BNE CANF
 
-	WIS BLB
+	FlbAD BLB
 	BCS CAF
 **************************************	
 *** Check J, T labels
-CKJLTL	WIS JLB
+CKJLTL	FlbAD JLB
 	BCS CAF
-	WIS TLB
+	FlbAD TLB
 	BCS CAF
 CANF	CLC
 	RTS
@@ -4887,9 +5018,9 @@ SKP3	CLC
 	LDA $21
 	RTS
 **************************************
-
-ANO1	MovaW PVA,PVAV
-ANO	MovaW SKAV,SKA
+*** address name offset
+ANOfst1	MovaW PVA,PVAV
+ANOfst	MovaW SKAV,SKA
 	MovlB ANf,0
 	STA AOf
 	LDA PVA+1
@@ -4957,7 +5088,7 @@ AOD	LDA ANf
 	RTS
 	
 *** Write branch label
-WBL	WIS BLB
+WBL	FlbAD BLB
 	BCC WD
 
 WBL1	PutS \H\
@@ -5384,7 +5515,7 @@ WA22	RTS
 
 OFSI	DETZ
 
-	LDA PREPFG
+	LDA PREPf
 	BEQ OFD
 
 	JMP CPHL
@@ -5581,7 +5712,7 @@ CI	LDA LS
 
 	INC C3F
 	MovlB CHIF,0
-	MovlB PREPFG,1
+	MovlB PREPf,1
 	JMP API
 CID	RTS
 
@@ -5907,7 +6038,7 @@ MESSAGE	PHP
 	TYA
 	PHA
 
-	MovaW SAVV1,ADR1		ZF is 1 byte!!!!!
+	MovaW SAVV1,ADR1		Zf is 1 byte!!!!!
 	MovaW SAVV2,SKA
 	MovaW SAVV3,STAD_seg
 	MovaW SAVV4,NDAD
